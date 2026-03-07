@@ -50,19 +50,19 @@ struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
         detach();
     }
     void onSet(uint32 val) override {
-        CallAfter([this, val]{
+        safeCall([this, val]{
             SetValue(static_cast<int32>(val));
         });
     }
 
     void onRange(uint32 val) override {
-        CallAfter([this, val]{
+        safeCall([this, val]{
             SetRange(static_cast<int32>(val));
         });
     }
 
     void onPulse() override {
-        CallAfter([this]{
+        safeCall([this]{
             Pulse();
         });
     }

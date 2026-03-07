@@ -51,7 +51,7 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
     }
 
     void onChange() override {
-        CallAfter([this, str=context<data::String>().val()]() {
+        safeCall([this, str=context<data::String>().val()]() {
             SetLabel(str);
         });
     }
