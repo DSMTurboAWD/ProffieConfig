@@ -50,7 +50,7 @@ struct DATA_EXPORT Choice : Model {
 private:
     std::unique_ptr<Responder> mRsp;
 
-    Filter mFilter;
+    Filter mFilter{nullptr};
 
     uint32 mNumChoices{0};
     int32 mIdx{-1};

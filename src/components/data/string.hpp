@@ -53,10 +53,10 @@ struct DATA_EXPORT String : Model {
 private:
     std::unique_ptr<Responder> mRsp;
 
+    Filter mFilter{nullptr};
+
     std::string mValue;
     size mPos{0};
-
-    Filter mFilter;
 };
 
 struct DATA_EXPORT String::ROContext : virtual Model::ROContext {

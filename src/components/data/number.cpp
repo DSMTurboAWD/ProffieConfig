@@ -114,7 +114,7 @@ template <typename T>
 bool data::detail::Number<T>::SetAction::shouldPerform(Model& model) {
     auto& num{static_cast<Number&>(model)};
 
-    num.mFilter(num, mValue);
+    if (num.mFilter) num.mFilter(num, mValue);
     mValue = num.clamp(mValue);
 
     return mValue != num.mValue;
@@ -162,7 +162,7 @@ void data::detail::Number<T>::UpdateAction::perform(Model& model) {
     mLastValue = num.mValue;
 
     auto tmp{num.mValue};
-    num.mFilter(num, tmp);
+    if (num.mFilter) num.mFilter(num, tmp);
     num.mValue = num.clamp(tmp);
 
     num.sendToReceivers(&Receiver::onUpdate);

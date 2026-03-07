@@ -48,7 +48,7 @@ struct DATA_EXPORT Bool : Model {
 private:
     std::unique_ptr<Responder> mRsp;
 
-    Filter mFilter;
+    Filter mFilter{nullptr};
     bool mValue{false};
 };
 

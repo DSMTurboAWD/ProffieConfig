@@ -74,7 +74,7 @@ data::Bool::SetAction::SetAction(bool val) : mValue{val} {}
 
 bool data::Bool::SetAction::shouldPerform(Model& model) {
     auto& bl{static_cast<Bool&>(model)};
-    bl.mFilter(bl, mValue);
+    if (bl.mFilter) bl.mFilter(bl, mValue);
     return bl.mValue != mValue;
 }
 
