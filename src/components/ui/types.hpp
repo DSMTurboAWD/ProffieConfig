@@ -27,5 +27,8 @@ namespace pcui {
 
 using DescriptorPtr = std::unique_ptr<detail::Descriptor>;
 
+template<typename T>
+using OptRef = std::optional<std::reference_wrapper<T>>;
+
 } // namespace pcui
 
