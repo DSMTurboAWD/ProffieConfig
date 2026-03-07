@@ -19,6 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/toplevel.h>
+
 #include "ui/controls/button.hpp"
 #include "ui/layout/panel.hpp"
 #include "ui/layout/spacer.hpp"
@@ -46,8 +48,13 @@ onboard::Frame::Frame() :
         _("ProffieConfig First-Time Setup"),
         wxDefaultPosition,
         wxDefaultSize,
-        wxSYSTEM_MENU | wxCLOSE_BOX | wxMINIMIZE_BOX | wxCAPTION | wxCLIP_CHILDREN
+        wxSYSTEM_MENU | wxCLOSE_BOX | wxMINIMIZE_BOX |
+        wxCAPTION | wxCLIP_CHILDREN
     ) {
+
+    pcui::build(this, ui());
+
+    Fit();
 
     bindEvents();
     CentreOnScreen();
@@ -64,13 +71,14 @@ pcui::DescriptorPtr onboard::Frame::ui() {
       .children_={
         pcui::Spacer{10}(),
         pcui::Stack{
+          .base_={.proportion_=1},
           .orient_=wxHORIZONTAL,
           .children_={
             pcui::Spacer{10}(),
             pcui::Image{
+              .win_={.maxSize_={256, 256}},
               .src_=pcui::Image::LoadDetails{
                 .name_="icon",
-                .size_={.dim_=256},
               },
             }(),
             pcui::Spacer{10}(),
@@ -98,6 +106,9 @@ pcui::DescriptorPtr onboard::Frame::ui() {
         }(),
         pcui::Spacer{10}(),
         pcui::Stack{
+            .base_={
+                .expand_=true,
+            },
             .orient_=wxHORIZONTAL,
             .children_={
               pcui::Spacer{10}(),

@@ -63,11 +63,12 @@ std::string state::manifestChannel;
 void state::init() {
     loadState();
 
-    if (not doneWithFirstRun) onboard::Frame::instance = new onboard::Frame();
-    else {
-        doNecessaryMigrations();
-        // MainMenu::instance = new MainMenu();
-    }
+    // if (not doneWithFirstRun) {
+        onboard::Frame::instance = new onboard::Frame();
+    // } else {
+    //     doNecessaryMigrations();
+    //     MainMenu::instance = new MainMenu();
+    // }
 }
 
 bool state::getPreference(Preference preference) {

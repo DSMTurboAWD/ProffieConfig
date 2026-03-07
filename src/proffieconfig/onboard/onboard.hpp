@@ -22,7 +22,6 @@
 #include "pages/info.hpp"
 #include "pages/setup.hpp"
 #include "pages/welcome.hpp"
-#include "ui/build.hpp"
 #include "ui/frame.hpp"
 
 namespace onboard {
