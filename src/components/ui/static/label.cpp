@@ -25,6 +25,7 @@
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 #include "utils/defer.hpp"
+#include "wx/gdicmn.h"
 
 using namespace pcui;
 
@@ -34,14 +35,30 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
     Static(wxWindow *parent, const Label& desc) : WinBase(desc.win_) {
         defer { postCreation(desc.win_); };
 
+        const auto style{desc.base_.align_};
+
         if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
-            Create(parent, wxID_ANY, *ptr);
+            Create(
+                parent,
+                wxID_ANY,
+                *ptr,
+                wxDefaultPosition,
+                wxDefaultSize,
+                style
+            );
             return;
         } 
 
         const auto& model{std::get<1>(desc.label_)};
         data::String::ROContext str{model};
-        Create(parent, wxID_ANY, str.val());
+        Create(
+            parent,
+            wxID_ANY,
+            str.val(),
+            wxDefaultPosition,
+            wxDefaultSize,
+            style
+        );
         
         attach(model);
     }
