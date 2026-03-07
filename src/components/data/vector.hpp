@@ -39,6 +39,7 @@ struct DATA_EXPORT Vector : Node {
 
     Vector(Node * = nullptr);
     Vector(const Vector&, Node * = nullptr);
+    ~Vector() override;
 
     std::unique_ptr<Model> clone(Node *) const override;
 

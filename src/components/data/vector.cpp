@@ -37,6 +37,10 @@ data::Vector::Vector(const Vector& other, Node *parent) :
     mRsp->attach(*this);
 }
 
+data::Vector::~Vector() {
+    mRsp->detach();
+}
+
 auto data::Vector::clone(Node *parent) const -> std::unique_ptr<Model> {
     return std::make_unique<Vector>(*this, parent);
 }
