@@ -42,3 +42,34 @@ auto data::logic::adapt(data::Bool& bl) -> Element {
     return std::make_unique<Adapter>(bl);
 }
 
+auto data::logic::adapt(
+    data::Choice& choice, HasSelection sels
+) -> Element {
+    struct Adapter : detail::Base, data::Choice::Receiver {
+        Adapter(data::Choice& choice, HasSelection sels) :
+            choice_{choice}, sels_{std::move(sels)} {}
+        ~Adapter() override { detach(); }
+
+        bool doActivate(ChangeFunc changeFunc) override {
+            changeFunc_ = std::move(changeFunc);
+            attach(choice_);
+            return isTrue();
+        }
+
+        void onChoice() override {
+            std::lock_guard scopeLock{*pLock};
+            changeFunc_(isTrue());
+        }
+
+        bool isTrue() {
+            return sels_.contains(context<Choice>().choice());
+        }
+
+        data::Choice& choice_;
+        HasSelection sels_;
+        ChangeFunc changeFunc_;
+    };
+
+    return std::make_unique<Adapter>(choice, std::move(sels));
+}
+
