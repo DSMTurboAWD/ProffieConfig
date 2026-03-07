@@ -51,7 +51,7 @@ Manager::Manager(Element&& child) :
             rcvr->onChange(val);
         }
     }};
-    mChild->activate(changeFunc, &mLock);
+    mVal = mChild->activate(changeFunc, &mLock);
 }
 
 Holder::Holder(Element&& child) :
