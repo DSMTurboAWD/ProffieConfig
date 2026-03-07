@@ -986,7 +986,7 @@ std::optional<std::pair<CommonData, pconf::HashedData>> parseSettingCommon(
 
     const auto requiredEntry{data.find("REQUIRE")};
     if (requiredEntry and requiredEntry->value_) {
-        const auto strList{pconf::valueAsList(requireAnyEntry->value_)};
+        const auto strList{pconf::valueAsList(requiredEntry->value_)};
         commonData.required_.reserve(strList.size());
 
         for (const auto& str : strList) {
