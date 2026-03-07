@@ -147,7 +147,7 @@ struct DATA_EXPORT Model::Context : virtual ROContext {
 
     template<typename T = Model>
     [[nodiscard]] T& model() const {
-        return const_cast<T&>(model<T>());
+        return const_cast<T&>(ROContext::model<T>());
     }
 
     /**
