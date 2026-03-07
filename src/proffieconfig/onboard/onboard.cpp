@@ -21,6 +21,7 @@
 
 #include <wx/toplevel.h>
 
+#include "data/logic/adapter.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/layout/panel.hpp"
 #include "ui/layout/spacer.hpp"
@@ -52,6 +53,11 @@ onboard::Frame::Frame() :
         wxCAPTION | wxCLIP_CHILDREN
     ) {
 
+    { data::Choice::Context page{mPage};
+        page.update(ePage_Max);
+        page.choose(ePage_Welcome);
+    }
+
     pcui::build(this, ui());
 
     Fit();
@@ -62,6 +68,7 @@ onboard::Frame::Frame() :
 }
 
 onboard::Frame::~Frame() {
+    GetSizer()->DeleteWindows();
     instance = nullptr;
 }
 
@@ -69,9 +76,9 @@ pcui::DescriptorPtr onboard::Frame::ui() {
     return pcui::Stack{
       .base_={.minSize_={900, 430},},
       .children_={
-        pcui::Spacer{10}(),
+        pcui::Spacer{20}(),
         pcui::Stack{
-          .base_={.proportion_=1},
+          .base_={.proportion_=1, .expand_=true},
           .orient_=wxHORIZONTAL,
           .children_={
             pcui::Spacer{10}(),
@@ -83,53 +90,68 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             }(),
             pcui::Spacer{10}(),
             pcui::Panel{
-                .win_={.show_={}},
-                .child_=mWelcomePage.ui(),
+              .base_={.proportion_=1,},
+              .win_={
+                .show_=data::logic::adapt(
+                  mPage, data::logic::HasSelection{{ePage_Welcome}}
+                )
+              },
+              .child_=mWelcomePage.ui(),
             }(),
             pcui::Panel{
-                .win_={.show_={}},
-                .child_=mSetupPage.ui(),
+              .base_={.proportion_=1,},
+              .win_={
+                .show_=data::logic::adapt(
+                  mPage, data::logic::HasSelection{{ePage_Setup}}
+                )
+              },
+              .child_=mSetupPage.ui(),
             }(),
             pcui::Panel{
-                .win_={.show_={}},
-                .child_=mInfoPage.ui(),
+              .base_={.proportion_=1,},
+              .win_={
+                .show_=data::logic::adapt(
+                  mPage, data::logic::HasSelection{{ePage_Info}}
+                )
+              },
+              .child_=mInfoPage.ui(),
             }(),
             pcui::Spacer{10}(),
           }
         }(),
         pcui::Spacer{10}(),
         pcui::Divider{
-            .base_={
-                .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT,},
-                .expand_=true
-            },
+          .base_={
+            .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT,},
+            .expand_=true
+          },
         }(),
         pcui::Spacer{10}(),
         pcui::Stack{
-            .base_={
-                .expand_=true,
-            },
-            .orient_=wxHORIZONTAL,
-            .children_={
-              pcui::Spacer{10}(),
-              pcui::Button{
-                .label_=_("Cancel"),
-              }(),
-              pcui::Spacer{10}(),
-              pcui::Button{
-                .label_=_("Skip"),
-              }(),
-              pcui::StretchSpacer{}(),
-              pcui::Spacer{10}(),
-              pcui::Button{
-                .label_=_("Back"),
-              }(),
-              pcui::Spacer{10}(),
-              pcui::Button{
-                .label_=wxGetTranslation(NEXT_STR),
-              }(),
-              pcui::Spacer{10}(),
-            }
+          .base_={
+            .expand_=true,
+          },
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Spacer{10}(),
+            pcui::Button{
+              .label_=_("Cancel"),
+            }(),
+            pcui::Spacer{10}(),
+            pcui::Button{
+              .label_=_("Skip"),
+            }(),
+            pcui::StretchSpacer{}(),
+            pcui::Spacer{10}(),
+            pcui::Button{
+              .label_=_("Back"),
+            }(),
+            pcui::Spacer{10}(),
+            pcui::Button{
+              .label_=wxGetTranslation(NEXT_STR),
+            }(),
+            pcui::Spacer{10}(),
+          }
         }(),
         pcui::Spacer{10}(),
       }

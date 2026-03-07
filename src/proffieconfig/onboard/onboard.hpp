@@ -19,10 +19,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "data/choice.hpp"
+#include "ui/frame.hpp"
+
 #include "pages/info.hpp"
 #include "pages/setup.hpp"
 #include "pages/welcome.hpp"
-#include "ui/frame.hpp"
 
 namespace onboard {
 
@@ -42,6 +44,14 @@ public:
 private:
     pcui::DescriptorPtr ui();
     void bindEvents();
+
+    enum {
+        ePage_Welcome,
+        ePage_Setup,
+        ePage_Info,
+        ePage_Max,
+    };
+    data::Choice mPage;
 
     onboard::Welcome mWelcomePage;
     onboard::Setup mSetupPage;
