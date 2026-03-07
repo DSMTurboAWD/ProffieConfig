@@ -46,6 +46,8 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
 
         attach(std::get<0>(desc.data_));
 
+        postCreation(desc.win_);
+
         Bind(wxEVT_SPINCTRL, &IntCtrl::onSpin, this);
     }
 
@@ -106,6 +108,8 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
         SetIncrement(params.inc_);
 
         attach(std::get<1>(desc.data_));
+
+        postCreation(desc.win_);
 
         Bind(wxEVT_SPINCTRLDOUBLE, &DoubleCtrl::onSpin, this);
     }

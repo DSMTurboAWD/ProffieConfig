@@ -38,6 +38,8 @@ struct Control : priv::WinBase<wxPanel, data::Selector::Receiver>,
 
         data::Selector::Receiver::attach(desc.data_);
         data::Choice::Receiver::attach(desc.data_.choice_);
+
+        postCreation(desc.win_);
     }
 
     ~Control() override {

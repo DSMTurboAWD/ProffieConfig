@@ -42,6 +42,8 @@ struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
         );
 
         attach(desc.data_);
+
+        postCreation(desc.win_);
     }
 
     ~Indicator() override {

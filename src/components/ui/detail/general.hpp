@@ -46,6 +46,7 @@ struct UI_EXPORT DynamicList : std::vector<std::unique_ptr<T>> {
  */
 struct UI_EXPORT ChildBase {
     wxSize minSize_{wxDefaultSize};
+
     int32 proportion_{0};
 
     struct {
@@ -61,7 +62,10 @@ struct UI_EXPORT ChildBase {
  * General properties for child window items.
  */
 struct UI_EXPORT ChildWindowBase {
+    wxSize maxSize_{wxDefaultSize};
+
     data::logic::Holder show_;
+
     wxString tooltip_;
 };
 

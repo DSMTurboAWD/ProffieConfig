@@ -40,6 +40,8 @@ struct RadioControl : priv::WinBase<wxRadioButton, data::Model::Receiver> {
         Create(parent, wxID_ANY, label);
 
         attach(data);
+
+        postCreation(win);
     }
 
     ~RadioControl() override {
@@ -58,6 +60,8 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
         );
 
         attach(desc.data_);
+
+        postCreation(desc.win_);
 
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};

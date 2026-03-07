@@ -20,10 +20,11 @@
  */
 
 #include <wx/button.h>
+#include <wx/gdicmn.h>
 
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
-#include "wx/gdicmn.h"
+#include "utils/defer.hpp"
 
 using namespace pcui;
 
@@ -33,6 +34,8 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     Control(wxWindow *parent, const Button& desc) :
         WinBase(desc.win_),
         func_{desc.func_} {
+        defer { postCreation(desc.win_); };
+
         const auto style{desc.exactFit_ ? wxBU_EXACTFIT : 0};
         if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
             Create(

@@ -19,6 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/statbmp.h>
+
+#include "data/generic.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "utils/color.hpp"
@@ -32,11 +35,16 @@ struct UI_EXPORT Image {
 
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildBase base_;
+    detail::ChildWindowBase win_;
+
+    std::optional<std::reference_wrapper<data::Generic>> data_;
+
+    wxStaticBitmapBase::ScaleMode scale_{wxStaticBitmapBase::Scale_AspectFill};
 
     struct LoadDetails {
         cstring name_;
         struct {
-            int32 dim_;
+            int32 dim_{-1};
             wxOrientation orient_;
         } size_;
         color::Dynamic color_;

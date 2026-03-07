@@ -43,6 +43,8 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
         // Bind can send events (the handler expects good receiver)
         attach(desc.data_);
 
+        postCreation(desc.win_);
+
         Bind(wxEVT_CHECKBOX, &Control::onCheck, this);
     }
 

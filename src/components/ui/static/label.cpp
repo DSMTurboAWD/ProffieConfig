@@ -24,6 +24,7 @@
 
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
+#include "utils/defer.hpp"
 
 using namespace pcui;
 
@@ -31,6 +32,8 @@ namespace {
 
 struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
     Static(wxWindow *parent, const Label& desc) : WinBase(desc.win_) {
+        defer { postCreation(desc.win_); };
+
         if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
             Create(parent, wxID_ANY, *ptr);
             return;

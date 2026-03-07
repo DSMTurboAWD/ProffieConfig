@@ -29,8 +29,11 @@ struct WinBase : Base, Receiver {
     WinBase(const detail::ChildWindowBase& desc) {
         mShow = desc.show_;
         if (mShow) mShowReceiver = std::make_unique<ShowReceiver>(this);
+    }
 
+    void postCreation(const detail::ChildWindowBase& desc) {
         Base::SetToolTip(desc.tooltip_);
+        Base::SetMaxSize(desc.maxSize_);
     }
 
     void onAttach() override {

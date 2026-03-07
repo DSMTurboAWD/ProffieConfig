@@ -32,6 +32,7 @@
 #endif
 
 #include "ui/priv/helpers.hpp"
+#include "ui/priv/winbase.hpp"
 #include "utils/paths.hpp"
 
 
@@ -47,6 +48,24 @@ void generateMissingBMP(wxBitmap&, const wxSize& = wxDefaultSize);
 // std::unordered_map<string, wxBitmap> bmps;
 wxBitmap loadPNG(cstring);
 wxBitmap loadPNG(cstring, int32, wxOrientation, const wxColour&);
+
+#ifdef __WXOSX__
+using Widget = wxStaticBitmap;
+#else
+using Widget = wxGenericStaticBitmap;
+#endif
+
+struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
+    Static(wxWindow *parent, const Image& desc, const wxBitmapBundle& bmp) :
+        WinBase(desc.win_) {
+        Create(parent, wxID_ANY, bmp);
+
+        if (desc.data_) attach(*desc.data_);
+
+        postCreation(desc.win_);
+        SetScaleMode(desc.scale_);
+    }
+};
 
 } // namespace
 
@@ -74,13 +93,7 @@ wxSizerItem *Image::Desc::build(const detail::Scaffold& scaffold) const {
         }
     } else assert(0);
 
-#   ifndef __WXOSX__
-    auto *img{new wxGenericStaticBitmap(scaffold.childParent_, wxID_ANY, bmp)};
-#   else
-    auto *img{new wxStaticBitmap(scaffold.childParent_, wxID_ANY, bmp)};
-#   endif
-    img->SetScaleMode(wxStaticBitmapBase::Scale_AspectFill);
-
+    auto *img{new Static(scaffold.childParent_, *this, bmp)};
     auto *item{new wxSizerItem(img)};
     priv::apply(base_, item);
     return item;
