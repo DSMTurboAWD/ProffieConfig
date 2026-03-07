@@ -23,8 +23,29 @@
 
 #include "ui/build.hpp"
 #include "ui/priv/helpers.hpp"
+#include "ui/priv/winbase.hpp"
 
 using namespace pcui;
+
+namespace {
+
+struct Layout : priv::WinBase<wxPanel, data::Generic::Receiver> {
+    Layout(wxWindow *parent, const Panel& desc) :
+        WinBase(desc.win_) {
+
+        Create(parent);
+
+        if (desc.data_) attach(*desc.data_);
+
+        postCreation(desc.win_);
+    }
+
+    ~Layout() override {
+        detach();
+    }
+};
+
+} // namespace
 
 std::unique_ptr<detail::Descriptor> Panel::operator()() {
     return std::make_unique<Panel::Desc>(std::move(*this));
@@ -34,7 +55,7 @@ Panel::Desc::Desc(Panel&& data) :
     Panel{std::move(data)} {}
 
 wxSizerItem *Panel::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *panel{new wxPanel(scaffold.childParent_)};
+    auto *panel{new Layout(scaffold.childParent_, *this)};
 
     pcui::build(panel, child_);
 

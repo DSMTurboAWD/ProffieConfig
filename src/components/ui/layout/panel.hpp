@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "data/generic.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/types.hpp"
 
@@ -33,6 +34,7 @@ struct UI_EXPORT Panel {
     detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
+    OptRef<data::Generic> data_;
     DescriptorPtr child_;
 
     DescriptorPtr operator()();
