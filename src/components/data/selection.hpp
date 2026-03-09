@@ -46,6 +46,11 @@ struct DATA_EXPORT Selection : Model {
 
     using AddFilter = void (*)(const ROContext&, const std::string&);
 
+    /**
+     * @return true if the unselected value should be pruned.
+     */
+    using Pruner = bool (*)(const ROContext&, uint32);
+
     Selection(Node * = nullptr);
     Selection(const Selection&, Node * = nullptr);
     ~Selection() override;
@@ -53,11 +58,13 @@ struct DATA_EXPORT Selection : Model {
     std::unique_ptr<Model> clone(Node *) const override;
 
     void setAddFilter(AddFilter);
+    void setPruner(Pruner);
 
     [[nodiscard]] Responder& responder() const;
 
 private:
     AddFilter mAddFilter{nullptr};
+    Pruner mPruner{nullptr};
 
     std::unique_ptr<Responder> mRsp;
     std::vector<std::string> mItems;

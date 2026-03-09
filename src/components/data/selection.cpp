@@ -49,6 +49,11 @@ void data::Selection::setAddFilter(AddFilter filter) {
     mAddFilter = filter;
 }
 
+void data::Selection::setPruner(Pruner pruner) {
+    std::lock_guard scopeLock{pLock};
+    mPruner = pruner;
+}
+
 auto data::Selection::responder() const -> Responder& { return *mRsp; }
 
 data::Selection::ROContext::ROContext(const Selection& sel) :
@@ -134,6 +139,10 @@ void data::Selection::SelectAction::perform(Model& model) {
     sel.mSelected[mIdx] = mSelect;
 
     sel.sendToReceivers(&Receiver::onSelection, mIdx);
+
+    if (sel.mPruner and sel.mPruner(sel, mIdx)) {
+        sel.processAction(std::make_unique<RemoveAction>(mIdx));
+    }
 }
 
 void data::Selection::SelectAction::retract(Model& model) {
@@ -161,6 +170,12 @@ void data::Selection::ClearAction::perform(Model& model) {
 
     for (size idx{0}; idx < sel.mSelected.size(); ++idx) {
         sel.sendToReceivers(&Receiver::onSelection, idx);
+    }
+
+    for (size idx{0}; idx < sel.mSelected.size(); ++idx) {
+        if (not sel.mPruner or not sel.mPruner(sel, idx)) continue;
+
+        sel.processAction(std::make_unique<RemoveAction>(idx));
     }
 }
 
