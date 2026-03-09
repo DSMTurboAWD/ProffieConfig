@@ -174,15 +174,20 @@ struct DATA_EXPORT Model::Receiver {
 
 protected:
     template<typename T = Model>
-    T& model() const {
-        assert(mModel);
-        return static_cast<T&>(*mModel);
+    [[nodiscard]] T *maybeModel() const {
+        return static_cast<T *>(mModel);
     }
 
     template<typename T = Model>
-    typename T::Context context() const {
+    [[nodiscard]] T& model() const {
         assert(mModel);
-        return typename T::Context(static_cast<T&>(*mModel));
+        return *maybeModel<T>();
+    }
+
+    template<typename T = Model>
+    [[nodiscard]] typename T::Context context() const {
+        assert(mModel);
+        return typename T::Context(model<T>());
     }
     
     /**
