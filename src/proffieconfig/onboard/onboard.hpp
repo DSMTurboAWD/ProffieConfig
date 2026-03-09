@@ -55,6 +55,8 @@ private:
 
     data::Choice mPhase;
 
+    data::String mCancelButton;
+    data::String mSkipButton;
     data::String mBackButton;
     data::String mNextButton;
 

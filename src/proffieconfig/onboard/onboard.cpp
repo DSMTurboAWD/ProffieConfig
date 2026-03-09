@@ -55,6 +55,8 @@ onboard::Frame::Frame() :
         wxCAPTION | wxCLIP_CHILDREN
     ) {
 
+    data::String::Context{mCancelButton}.change(_("Cancel").ToStdString());
+    data::String::Context{mSkipButton}.change(_("Skip").ToStdString());
     data::String::Context{mBackButton}.change(_("Back").ToStdString());
 
     mPhase.responder().onChoice_ = [](const data::Choice::ROContext& ctxt) {
@@ -64,6 +66,8 @@ onboard::Frame::Frame() :
 
         const auto phase{static_cast<Phase>(ctxt.choice())};
 
+        data::String::Context cancelButton{frame.mCancelButton};
+        data::String::Context skipButton{frame.mSkipButton};
         data::String::Context backButton{frame.mBackButton};
         data::String::Context nextButton{frame.mNextButton};
 
@@ -87,7 +91,11 @@ onboard::Frame::Frame() :
                 break;
         }
 
-        backButton.enable(phase != ePhase_Welcome);
+        cancelButton.enable(phase != ePhase_Setup_Prog);
+        skipButton.enable(phase != ePhase_Setup_Prog);
+        backButton.enable(
+            phase != ePhase_Welcome and phase != ePhase_Setup_Prog
+        );
         nextButton.enable(phase != ePhase_Setup_Prog);
 
         frame.mSetupDone |= phase == ePhase_Setup_Done;
@@ -190,7 +198,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
           .children_={
             pcui::Spacer{10}(),
             pcui::Button{
-              .label_=_("Cancel"),
+              .label_=mCancelButton,
               .func_=[this] {
                   Close();
               }
@@ -206,7 +214,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                   }}
                 )
               },
-              .label_=_("Skip"),
+              .label_=mSkipButton,
               .func_=[this] {
                   auto res{pcui::showMessage(
                       _("Skipping will leave ProffieConfig and your computer unprepared.") +
