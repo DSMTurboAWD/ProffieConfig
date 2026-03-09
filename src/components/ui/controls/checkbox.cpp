@@ -29,7 +29,7 @@ using namespace pcui;
 namespace {
 
 struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
-    Control(wxWindow *parent, const CheckBox& desc) : WinBase(desc.win_) {
+    Control(wxWindow *parent, const CheckBox& desc) {
         Create(
             parent,
             wxID_ANY,
@@ -39,12 +39,9 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
             desc.base_.align_ & wxALIGN_RIGHT
         );
 
-        // Attach now. Virtual handler is in valid state and this is before
-        // Bind can send events (the handler expects good receiver)
-        attach(desc.data_);
-
         postCreation(desc.win_);
 
+        attach(desc.data_);
         Bind(wxEVT_CHECKBOX, &Control::onCheck, this);
     }
 

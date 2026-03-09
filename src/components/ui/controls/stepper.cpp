@@ -30,7 +30,7 @@ using namespace pcui;
 namespace {
 
 struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
-    IntCtrl(wxWindow *parent, const Stepper& desc) : WinBase(desc.win_) {
+    IntCtrl(wxWindow *parent, const Stepper& desc) {
         Create(
             parent,
             wxID_ANY,
@@ -44,10 +44,9 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
         SetRange(params.min_, params.max_);
         SetIncrement(params.inc_);
 
-        attach(std::get<0>(desc.data_));
-
         postCreation(desc.win_);
 
+        attach(std::get<0>(desc.data_));
         Bind(wxEVT_SPINCTRL, &IntCtrl::onSpin, this);
     }
 
@@ -94,7 +93,7 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
 };
 
 struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
-    DoubleCtrl(wxWindow *parent, const Stepper& desc) : WinBase(desc.win_) {
+    DoubleCtrl(wxWindow *parent, const Stepper& desc) {
         Create(
             parent,
             wxID_ANY,
@@ -104,14 +103,13 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
             desc.base_.align_ & wxALIGN_RIGHT
         );
 
+        postCreation(desc.win_);
+
         auto params{context<data::Decimal>().params()};
         SetRange(params.min_, params.max_);
         SetIncrement(params.inc_);
 
         attach(std::get<1>(desc.data_));
-
-        postCreation(desc.win_);
-
         Bind(wxEVT_SPINCTRLDOUBLE, &DoubleCtrl::onSpin, this);
     }
 

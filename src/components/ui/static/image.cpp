@@ -56,14 +56,13 @@ using Widget = wxGenericStaticBitmap;
 #endif
 
 struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
-    Static(wxWindow *parent, const Image& desc, const wxBitmapBundle& bmp) :
-        WinBase(desc.win_) {
+    Static(wxWindow *parent, const Image& desc, const wxBitmapBundle& bmp) {
         Create(parent, wxID_ANY, bmp);
-
-        if (desc.data_) attach(*desc.data_);
 
         postCreation(desc.win_);
         SetScaleMode(desc.scale_);
+
+        if (desc.data_) attach(*desc.data_);
     }
 };
 

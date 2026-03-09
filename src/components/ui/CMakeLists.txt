@@ -9,6 +9,7 @@ add_library(ui SHARED
     text.cpp
 
     priv/helpers.cpp
+    priv/winbase.cpp
 
     detail/descriptor.cpp
     detail/scaffold.cpp

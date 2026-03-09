@@ -38,7 +38,7 @@ struct UI_EXPORT Button {
 
     std::variant<
         wxString,
-        std::reference_wrapper<data::String>
+        std::reference_wrapper<const data::String>
     > label_;
 
     bool exactFit_{false};

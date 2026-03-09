@@ -31,18 +31,18 @@ using namespace pcui;
 
 namespace {
 
-struct Control : priv::WinBase<wxPanel, data::Selector::Receiver>,
-                 data::Choice::Receiver {
-    Control(wxWindow *parent, const Selector& desc) : WinBase(desc.win_) {
+struct Layout : priv::WinBase<wxPanel, data::Selector::Receiver>,
+                data::Choice::Receiver {
+    Layout(wxWindow *parent, const Selector& desc) {
         Create(parent);
+
+        postCreation(desc.win_);
 
         data::Selector::Receiver::attach(desc.data_);
         data::Choice::Receiver::attach(desc.data_.choice_);
-
-        postCreation(desc.win_);
     }
 
-    ~Control() override {
+    ~Layout() override {
         data::Selector::Receiver::detach();
         data::Choice::Receiver::detach();
     }
@@ -74,7 +74,7 @@ Selector::Desc::Desc(Selector&& data) :
     Selector{std::move(data)} {}
 
 wxSizerItem *Selector::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold.childParent_, *this)};
+    auto *chk{new Layout(scaffold.childParent_, *this)};
     auto *item{new wxSizerItem(chk)};
     priv::apply(base_, item);
     return item;

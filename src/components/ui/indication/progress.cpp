@@ -31,7 +31,7 @@ using namespace pcui;
 namespace {
 
 struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
-    Indicator(wxWindow *parent, const Progress& desc) : WinBase(desc.win_) {
+    Indicator(wxWindow *parent, const Progress& desc) {
         Create(
             parent,
             wxID_ANY,
@@ -41,9 +41,9 @@ struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
             wxGA_SMOOTH | desc.orient_ | (desc.showOnBar_ ? wxGA_PROGRESS : 0)
         );
 
-        attach(desc.data_);
-
         postCreation(desc.win_);
+
+        attach(desc.data_);
     }
 
     ~Indicator() override {

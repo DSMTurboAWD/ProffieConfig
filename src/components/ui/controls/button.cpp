@@ -24,7 +24,6 @@
 
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
-#include "utils/defer.hpp"
 
 using namespace pcui;
 
@@ -32,9 +31,7 @@ namespace {
 
 struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     Control(wxWindow *parent, const Button& desc) :
-        WinBase(desc.win_),
         func_{desc.func_} {
-        defer { postCreation(desc.win_); };
 
         const auto style{desc.exactFit_ ? wxBU_EXACTFIT : 0};
         if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
@@ -46,21 +43,24 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
                 wxDefaultSize,
                 style 
             );
-            return;
+
+            postCreation(desc.win_);
+        } else {
+            const auto& model{std::get<1>(desc.label_)};
+            data::String::ROContext str{model};
+            Create(
+                parent,
+                wxID_ANY,
+                str.val(),
+                wxDefaultPosition,
+                wxDefaultSize,
+                style
+            );
+
+            postCreation(desc.win_);
+
+            attach(model);
         }
-
-        const auto& model{std::get<1>(desc.label_)};
-        data::String::ROContext str{model};
-        Create(
-            parent,
-            wxID_ANY,
-            str.val(),
-            wxDefaultPosition,
-            wxDefaultSize,
-            style
-        );
-
-        attach(model);
 
         Bind(wxEVT_BUTTON, &Control::onPress, this);
     }

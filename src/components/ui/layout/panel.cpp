@@ -30,14 +30,12 @@ using namespace pcui;
 namespace {
 
 struct Layout : priv::WinBase<wxPanel, data::Generic::Receiver> {
-    Layout(wxWindow *parent, const Panel& desc) :
-        WinBase(desc.win_) {
-
+    Layout(wxWindow *parent, const Panel& desc) {
         Create(parent);
 
-        if (desc.data_) attach(*desc.data_);
-
         postCreation(desc.win_);
+
+        if (desc.data_) attach(*desc.data_);
     }
 
     ~Layout() override {

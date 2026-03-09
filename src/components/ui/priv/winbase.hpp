@@ -24,18 +24,25 @@
 #include "ui/detail/general.hpp"
 #include "data/logic/logic.hpp"
 
+class wxWindow;
+
 namespace pcui::priv {
+
+void layoutAndFitFor(wxWindow *);
 
 template <typename Base, typename Receiver>
 struct WinBase : Base, Receiver {
-    WinBase(const detail::ChildWindowBase& desc) {
-        mShow = desc.show_;
-        if (mShow) mShowReceiver = std::make_unique<ShowReceiver>(this);
-    }
+    WinBase() = default;
 
+    /**
+     * Post window creation, prior to receiver attachment.
+     */
     void postCreation(const detail::ChildWindowBase& desc) {
         Base::SetToolTip(desc.tooltip_);
         Base::SetMaxSize(desc.maxSize_);
+
+        mShow = desc.show_;
+        if (mShow) mShowReceiver = std::make_unique<ShowReceiver>(this);
     }
 
     void onAttach() override {
@@ -76,6 +83,7 @@ private:
         void onChange(bool val) override {
             winbase_->safeCall([this, val]() {
                 winbase_->Base::Show(val);
+                layoutAndFitFor(winbase_);
             });
         }
 

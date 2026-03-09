@@ -36,12 +36,12 @@ struct RadioControl : priv::WinBase<wxRadioButton, data::Model::Receiver> {
         const wxString& label,
         data::Bool& data,
         const detail::ChildWindowBase& win
-    ) : WinBase(win) {
+    ) {
         Create(parent, wxID_ANY, label);
 
-        attach(data);
-
         postCreation(win);
+
+        attach(data);
     }
 
     ~RadioControl() override {
@@ -52,16 +52,16 @@ struct RadioControl : priv::WinBase<wxRadioButton, data::Model::Receiver> {
 };
 
 struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
-    Control(wxWindow *parent, const Radios& desc) : WinBase(desc.win_) {
+    Control(wxWindow *parent, const Radios& desc) {
         create(
             wxVERTICAL,
             parent,
             desc.label_
         );
 
-        attach(desc.data_);
-
         postCreation(desc.win_);
+
+        attach(desc.data_);
 
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};
