@@ -33,7 +33,7 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     using namespace priv;
 
     bladeDetect_.enable_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& awareness{*ctxt.model().parent<BladeAwareness>()};
         data::String::Context pin{awareness.bladeDetect_.pin_};
@@ -41,7 +41,7 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     };
 
     bladeId_.enable_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& bladeId{ctxt.model().parent<BladeAwareness>()->bladeId_};
         data::String::Context{bladeId.pin_}.enable(ctxt.val());
@@ -59,7 +59,7 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     }
 
     const auto bridgePinFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         uint32 numTrimmed{};
         utils::trimCppName(
@@ -84,7 +84,7 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     }
 
     (bladeId_.continuousScanning_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& bladeId{ctxt.model().parent<BladeAwareness>()->bladeId_};
         data::Integer::Context itvl{bladeId.continuousInterval_};
@@ -94,20 +94,18 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     })(bladeId_.continuousScanning_);
 
     (bladeId_.powerForId_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& bladeId{ctxt.model().parent<BladeAwareness>()->bladeId_};
         data::Selection::Context{bladeId.powerPins_}.enable(ctxt.val());
     })(bladeId_.powerForId_);
 
-    bladeId_.powerPins_.responder().onSelection_ = [](
-        const data::Selection::Context& ctxt, uint32 idx
+    const auto powerPinPruner{[](
+        const data::Selection::ROContext&, uint32 idx
     ) {
-        if (idx < 6) return;
-        if (ctxt.selected()[idx]) return;
-
-        ctxt.remove(idx);
-    };
+        return idx >= 6;
+    }};
+    bladeId_.powerPins_.setPruner(powerPinPruner);
 
     { data::Selection::Context powerPins{bladeId_.powerPins_};
         powerPins.setItems({

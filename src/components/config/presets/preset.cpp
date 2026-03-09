@@ -21,14 +21,13 @@
 
 #include <algorithm>
 
-#include "config/presets/array.hpp"
 #include "utils/string.hpp"
 
 using namespace config::presets;
 
 Preset::Preset(data::Node *parent) : data::Node(parent) {
     const auto nameFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         uint32 numTrimmed{};
         utils::trim(
@@ -63,7 +62,7 @@ Preset::Preset(data::Node *parent) : data::Node(parent) {
     name_.setFilter(nameFilter);
 
     const auto fontDirFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         uint32 numTrimmed{};
         utils::trim(
@@ -116,7 +115,7 @@ data::Model *Preset::find(uint64 id) {
 
 Style::Style(Node *parent) : data::Node(parent) {
     const auto commentFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         size_t illegalPos{};
         while (
@@ -130,7 +129,7 @@ Style::Style(Node *parent) : data::Node(parent) {
     comment_.setFilter(commentFilter);
 
     const auto styleFilter{[] (
-        const data::String::Context& ctxt, std::string& str, size& pos
+        const data::String::ROContext& ctxt, std::string& str, size& pos
     ) {
         // TODO: The replication in here is kind of ugly...
         auto& style{*ctxt.model().parent<Style>()};

@@ -33,7 +33,7 @@ using namespace config::blades;
 WS281X::WS281X(data::Node *parent) : data::Node{parent} {
     using namespace priv;
 
-    length_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    length_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& ws281x{*ctxt.model().parent<WS281X>()};
         data::Vector::Context splits{ws281x.splits_};
 
@@ -56,7 +56,7 @@ WS281X::WS281X(data::Node *parent) : data::Node{parent} {
     };
 
     const auto dataPinFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         uint32 numTrimmed{};
         utils::trimCppName(
@@ -70,7 +70,7 @@ WS281X::WS281X(data::Node *parent) : data::Node{parent} {
     }};
     dataPin_.setFilter(dataPinFilter);
 
-    hasWhite_.responder().onSet_ = [](const data::Bool::Context& ctxt) {
+    hasWhite_.responder().onSet_ = [](const data::Bool::ROContext& ctxt) {
         auto& ws281x{*ctxt.model().parent<WS281X>()};
 
         if (ctxt.val()) {
@@ -95,17 +95,15 @@ WS281X::WS281X(data::Node *parent) : data::Node{parent} {
         data::Choice::Context{ws281x.colorOrder3_}.choose(newOrder3);
     };
 
-    powerPins_.responder().onSelection_ = [](
-        const data::Selection::Context& ctxt, uint32 idx
+    const auto powerPinPruner{[](
+        const data::Selection::ROContext&, uint32 idx
     ) {
-        if (idx < 6) return;
-        if (ctxt.selected()[idx]) return;
-
-        ctxt.remove(idx);
-    };
+        return idx >= 6;
+    }};
+    powerPins_.setPruner(powerPinPruner);
 
     splits_.responder().onInsert_ = [](
-        const data::Vector::Context& ctxt, size
+        const data::Vector::ROContext& ctxt, size
     ) {
         ctxt.model().root<Config>()->syncStyles();
     };
@@ -150,7 +148,7 @@ WS281X::Split::Split(data::Node *parent) :
     type_(Type::eMax, this) {
 
     type_.responder().onSelection_ = [](
-        const data::Exclusive::Context& ctxt, size sel
+        const data::Exclusive::ROContext& ctxt, size sel
     ) {
         auto& split{*ctxt.model().parent<Split>()};
 
@@ -179,7 +177,7 @@ WS281X::Split::Split(data::Node *parent) :
         ctxt.model().root<Config>()->syncStyles();
     };
 
-    start_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    start_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& split{*ctxt.model().parent<Split>()};
 
         const auto segVal{data::Integer::Context{split.segments_}.val()};
@@ -203,7 +201,7 @@ WS281X::Split::Split(data::Node *parent) :
         }
     };
 
-    end_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    end_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& split{*ctxt.model().parent<Split>()};
 
         const auto endVal{ctxt.val()};
@@ -217,7 +215,7 @@ WS281X::Split::Split(data::Node *parent) :
         length.set(endVal - start.val() + 1);
     };
 
-    const auto lenFilter{[](const data::Integer::Context& ctxt, int32& len) {
+    const auto lenFilter{[](const data::Integer::ROContext& ctxt, int32& len) {
         auto parentLen{data::Integer::Context{
             ctxt.model().parent<Split>()->parent<WS281X>()->length_
         }.val()};
@@ -226,7 +224,7 @@ WS281X::Split::Split(data::Node *parent) :
     }};
     length_.setFilter(lenFilter);
 
-    length_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    length_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& split{*ctxt.model().parent<Split>()};
         auto parentLen{data::Integer::Context{
             split.parent<WS281X>()->length_
@@ -244,7 +242,7 @@ WS281X::Split::Split(data::Node *parent) :
         end.set(start.val() + lengthVal - 1);
     };
 
-    segments_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    segments_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& split{*ctxt.model().parent<Split>()};
         auto parentLen{data::Integer::Context{
             split.parent<WS281X>()->length_
@@ -271,7 +269,7 @@ WS281X::Split::Split(data::Node *parent) :
     };
 
     const auto listFilter{[](
-        const data::String::Context& ctxt, std::string& str, size& pos
+        const data::String::ROContext& ctxt, std::string& str, size& pos
     ) {
         auto& split{*ctxt.model().parent<Split>()};
         auto parentLen{data::Integer::Context{

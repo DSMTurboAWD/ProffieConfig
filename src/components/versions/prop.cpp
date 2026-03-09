@@ -171,7 +171,7 @@ Toggle::Toggle(
     ),
     data::Bool(&prop),
     disables_{std::move(disables)} {
-    responder().onSet_ = [](const data::Bool::Context& ctxt) {
+    responder().onSet_ = [](const data::Bool::ROContext& ctxt) {
         ctxt.model().parent<Prop>()->recalculateRequires();
     };
 }
@@ -285,7 +285,7 @@ Option::Selection::Selection(
     ),
     data::Bool(&prop),
     disables_{std::move(disables)} {
-    responder().onSet_ = [](const data::Bool::Context& ctxt) {
+    responder().onSet_ = [](const data::Bool::ROContext& ctxt) {
         ctxt.model().parent<Prop>()->recalculateRequires();
     };
 }

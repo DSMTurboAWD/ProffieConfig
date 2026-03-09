@@ -34,7 +34,7 @@ config::Settings::Settings(Config& parent) :
     bladeAwareness_(*this) {
     using namespace priv;
 
-    const auto onSaveOptSet{[](const data::Bool::Context& ctxt) static {
+    const auto onSaveOptSet{[](const data::Bool::ROContext& ctxt) static {
         auto& settings{*ctxt.model().parent<Settings>()};
         using BCtxt = data::Bool::Context;
         BCtxt saveState{settings.saveState_};
@@ -90,7 +90,7 @@ config::Settings::Settings(Config& parent) :
         .min_=0, .max_=4000, .inc_=50
     });
 
-    volume_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    volume_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& settings{*ctxt.model().parent<Settings>()};
         data::Integer::Context bootVolume{settings.bootVolume_};
 
@@ -103,7 +103,7 @@ config::Settings::Settings(Config& parent) :
     data::Integer::Context{bootVolume_}.set(1000);
 
     enableBootVolume_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& settings{*ctxt.model().parent<Settings>()};
         data::Integer::Context bootVolume{settings.bootVolume_};
@@ -112,7 +112,7 @@ config::Settings::Settings(Config& parent) :
     enableBootVolume_.responder().onSet_(enableBootVolume_);
 
     enableFiltering_.responder().onSet_ = [](
-        const data::Bool::Context& ctxt
+        const data::Bool::ROContext& ctxt
     ) {
         auto& settings{*ctxt.model().parent<Settings>()};
         data::Integer::Context order{settings.filterOrder_};
@@ -133,7 +133,7 @@ config::Settings::Settings(Config& parent) :
         order.set(8);
     }
 
-    disableTalkie_.responder().onSet_ = [](const data::Bool::Context& ctxt) {
+    disableTalkie_.responder().onSet_ = [](const data::Bool::ROContext& ctxt) {
         auto& settings{*ctxt.model().parent<Settings>()};
         data::Bool::Context femaleTalkie{settings.femaleTalkie_};
         femaleTalkie.enable(not ctxt.val());
@@ -226,7 +226,7 @@ void config::Settings::processDefines() {
 
 config::Settings::ProcessDefinesAction::ProcessDefinesAction() = default;
 
-bool config::Settings::ProcessDefinesAction::shouldPerform(data::Model&) {
+bool config::Settings::ProcessDefinesAction::setup(data::Model&) {
     return true;
 }
 
@@ -529,7 +529,7 @@ void config::Settings::ProcessDefinesAction::perform(data::Model& model) {
         PropProcDefAction(std::string def, std::string val) :
             mDef{std::move(def)}, mVal{std::move(val)} {}
 
-        bool shouldPerform(data::Model& model) override {
+        bool setup(data::Model& model) override {
             // TODO: Can this be setup to actually use the respective action's
             // check rather than trying to emulate it?
             if (auto *ptr = dynamic_cast<data::Bool *>(&model)) {

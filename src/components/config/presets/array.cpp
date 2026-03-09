@@ -39,7 +39,7 @@ Array::Array(data::Node *parent) :
     }};
 
     presets_.responder().onInsert_ = [](
-        const data::Vector::Context& ctxt, size
+        const data::Vector::ROContext& ctxt, size
     ) {
         ctxt.model().root<Config>()->syncStyles();
     };

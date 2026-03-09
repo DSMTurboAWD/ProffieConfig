@@ -144,7 +144,7 @@ struct CONFIG_EXPORT Settings : data::Node {
 struct CONFIG_EXPORT Settings::ProcessDefinesAction : data::Action {
     ProcessDefinesAction();
 
-    bool shouldPerform(data::Model&) override;
+    bool setup(data::Model&) override;
     void perform(data::Model&) override;
     void retract(data::Model&) override;
 };

@@ -44,7 +44,7 @@ data::Model *Simple::find(uint64) {
 Simple::Star::Star(Simple& simple) : data::Node(&simple) {
     using namespace priv;
 
-    led_.responder().onChoice_ = [](const data::Choice::Context& ctxt) {
+    led_.responder().onChoice_ = [](const data::Choice::ROContext& ctxt) {
         auto& star{*ctxt.model().parent<Star>()};
         data::String::Context{star.powerPin_}.enable(
             ctxt.choice() != eLED_None

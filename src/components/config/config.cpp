@@ -80,7 +80,7 @@ config::Config::Config() :
     bladeConfigs_{this},
     buttons_{this} {
 
-    const auto propSelFilt{[](const data::Choice::Context& ctxt, int32& idx) {
+    const auto propSelFilt{[](const data::Choice::ROContext& ctxt, int32& idx) {
         if (idx == -1 and ctxt.numChoices()) idx = 0;
     }};
     mPropSel.choice_.setFilter(propSelFilt);

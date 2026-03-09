@@ -29,7 +29,7 @@ Define::Define(
     std::string&& value
 ) : data::Node(parent) {
     const auto defineFilter{[](
-        const data::String::Context& ctxt, std::string& str, size& pos
+        const data::String::ROContext& ctxt, std::string& str, size& pos
     ) {
 
     }};
@@ -37,7 +37,7 @@ Define::Define(
     data::String::Context{name_}.change(std::move(name), 0);
 
     const auto valFilter{[](
-        const data::String::Context& ctxt, std::string& str, size& pos
+        const data::String::ROContext& ctxt, std::string& str, size& pos
     ) {
 
     }};

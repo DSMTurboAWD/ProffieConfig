@@ -71,7 +71,7 @@ Simple& Blade::simple() {
 
 BladeConfig::BladeConfig(data::Node *parent) : data::Node(parent) {
     const auto nameFilter{[](
-        const data::String::Context&, std::string& str, size& pos
+        const data::String::ROContext&, std::string& str, size& pos
     ) {
         uint32 numTrimmed{};
         utils::trimCppName(
@@ -86,11 +86,11 @@ BladeConfig::BladeConfig(data::Node *parent) : data::Node(parent) {
     }};
     name_.setFilter(nameFilter);
 
-    name_.responder().onChange_ = [](const data::String::Context& ctxt) {
+    name_.responder().onChange_ = [](const data::String::ROContext& ctxt) {
         ctxt.model().parent<BladeConfig>()->recomputeIssues();
     };
 
-    id_.responder().onSet_ = [](const data::Integer::Context& ctxt) {
+    id_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& bladeConfig{*ctxt.model().parent<BladeConfig>()};
         bladeConfig.recomputeIssues();
         data::Bool::Context noBladeId{bladeConfig.noBladeId_};
@@ -98,7 +98,7 @@ BladeConfig::BladeConfig(data::Node *parent) : data::Node(parent) {
     };
 
     const auto noBladeIdFilter{[](
-        const data::Bool::Context& ctxt, bool& noBladeId
+        const data::Bool::ROContext& ctxt, bool& noBladeId
     ) {
         auto& bladeConfig{*ctxt.model().parent<BladeConfig>()};
         data::Integer::Context id{bladeConfig.id_};
@@ -106,7 +106,7 @@ BladeConfig::BladeConfig(data::Node *parent) : data::Node(parent) {
     }};
     noBladeId_.setFilter(noBladeIdFilter);
 
-    noBladeId_.responder().onSet_ = [](const data::Bool::Context& ctxt) {
+    noBladeId_.responder().onSet_ = [](const data::Bool::ROContext& ctxt) {
         auto& bladeConfig{*ctxt.model().parent<BladeConfig>()};
         if (ctxt.val()) {
             data::Integer::Context id{bladeConfig.id_};
@@ -115,14 +115,14 @@ BladeConfig::BladeConfig(data::Node *parent) : data::Node(parent) {
     };
 
     presetArray_.choice_.responder().onChoice_ = [](
-        const data::Choice::Context& ctxt
+        const data::Choice::ROContext& ctxt
     ) {
         auto& bladeConfig{*ctxt.model().parent<BladeConfig>()};
         bladeConfig.recomputeIssues();
     };
 
     blades_.responder().onInsert_ = [](
-        const data::Vector::Context& ctxt, size
+        const data::Vector::ROContext& ctxt, size
     ) {
         ctxt.model().root<Config>()->syncStyles();
     };
