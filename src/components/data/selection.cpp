@@ -183,7 +183,7 @@ bool data::Selection::SetItemsAction::shouldPerform(Model& model) {
 
     for (size idx{0}; idx < mItems.size(); ++idx) {
         auto& item{mItems[idx]};
-        if (sel.mAddFilter) sel.mAddFilter(item);
+        if (sel.mAddFilter) sel.mAddFilter(sel, item);
 
         if (item.empty()) {
             mItems.erase(std::next(

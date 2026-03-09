@@ -92,7 +92,7 @@ data::Bool& data::Exclusive::operator[](size idx) const {
     return *data()[idx];
 }
 
-size data::Exclusive::selected() {
+size data::Exclusive::selected() const {
     std::lock_guard scopeLock{pLock};
     return mSelected;
 }

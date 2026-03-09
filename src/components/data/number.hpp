@@ -40,7 +40,7 @@ struct DATA_EXPORT Number : Model {
     struct SetAction;
     struct UpdateAction;
 
-    using Filter = void (*)(const Context&, T&);
+    using Filter = void (*)(const ROContext&, T&);
 
     Number(Node * = nullptr);
     Number(const Number&, Node * = nullptr);

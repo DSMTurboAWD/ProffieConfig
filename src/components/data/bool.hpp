@@ -33,7 +33,7 @@ struct DATA_EXPORT Bool : Model {
 
     struct SetAction;
 
-    using Filter = void (*)(const Context&, bool&);
+    using Filter = void (*)(const ROContext&, bool&);
 
     Bool(Node * = nullptr);
     Bool(const Bool&, Node * = nullptr);

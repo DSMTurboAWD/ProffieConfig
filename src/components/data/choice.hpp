@@ -35,7 +35,7 @@ struct DATA_EXPORT Choice : Model {
     struct ChoiceAction;
     struct UpdateAction;
 
-    using Filter = void (*)(const Context&, int32&);
+    using Filter = void (*)(const ROContext&, int32&);
 
     Choice(Node * = nullptr);
     Choice(const Choice&, Node * = nullptr);

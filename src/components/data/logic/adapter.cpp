@@ -19,9 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-auto data::logic::adapt(data::Bool& bl) -> Element {
+auto data::logic::adapt(const data::Bool& bl) -> Element {
     struct Adapter : detail::Base, data::Bool::Receiver {
-        Adapter(data::Bool& bl) : bl_{bl} {}
+        Adapter(const data::Bool& bl) : bl_{bl} {}
         ~Adapter() override { detach(); }
 
         bool doActivate(ChangeFunc changeFunc) override {
@@ -35,7 +35,7 @@ auto data::logic::adapt(data::Bool& bl) -> Element {
             changeFunc_(context<Bool>().val());
         }
 
-        data::Bool& bl_;
+        const data::Bool& bl_;
         ChangeFunc changeFunc_;
     };
 
@@ -43,10 +43,10 @@ auto data::logic::adapt(data::Bool& bl) -> Element {
 }
 
 auto data::logic::adapt(
-    data::Choice& choice, HasSelection sels
+    const data::Choice& choice, HasSelection sels
 ) -> Element {
     struct Adapter : detail::Base, data::Choice::Receiver {
-        Adapter(data::Choice& choice, HasSelection sels) :
+        Adapter(const data::Choice& choice, HasSelection sels) :
             choice_{choice}, sels_{std::move(sels)} {}
         ~Adapter() override { detach(); }
 
@@ -65,7 +65,7 @@ auto data::logic::adapt(
             return sels_.contains(context<Choice>().choice());
         }
 
-        data::Choice& choice_;
+        const data::Choice& choice_;
         HasSelection sels_;
         ChangeFunc changeFunc_;
     };

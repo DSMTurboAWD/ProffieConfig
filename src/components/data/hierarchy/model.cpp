@@ -49,7 +49,7 @@ data::Model::Model(const Model& other, Node *parent, Root *root) :
     mEnabled = other.mEnabled;
 }
 
-void data::Model::attachReceiver(Receiver& receiver) {
+void data::Model::attachReceiver(Receiver& receiver) const {
     std::scoped_lock scopeLock{pLock, receiver.mLock};
 
     assert(receiver.mModel == nullptr);
@@ -59,7 +59,7 @@ void data::Model::attachReceiver(Receiver& receiver) {
     receiver.onAttach();
 }
 
-void data::Model::detachReceiver(Receiver& receiver) {
+void data::Model::detachReceiver(Receiver& receiver) const {
     std::scoped_lock scopeLock{pLock, receiver.mLock};
 
     assert(receiver.mModel == this);
@@ -115,11 +115,11 @@ bool data::Model::processAction(
 }
 
 data::Model::ROContext::ROContext(const Model& base) : mModel{base} {
-    const_cast<Model&>(mModel).pLock.lock();
+    mModel.pLock.lock();
 } 
 
 data::Model::ROContext::~ROContext() {
-    const_cast<Model&>(mModel).pLock.unlock();
+    mModel.pLock.unlock();
 }
 
 bool data::Model::ROContext::enabled() const {
@@ -156,7 +156,7 @@ data::Model::Receiver::~Receiver() {
     assert(not mModel);
 }
 
-void data::Model::Receiver::attach(Model& model) {
+void data::Model::Receiver::attach(const Model& model) {
     std::lock_guard scopeLock{mLock};
     model.attachReceiver(*this);
 }
@@ -165,12 +165,6 @@ void data::Model::Receiver::detach() {
     std::lock_guard scopeLock{mLock};
     if (mModel == nullptr) return;
     mModel->detachReceiver(*this);
-}
-
-bool data::Model::Receiver::processAction(std::unique_ptr<Action>&& action) {
-    std::lock_guard scopeLock{mLock};
-    if (not mModel) return false;
-    return mModel->processAction(std::move(action), true);
 }
 
 data::Model::EnableAction::EnableAction(bool en) : mEnable{en} {}

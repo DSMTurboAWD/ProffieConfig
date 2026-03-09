@@ -57,7 +57,7 @@ struct DATA_EXPORT Exclusive : data::Model {
     [[nodiscard]] Bool& operator[](size idx) const;
 
     // TODO: This should go into a context.
-    [[nodiscard]] size selected();
+    [[nodiscard]] size selected() const;
     void select(size);
 
     [[nodiscard]] Responder& responder() const;

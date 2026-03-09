@@ -38,7 +38,7 @@ struct DATA_EXPORT String : Model {
     struct ChangeAction;
     struct MoveAction;
 
-    using Filter = void (*)(const Context&, std::string&, size&);
+    using Filter = void (*)(const ROContext&, std::string&, size&);
 
     String(Node * = nullptr);
     String(const String&, Node * = nullptr);

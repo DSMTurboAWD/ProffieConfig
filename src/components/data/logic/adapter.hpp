@@ -27,11 +27,11 @@
 
 namespace data::logic {
 
-DATA_EXPORT Element adapt(data::Bool&);
+DATA_EXPORT Element adapt(const data::Bool&);
 
 struct HasSelection : std::set<int32> {};
 
-DATA_EXPORT Element adapt(data::Choice&, HasSelection);
+DATA_EXPORT Element adapt(const data::Choice&, HasSelection);
 
 } // namespace data::logic
 

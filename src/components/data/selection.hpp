@@ -44,7 +44,7 @@ struct DATA_EXPORT Selection : Model {
     struct AddAction;
     struct RemoveAction;
 
-    using AddFilter = void (*)(std::string&);
+    using AddFilter = void (*)(const ROContext&, const std::string&);
 
     Selection(Node * = nullptr);
     Selection(const Selection&, Node * = nullptr);

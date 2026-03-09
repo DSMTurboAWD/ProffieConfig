@@ -64,8 +64,8 @@ struct DATA_EXPORT Model {
     /**
      * Attach a receiver to this model.
      */
-    void attachReceiver(Receiver&);
-    void detachReceiver(Receiver&);
+    void attachReceiver(Receiver&) const;
+    void detachReceiver(Receiver&) const;
 
     /**
      * Process an action for non-UI. Waits until the action is accepted.
@@ -107,7 +107,7 @@ protected:
         sendToReceivers(lambda);
     }
 
-    std::recursive_mutex pLock;
+    mutable std::recursive_mutex pLock;
 
 private:
     bool mEnabled{true};
@@ -115,7 +115,7 @@ private:
     void sendToReceivers(const std::function<void(Receiver *)>&);
     bool processAction(std::unique_ptr<Action>&&, bool);
 
-    std::set<Receiver *> mReceivers;
+    mutable std::set<Receiver *> mReceivers;
 
     Node *const mParent;
     Root *const mRoot;
@@ -169,34 +169,26 @@ struct DATA_EXPORT Model::Receiver {
     Receiver(const Receiver&);
     virtual ~Receiver();
 
-    void attach(Model& model);
+    void attach(const Model& model);
     void detach();
 
 protected:
     template<typename T = Model>
-    [[nodiscard]] T *maybeModel() const {
-        return static_cast<T *>(mModel);
+    [[nodiscard]] const T *maybeModel() const {
+        return static_cast<const T *>(mModel);
     }
 
     template<typename T = Model>
-    [[nodiscard]] T& model() const {
+    [[nodiscard]] const T& model() const {
         assert(mModel);
         return *maybeModel<T>();
     }
 
     template<typename T = Model>
-    [[nodiscard]] typename T::Context context() const {
+    [[nodiscard]] typename T::ROContext context() const {
         assert(mModel);
-        return typename T::Context(model<T>());
+        return typename T::ROContext(model<T>());
     }
-    
-    /**
-     * Whenever an action occurs, this should be called to (maybe) affect the
-     * model.
-     *
-     * @return if the action was accepted. If not the control needs to reload.
-     */
-    [[nodiscard]] bool processAction(std::unique_ptr<Action>&&);
 
     /**
      * Receiver is attached to a new model.
@@ -222,7 +214,7 @@ protected:
 private:
     friend Model;
 
-    Model *mModel{nullptr};
+    const Model *mModel{nullptr};
 
     std::recursive_mutex mLock;
 };
@@ -230,7 +222,7 @@ private:
 template<typename BaseModel>
 struct DATA_EXPORT Model::Responder : BaseModel::Receiver {
     template <typename ...Args>
-    using Function = void(*)(const typename BaseModel::Context&, Args...);
+    using Function = void(*)(const typename BaseModel::ROContext&, Args...);
 
     Function<> onEnabled_;
 
