@@ -39,16 +39,8 @@ struct DATA_EXPORT Base {
      */
     using ChangeFunc = std::function<void(bool)>;
 
-    bool activate(ChangeFunc);
-
 protected:
-    friend Manager;
-
-    /**
-     * Internal call to perform activation.
-     * Calls doActivate()
-     */
-    bool activate(ChangeFunc, std::recursive_mutex *);
+    bool activate(detail::Base&, ChangeFunc);
 
     /**
      * Perform activation routine.
@@ -56,6 +48,15 @@ protected:
     virtual bool doActivate(ChangeFunc) = 0;
 
     std::recursive_mutex *pLock{nullptr};
+
+private:
+    friend Manager;
+
+    /**
+     * Internal call to perform activation.
+     * Calls doActivate()
+     */
+    bool activate(ChangeFunc, std::recursive_mutex *);
 };
 
 } // namespace detail

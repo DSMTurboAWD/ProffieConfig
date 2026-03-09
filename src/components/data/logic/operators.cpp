@@ -32,7 +32,7 @@ auto data::logic::operator not(
             const auto onChange{[changeFunc=std::move(changeFunc)](bool val) {
                 changeFunc(not val);
             }};
-            return not child_->activate(onChange);
+            return not activate(*child_, onChange);
         }
 
         Element child_;
@@ -57,7 +57,7 @@ auto data::logic::operator or(
                     changeFunc(lhsVal_ or rhsVal_);
                 }
             }};
-            lhsVal_ = lhs_->activate(onLHSChange);
+            lhsVal_ = activate(*lhs_, onLHSChange);
 
             const auto onRHSChange{[this, changeFunc](bool val) {
                 const auto oldVal{rhsVal_};
@@ -67,7 +67,7 @@ auto data::logic::operator or(
                     changeFunc(lhsVal_ or rhsVal_);
                 }
             }};
-            rhsVal_ = rhs_->activate(onRHSChange);
+            rhsVal_ = activate(*rhs_, onRHSChange);
 
             return lhsVal_ or rhsVal_;
         }
@@ -97,7 +97,7 @@ auto data::logic::operator and(
                     changeFunc(lhsVal_ and rhsVal_);
                 }
             }};
-            lhsVal_ = lhs_->activate(onLHSChange);
+            lhsVal_ = activate(*lhs_, onLHSChange);
 
             const auto onRHSChange{[this, changeFunc](bool val) {
                 const auto oldVal{rhsVal_};
@@ -107,7 +107,7 @@ auto data::logic::operator and(
                     changeFunc(lhsVal_ and rhsVal_);
                 }
             }};
-            rhsVal_ = rhs_->activate(onRHSChange);
+            rhsVal_ = activate(*rhs_, onRHSChange);
 
             return lhsVal_ and rhsVal_;
         }

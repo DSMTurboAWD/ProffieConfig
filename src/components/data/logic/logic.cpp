@@ -25,8 +25,8 @@ using namespace data::logic;
 
 detail::Base::~Base() = default;
 
-bool detail::Base::activate(ChangeFunc func) {
-    return activate(std::move(func), pLock);
+bool detail::Base::activate(detail::Base& base, ChangeFunc func) {
+    return base.activate(std::move(func), pLock);
 }
 
 bool detail::Base::activate(
