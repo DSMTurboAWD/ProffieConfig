@@ -22,6 +22,7 @@
 #include <wx/toplevel.h>
 
 #include "data/logic/adapter.hpp"
+#include "data/logic/operators.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/layout/panel.hpp"
 #include "ui/layout/spacer.hpp"
@@ -29,6 +30,7 @@
 #include "ui/misc/message.hpp"
 #include "ui/static/divider.hpp"
 #include "ui/static/image.hpp"
+#include "utils/parent.hpp"
 
 #include "../core/state.hpp"
 
@@ -53,9 +55,57 @@ onboard::Frame::Frame() :
         wxCAPTION | wxCLIP_CHILDREN
     ) {
 
-    { data::Choice::Context page{mPage};
-        page.update(ePage_Max);
-        page.choose(ePage_Welcome);
+    data::String::Context{mBackButton}.change(_("Back").ToStdString());
+
+    mPhase.responder().onChoice_ = [](const data::Choice::ROContext& ctxt) {
+        auto& frame{utils::parent<&Frame::mPhase>(
+            const_cast<data::Choice&>(ctxt.model<data::Choice>())
+        )};
+
+        const auto phase{static_cast<Phase>(ctxt.choice())};
+
+        data::String::Context backButton{frame.mBackButton};
+        data::String::Context nextButton{frame.mNextButton};
+
+        switch (phase) {
+            case ePhase_Welcome:
+            case ePhase_Setup_Prog:
+            case ePhase_Setup_Done:
+                nextButton.change(_("Next").ToStdString());
+                break;
+            case ePhase_Setup_Pre:
+                nextButton.change(_("Run Setup").ToStdString());
+                break;
+            case ePhase_Setup_Fail:
+                nextButton.change(_("Try Again").ToStdString());
+                break;
+            case ePhase_Info:
+                nextButton.change(_("Finish").ToStdString());
+                break;
+            case ePhase_Max:
+                nextButton.change("Where Are You?");
+                break;
+        }
+
+        backButton.enable(phase != ePhase_Welcome);
+        nextButton.enable(phase != ePhase_Setup_Prog);
+
+        frame.mSetupDone |= phase == ePhase_Setup_Done;
+
+        if (phase == ePhase_Setup_Fail) {
+            pcui::showMessage(
+                _("Dependency installation failed, please try again.") +
+                "\n\n" +
+                data::String::Context{frame.mSetupPage.errorMessage_}.val(),
+                _("Installation Failure"),
+                wxOK | wxCENTER,
+                &frame
+            );
+        }
+    };
+    { data::Choice::Context phase{mPhase};
+        phase.update(ePhase_Max);
+        phase.choose(ePhase_Welcome);
     }
 
     pcui::build(this, ui());
@@ -93,7 +143,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .base_={.proportion_=1,},
               .win_={
                 .show_=data::logic::adapt(
-                  mPage, data::logic::HasSelection{{ePage_Welcome}}
+                  mPhase, data::logic::HasSelection{{ePhase_Welcome}}
                 )
               },
               .child_=mWelcomePage.ui(),
@@ -102,7 +152,12 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .base_={.proportion_=1,},
               .win_={
                 .show_=data::logic::adapt(
-                  mPage, data::logic::HasSelection{{ePage_Setup}}
+                  mPhase, data::logic::HasSelection{{
+                    ePhase_Setup_Pre,
+                    ePhase_Setup_Prog,
+                    ePhase_Setup_Fail,
+                    ePhase_Setup_Done,
+                  }}
                 )
               },
               .child_=mSetupPage.ui(),
@@ -111,7 +166,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .base_={.proportion_=1,},
               .win_={
                 .show_=data::logic::adapt(
-                  mPage, data::logic::HasSelection{{ePage_Info}}
+                  mPhase, data::logic::HasSelection{{ePhase_Info}}
                 )
               },
               .child_=mInfoPage.ui(),
@@ -136,19 +191,92 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::Spacer{10}(),
             pcui::Button{
               .label_=_("Cancel"),
+              .func_=[this] {
+                  Close();
+              }
             }(),
             pcui::Spacer{10}(),
             pcui::Button{
+              .win_={
+                .show_=not data::logic::adapt(
+                  mPhase, data::logic::HasSelection{{
+                    ePhase_Welcome,
+                    ePhase_Setup_Done,
+                    ePhase_Info
+                  }}
+                )
+              },
               .label_=_("Skip"),
+              .func_=[this] {
+                  auto res{pcui::showMessage(
+                      _("Skipping will leave ProffieConfig and your computer unprepared.") +
+                      "\n\n" +
+                      _("You should only do this if you know what you are doing!"),
+                      _("Skip Setup?"),
+                      wxYES_NO | wxNO_DEFAULT,
+                      this
+                  )};
+                  if (res == wxYES) {
+                      data::Choice::Context{mPhase}.choose(ePhase_Info);
+                  }
+              }
             }(),
             pcui::StretchSpacer{}(),
             pcui::Spacer{10}(),
             pcui::Button{
-              .label_=_("Back"),
+              .label_=mBackButton,
+              .func_=[this] {
+                  data::Choice::Context phase{mPhase};
+
+                  switch (static_cast<Phase>(phase.choice())) {
+                      case ePhase_Setup_Pre:
+                      case ePhase_Setup_Fail:
+                      case ePhase_Setup_Done:
+                          phase.choose(ePhase_Welcome);
+                          break;
+                      case ePhase_Info:
+                          phase.choose(ePhase_Setup_Done);
+                          break;
+                      case ePhase_Welcome:
+                      case ePhase_Setup_Prog:
+                      case ePhase_Max:
+                          assert(0);
+                          __builtin_unreachable();
+                          break;
+                  }
+              },
             }(),
             pcui::Spacer{10}(),
             pcui::Button{
-              .label_=wxGetTranslation(NEXT_STR),
+              .label_=mNextButton,
+              .func_=[this] {
+                  data::Choice::Context phase{mPhase};
+
+                  switch (static_cast<Phase>(phase.choice())) {
+                      case ePhase_Welcome:
+                          if (mSetupDone) {
+                              phase.choose(ePhase_Setup_Done);
+                          } else phase.choose(ePhase_Setup_Pre);
+                          break;
+                      case ePhase_Setup_Pre:
+                      case ePhase_Setup_Fail:
+                          mSetupPage.startSetup();
+                          break;
+                      case ePhase_Setup_Done:
+                          phase.choose(ePhase_Info);
+                          break;
+                      case ePhase_Info:
+                          state::doneWithFirstRun = true;
+                          state::saveState();
+                          Close(true);
+                          // MainMenu::instance = new MainMenu;
+                          break;
+                      case ePhase_Setup_Prog:
+                      case ePhase_Max:
+                          assert(0);
+                          __builtin_unreachable();
+                  }
+              }
             }(),
             pcui::Spacer{10}(),
           }
@@ -167,6 +295,7 @@ void onboard::Frame::bindEvents() {
                 wxYES_NO | wxNO_DEFAULT | wxCENTER,
                 this
             )};
+
             if (res != wxYES) {
                 event.Veto();
                 return;
@@ -178,109 +307,5 @@ void onboard::Frame::bindEvents() {
         }
         event.Skip();
     });
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        Close();
-    }, wxID_CANCEL);
-    // TODO: Make this button handling sane.
-    /*
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        auto res{pcui::showMessage(
-            _("Skipping will leave ProffieConfig and your computer unprepared.\nYou should only do this if you know what you are doing!"),
-            _("Skip Setup?"),
-            wxYES_NO | wxNO_DEFAULT,
-            this
-        )};
-        if (res == wxYES) {
-            mSetupPage->Hide();
-            mInfoPage->Show();
-            FindWindow(ID_Next)->SetLabel(wxGetTranslation(FINISH_STR));
-            FindWindow(ID_Skip)->Hide();
-            Layout();
-            Fit();
-        }
-    }, ID_Skip);
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        if (mInfoPage->IsShown()) {
-            mInfoPage->Hide();
-            mSetupPage->Show();
-            if (mSetupPage->isDone) {
-                FindWindow(ID_Next)->SetLabel(wxGetTranslation(NEXT_STR));
-                FindWindow(ID_Skip)->Hide();
-            } else {
-                FindWindow(ID_Next)->SetLabel(wxGetTranslation(RUN_SETUP_STR));
-                FindWindow(ID_Skip)->Show();
-            }
-        } else if (mSetupPage->IsShown()) {
-            mSetupPage->Hide();
-            mWelcomePage->Show();
-            FindWindow(wxID_BACKWARD)->Disable();
-            FindWindow(ID_Skip)->Hide();
-            FindWindow(ID_Next)->SetLabel(wxGetTranslation(NEXT_STR));
-        }
-
-        Layout();
-        Fit();
-    }, wxID_BACKWARD);
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        if (mWelcomePage->IsShown()) {
-            mWelcomePage->Hide();
-            mSetupPage->Show();
-            FindWindow(ID_Next)->SetLabel(wxGetTranslation(RUN_SETUP_STR));
-            if (not mSetupPage->isDone) FindWindow(ID_Skip)->Show();
-        } else if (mSetupPage->IsShown()) {
-            if (not mSetupPage->isDone) {
-                FindWindow(ID_Next)->Disable();
-                FindWindow(ID_Skip)->Disable();
-                FindWindow(wxID_BACKWARD)->Disable();
-                FindWindow(wxID_CANCEL)->Disable();
-
-                mSetupPage->startSetup();
-            } else {
-                mSetupPage->Hide();
-                mInfoPage->Show();
-                FindWindow(ID_Next)->SetLabel(wxGetTranslation(FINISH_STR));
-            }
-        } else if (mInfoPage->IsShown()) {
-            AppState::doneWithFirstRun = true;
-            AppState::saveState();
-            Close(true);
-            MainMenu::instance = new MainMenu;
-        }
-
-        FindWindow(wxID_BACKWARD)->Enable();
-        Layout();
-        Fit();
-    }, ID_Next);
-    */
 }
-
-/*
-void Onboard::Frame::handleNotification(uint32 id) {
-    if (id == Onboard::Setup::ID_DONE or id == Onboard::Setup::ID_FAILED) {
-        mSetupPage->finishSetup(id == Onboard::Setup::ID_DONE);
-
-        FindWindow(ID_Next)->Enable();
-        FindWindow(ID_Skip)->Enable();
-        FindWindow(wxID_BACKWARD)->Enable();
-        FindWindow(wxID_CANCEL)->Enable();
-    }
-
-    if (id == Onboard::Setup::ID_DONE) {
-        FindWindow(ID_Next)->SetLabel(wxGetTranslation(NEXT_STR));
-        FindWindow(ID_Skip)->Hide();
-    } else if (id == Onboard::Setup::ID_FAILED) {
-        FindWindow(ID_Next)->SetLabel(_("Try Again"));
-        
-        pcui::showMessage(
-            _("Dependency installation failed, please try again.") + "\n\n"
-            + mSetupPage->errorMessage,
-            _("Installation Failure"),
-            wxOK | wxCENTER,
-            this
-        );
-    } else if (id == Onboard::Setup::ID_STATUS) {
-        mSetupPage->loadingText->SetLabelText(mSetupPage->statusMessage);
-    }
-}
-*/
 

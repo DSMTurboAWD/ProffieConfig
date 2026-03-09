@@ -25,12 +25,22 @@
 #include <wx/time.h>
 
 #include "data/logic/adapter.hpp"
-#include "data/logic/operators.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/static/label.hpp"
 #include "utils/defer.hpp"
+#include "utils/parent.hpp"
 #include "versions/versions.hpp"
+
+#include "../onboard.hpp"
+
+onboard::Setup::Setup() {
+    mLoadingTimer = new wxTimer();
+    mLoadingTimer->Start(50);
+    mLoadingTimer->Bind(wxEVT_TIMER, [this](wxTimerEvent&) {
+        mProgress.pulse(); 
+    });
+}
 
 pcui::DescriptorPtr onboard::Setup::ui() {
     auto bulletString{wxString::FromUTF8("\t• ")};
@@ -60,50 +70,54 @@ pcui::DescriptorPtr onboard::Setup::ui() {
         }(),
         pcui::Spacer{10}(),
         pcui::Label{
-            .win_={
-                .show_={
-                    not data::logic::adapt(isDone_) and
-                    not data::logic::adapt(inProgress_)
-                },
-            },
-            .label_=_("Press \"Next\" to begin installation.\n"),
+          .win_{
+            .show_=data::logic::adapt(
+              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+              data::logic::HasSelection{{Frame::ePhase_Setup_Done}}
+            ),
+          },
+          .label_=_("The installation completed successfully. Press \"Next\" to continue..."),
         }(),
         pcui::Label{
-            .win_{
-                .show_=data::logic::adapt(isDone_),
-            },
-            .label_=_("The installation completed successfully. Press \"Next\" to continue..."),
-        }(),
-        pcui::Label{
-            .win_={.show_=data::logic::adapt(inProgress_)},
-            .label_=statusMessage_,
+          .win_={
+            .show_=data::logic::adapt(
+              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+              data::logic::HasSelection{{Frame::ePhase_Setup_Prog}}
+            ),
+          },
+          .label_=mStatusMessage,
         }(),
         pcui::Progress{
-            .win_={.show_=data::logic::adapt(inProgress_)},
-            .data_=progress_,
+          .win_={
+            .show_=data::logic::adapt(
+              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+              data::logic::HasSelection{{Frame::ePhase_Setup_Prog}}
+            ),
+          },
+          .data_=mProgress,
         }()
       }
     }();
 }
 
-onboard::Setup::Setup() {
-    mLoadingTimer = new wxTimer();
-    mLoadingTimer->Start(50);
-    mLoadingTimer->Bind(wxEVT_TIMER, [this](wxTimerEvent&) {
-        progress_.pulse(); 
-    });
-}
-
 void onboard::Setup::startSetup() {
-    data::Bool::Context inProgress{inProgress_};
-    assert(not inProgress.val());
+    auto& phaseModel{utils::parent<&Frame::mSetupPage>(*this).mPhase};
+    data::Choice::Context phase{phaseModel};
+    assert(
+        phase.choice() == Frame::ePhase_Setup_Pre or
+        phase.choice() == Frame::ePhase_Setup_Fail
+    );
 
-    inProgress.set(true);
+    phase.choose(Frame::ePhase_Setup_Prog);
 
-    std::thread{[this]() {
-        defer { 
-            data::Bool::Context inProgress{inProgress_};
-            inProgress.set(false);
+    std::thread{[this, &phaseModel]() {
+        bool success{false};
+        defer {
+            data::Choice::Context phase{phaseModel};
+            phase.choose(success
+                ? Frame::ePhase_Setup_Done
+                : Frame::ePhase_Setup_Fail
+            );
         };
 
 #       if defined(_WIN32) or defined(__linux__)
@@ -124,7 +138,7 @@ void onboard::Setup::startSetup() {
 #       endif
 
         if (not mOSInstalled) {
-            data::String::Context{statusMessage_}.change(
+            data::String::Context{mStatusMessage}.change(
                 _("Installing ProffieOS...").ToStdString()
             );
 
@@ -143,14 +157,7 @@ void onboard::Setup::startSetup() {
             }
         }
 
-        data::Bool::Context{isDone_}.set(true);
+        success = true;
     }}.detach();
-}
-
-void onboard::Setup::finishSetup(bool done) {
-    /*
-    Layout();
-    Fit();
-    */
 }
 

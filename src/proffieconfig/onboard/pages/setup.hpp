@@ -24,7 +24,6 @@
 #include <wx/stattext.h>
 #include <wx/timer.h>
 
-#include "data/bool.hpp"
 #include "data/string.hpp"
 #include "ui/types.hpp"
 #include "ui/indication/progress.hpp"
@@ -36,19 +35,15 @@ struct Setup {
 
     pcui::DescriptorPtr ui();
 
-    data::Bool isDone_;
-    data::Bool inProgress_;
-
     void startSetup();
-    // Called in from done or failed
-    void finishSetup(bool done);
 
-    pcui::Progress::Data progress_;
-    data::String statusMessage_;
     data::String errorMessage_;
 
 private:
     wxTimer *mLoadingTimer{nullptr};
+
+    pcui::Progress::Data mProgress;
+    data::String mStatusMessage;
 
     bool mOSInstalled{false};
 #   if defined(_WIN32) or defined(__linux__)

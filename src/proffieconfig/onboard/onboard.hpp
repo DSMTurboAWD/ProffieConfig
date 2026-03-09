@@ -20,6 +20,7 @@
  */
 
 #include "data/choice.hpp"
+#include "data/string.hpp"
 #include "ui/frame.hpp"
 
 #include "pages/info.hpp"
@@ -36,26 +37,32 @@ public:
     Frame();
     ~Frame() override;
 
-    enum {
-        eID_Next,
-        eID_Skip,
+    enum Phase {
+        ePhase_Welcome,
+        ePhase_Setup_Pre,
+        ePhase_Setup_Prog,
+        ePhase_Setup_Fail,
+        ePhase_Setup_Done,
+        ePhase_Info,
+        ePhase_Max,
     };
 
 private:
+    friend struct Setup;
+
     pcui::DescriptorPtr ui();
     void bindEvents();
 
-    enum {
-        ePage_Welcome,
-        ePage_Setup,
-        ePage_Info,
-        ePage_Max,
-    };
-    data::Choice mPage;
+    data::Choice mPhase;
 
-    onboard::Welcome mWelcomePage;
-    onboard::Setup mSetupPage;
-    onboard::Info mInfoPage;
+    data::String mBackButton;
+    data::String mNextButton;
+
+    bool mSetupDone{false};
+
+    Welcome mWelcomePage;
+    Setup mSetupPage;
+    Info mInfoPage;
 };
 
 } // namespace onboard
