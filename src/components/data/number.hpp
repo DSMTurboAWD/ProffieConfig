@@ -138,7 +138,7 @@ template <typename T>
 struct DATA_EXPORT Number<T>::SetAction : Action {
     SetAction(T val);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -151,7 +151,7 @@ template <typename T>
 struct DATA_EXPORT Number<T>::UpdateAction : Action {
     UpdateAction(Params params);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

@@ -100,7 +100,7 @@ bool data::Model::processAction(
     // this case, the UI still needs to reload, so that it has the modified
     // value, and not whatever value that may have happened to have been
     // modified to be equivalent.
-    if (not action->shouldPerform(*this)) return not fromUI;
+    if (not action->setup(*this)) return not fromUI;
 
     if (mRoot and not mRoot->capturePerformance(fromUI)) return false;
 
@@ -169,7 +169,7 @@ void data::Model::Receiver::detach() {
 
 data::Model::EnableAction::EnableAction(bool en) : mEnable{en} {}
 
-bool data::Model::EnableAction::shouldPerform(Model& model) {
+bool data::Model::EnableAction::setup(Model& model) {
     return model.mEnabled != mEnable;
 }
 

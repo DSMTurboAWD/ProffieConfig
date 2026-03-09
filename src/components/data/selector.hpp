@@ -100,7 +100,7 @@ protected:
 struct DATA_EXPORT Selector::BindAction : Action {
     BindAction(Vector *);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

@@ -46,9 +46,9 @@ struct DATA_EXPORT Action {
     [[nodiscard]] virtual bool maybeCoalesce(Action&);
 
     /**
-     * Return whether or not the action will do/is allowed to do anything.
+     * @return whether or not the action will do/is allowed to do anything.
      */
-    [[nodiscard]] virtual bool shouldPerform(Model&) = 0;
+    [[nodiscard]] virtual bool setup(Model&) = 0;
 
     /**
      * Perform the action on the Model

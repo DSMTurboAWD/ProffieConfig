@@ -84,7 +84,7 @@ private:
 struct DATA_EXPORT Version::SetAction : Action {
     SetAction(utils::Version);
     
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

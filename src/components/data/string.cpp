@@ -112,7 +112,7 @@ void data::String::Context::moveEnd() const {
 data::String::ChangeAction::ChangeAction(std::string&& str, size pos) :
     mStr{std::move(str)}, mPos{pos} {}
 
-bool data::String::ChangeAction::shouldPerform(Model& model) {
+bool data::String::ChangeAction::setup(Model& model) {
     auto& str{static_cast<String&>(model)};
 
     assert(mPos <= mStr.length());
@@ -146,7 +146,7 @@ void data::String::ChangeAction::retract(Model& model) {
 
 data::String::MoveAction::MoveAction(size pos) : mPos{pos} {}
 
-bool data::String::MoveAction::shouldPerform(Model& model) {
+bool data::String::MoveAction::setup(Model& model) {
     auto& str{static_cast<String&>(model)};
 
     assert(mPos <= str.mValue.size());

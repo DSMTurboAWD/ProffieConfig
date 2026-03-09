@@ -91,7 +91,7 @@ void data::Choice::Context::update(uint32 num) const {
 
 data::Choice::ChoiceAction::ChoiceAction(int32 choice) : mChoice{choice} {}
 
-bool data::Choice::ChoiceAction::shouldPerform(Model& model) {
+bool data::Choice::ChoiceAction::setup(Model& model) {
     auto& choice{static_cast<Choice&>(model)};
 
     assert(mChoice >= -1);
@@ -127,7 +127,7 @@ void data::Choice::ChoiceAction::retract(Model& model) {
 
 data::Choice::UpdateAction::UpdateAction(uint32 num) : mNum{num} {}
 
-bool data::Choice::UpdateAction::shouldPerform(Model& model) {
+bool data::Choice::UpdateAction::setup(Model& model) {
     auto& choice{static_cast<Choice&>(model)};
     return choice.mNumChoices != mNum;
 }

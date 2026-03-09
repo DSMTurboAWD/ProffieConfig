@@ -89,7 +89,7 @@ private:
 struct DATA_EXPORT Bool::SetAction : Action {
     SetAction(bool);
     
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

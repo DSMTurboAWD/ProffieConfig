@@ -237,7 +237,7 @@ private:
 struct DATA_EXPORT Model::EnableAction : Action {
     EnableAction(bool);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

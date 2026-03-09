@@ -163,7 +163,7 @@ private:
 struct DATA_EXPORT Selection::SelectAction : Action {
     SelectAction(uint32, bool);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -175,7 +175,7 @@ private:
 struct DATA_EXPORT Selection::ClearAction : Action {
     ClearAction();
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -186,7 +186,7 @@ private:
 struct DATA_EXPORT Selection::SetItemsAction : Action {
     SetItemsAction(std::vector<std::string>&&);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -199,7 +199,7 @@ private:
 struct DATA_EXPORT Selection::AddAction : Action {
     AddAction(std::string&&);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -210,7 +210,7 @@ private:
 struct DATA_EXPORT Selection::RemoveAction : Action {
     RemoveAction(uint32);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

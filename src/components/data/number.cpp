@@ -111,7 +111,7 @@ data::detail::Number<T>::SetAction::SetAction(T val) :
     mValue{val} {}
 
 template <typename T>
-bool data::detail::Number<T>::SetAction::shouldPerform(Model& model) {
+bool data::detail::Number<T>::SetAction::setup(Model& model) {
     auto& num{static_cast<Number&>(model)};
 
     if (num.mFilter) num.mFilter(num, mValue);
@@ -144,7 +144,7 @@ data::detail::Number<T>::UpdateAction::UpdateAction(Params params) :
     mParams{params} {}
 
 template <typename T>
-bool data::detail::Number<T>::UpdateAction::shouldPerform(Model& model) {
+bool data::detail::Number<T>::UpdateAction::setup(Model& model) {
     auto& num{static_cast<Number&>(model)};
 
     assert(mParams.min_ <= mParams.max_);

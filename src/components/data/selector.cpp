@@ -145,7 +145,7 @@ void data::Selector::Context::bind(Vector *vec) const {
 
 data::Selector::BindAction::BindAction(Vector *vec) : mVec{vec} {}
 
-bool data::Selector::BindAction::shouldPerform(Model& model) {
+bool data::Selector::BindAction::setup(Model& model) {
     auto& sel{static_cast<Selector&>(model)};
     return sel.mVec != mVec;
 }

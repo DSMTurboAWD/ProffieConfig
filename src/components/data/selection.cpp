@@ -121,7 +121,7 @@ void data::Selection::Context::remove(uint32 idx) const {
 data::Selection::SelectAction::SelectAction(uint32 idx, bool select)
     : mIdx{idx}, mSelect{select} {}
 
-bool data::Selection::SelectAction::shouldPerform(Model& model) {
+bool data::Selection::SelectAction::setup(Model& model) {
     auto& sel{static_cast<Selection&>(model)};
 
     assert(mIdx < sel.mItems.size());
@@ -146,7 +146,7 @@ void data::Selection::SelectAction::retract(Model& model) {
 
 data::Selection::ClearAction::ClearAction() = default;
 
-bool data::Selection::ClearAction::shouldPerform(Model& model) {
+bool data::Selection::ClearAction::setup(Model& model) {
     auto& sel{static_cast<Selection&>(model)};
 
     return not sel.mSelected.empty();
@@ -178,7 +178,7 @@ data::Selection::SetItemsAction::SetItemsAction(
     std::vector<std::string>&& items
 ) : mItems{std::move(items)} {}
 
-bool data::Selection::SetItemsAction::shouldPerform(Model& model) {
+bool data::Selection::SetItemsAction::setup(Model& model) {
     auto& sel{static_cast<Selection&>(model)};
 
     for (size idx{0}; idx < mItems.size(); ++idx) {
@@ -225,7 +225,7 @@ void data::Selection::SetItemsAction::retract(Model& model) {
 data::Selection::AddAction::AddAction(std::string&& item) :
     mItem{std::move(item)} {}
 
-bool data::Selection::AddAction::shouldPerform(Model&) {
+bool data::Selection::AddAction::setup(Model&) {
     return true;
 }
 
@@ -250,7 +250,7 @@ void data::Selection::AddAction::retract(Model& model) {
 
 data::Selection::RemoveAction::RemoveAction(uint32 idx) : mIdx{idx} {}
 
-bool data::Selection::RemoveAction::shouldPerform(Model& model) {
+bool data::Selection::RemoveAction::setup(Model& model) {
     auto& sel{static_cast<Selection&>(model)};
 
     assert(mIdx < sel.mItems.size());

@@ -133,7 +133,7 @@ data::Vector::InsertAction::InsertAction(
     size pos, std::unique_ptr<Model>&& model
 ) : mPos{pos}, mModel{std::move(model)} {}
 
-bool data::Vector::InsertAction::shouldPerform(Model& model) {
+bool data::Vector::InsertAction::setup(Model& model) {
     auto& vec{static_cast<Vector&>(model)};
     assert(mPos <= vec.mChildren.size());
     return true;
@@ -163,7 +163,7 @@ void data::Vector::InsertAction::retract(Model& model) {
 
 data::Vector::RemoveAction::RemoveAction(size pos) : mPos{pos} {}
 
-bool data::Vector::RemoveAction::shouldPerform(Model& model) {
+bool data::Vector::RemoveAction::setup(Model& model) {
     auto& vec{static_cast<Vector&>(model)};
     assert(mPos < vec.mChildren.size());
     return true;
@@ -195,7 +195,7 @@ void data::Vector::RemoveAction::retract(Model& model) {
 
 data::Vector::SwapAction::SwapAction(size pos) : mPos{pos} {}
 
-bool data::Vector::SwapAction::shouldPerform(Model& model) {
+bool data::Vector::SwapAction::setup(Model& model) {
     auto& vec{static_cast<Vector&>(model)};
     assert(mPos > 0 and mPos < vec.mChildren.size());
     return true;

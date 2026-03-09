@@ -165,7 +165,7 @@ private:
 struct DATA_EXPORT Vector::InsertAction : Action {
     InsertAction(size, std::unique_ptr<Model>&&);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -177,7 +177,7 @@ private:
 struct DATA_EXPORT Vector::RemoveAction : Action {
     RemoveAction(size);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -189,7 +189,7 @@ private:
 struct DATA_EXPORT Vector::SwapAction : Action {
     SwapAction(size);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

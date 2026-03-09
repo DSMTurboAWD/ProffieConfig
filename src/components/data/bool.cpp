@@ -72,7 +72,7 @@ void data::Bool::Context::operator|=(bool val) const {
 
 data::Bool::SetAction::SetAction(bool val) : mValue{val} {}
 
-bool data::Bool::SetAction::shouldPerform(Model& model) {
+bool data::Bool::SetAction::setup(Model& model) {
     auto& bl{static_cast<Bool&>(model)};
     if (bl.mFilter) bl.mFilter(bl, mValue);
     return bl.mValue != mValue;

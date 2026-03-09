@@ -64,7 +64,7 @@ void data::Version::Context::set(utils::Version val) const {
 data::Version::SetAction::SetAction(utils::Version val) :
     mValue{std::move(val)} {}
 
-bool data::Version::SetAction::shouldPerform(Model& model) {
+bool data::Version::SetAction::setup(Model& model) {
     auto& ver{static_cast<Version&>(model)};
     return utils::Version::RawComparator{}(ver.mValue, mValue) != 0;
 }

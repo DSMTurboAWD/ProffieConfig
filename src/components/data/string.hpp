@@ -123,7 +123,7 @@ private:
 struct DATA_EXPORT String::ChangeAction : Action {
     ChangeAction(std::string&&, size);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -135,7 +135,7 @@ private:
 struct DATA_EXPORT String::MoveAction : Action {
     MoveAction(size);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 

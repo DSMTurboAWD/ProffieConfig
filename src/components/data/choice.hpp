@@ -121,7 +121,7 @@ private:
 struct DATA_EXPORT Choice::ChoiceAction : Action {
     ChoiceAction(int32 choice);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
@@ -133,7 +133,7 @@ private:
 struct DATA_EXPORT Choice::UpdateAction : Action {
     UpdateAction(uint32 num);
 
-    bool shouldPerform(Model&) override;
+    bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
