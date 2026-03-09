@@ -88,7 +88,9 @@ pcui::DescriptorPtr onboard::Setup::ui() {
           .label_=mStatusMessage,
         }(),
         pcui::Progress{
+          .base_={.expand_=true},
           .win_={
+            .maxSize_={300, -1},
             .show_=data::logic::adapt(
               utils::parent<&Frame::mSetupPage>(*this).mPhase,
               data::logic::HasSelection{{Frame::ePhase_Setup_Prog}}
