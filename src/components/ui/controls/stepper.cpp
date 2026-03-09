@@ -70,9 +70,10 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
             return;
         }
 
-        auto res{processAction(std::make_unique<data::Integer::SetAction>(
-            evt.GetValue()
-        ))};
+        auto& num{const_cast<data::Integer&>(model<data::Integer>())};
+        auto res{num.processUIAction(
+            std::make_unique<data::Integer::SetAction>(evt.GetValue())
+        )};
         if (not res) [this, ctxt=context<data::Integer>()]() {
             SetValue(ctxt.val());
         }();
@@ -133,9 +134,10 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
             return;
         }
 
-        auto res{processAction(std::make_unique<data::Decimal::SetAction>(
-            evt.GetValue()
-        ))};
+        auto& dec{const_cast<data::Decimal&>(model<data::Decimal>())};
+        auto res{dec.processUIAction(
+            std::make_unique<data::Decimal::SetAction>(evt.GetValue())
+        )};
         if (not res) [this, ctxt=context<data::Decimal>()]() {
             SetValue(ctxt.val());
         }();

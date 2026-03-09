@@ -59,7 +59,8 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
             return;
         }
 
-        auto res{processAction(std::make_unique<data::Bool::SetAction>(
+        auto& bl{const_cast<data::Bool&>(model<data::Bool>())};
+        auto res{bl.processUIAction(std::make_unique<data::Bool::SetAction>(
             evt.IsChecked()
         ))};
         if (not res) [this, bl=context<data::Bool>()]() {

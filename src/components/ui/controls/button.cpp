@@ -71,8 +71,10 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     }
 
     void onPress(wxCommandEvent&) {
-        auto generic{context()};
-        if (generic.enabled() and func_) func_();
+        if (const auto *ptr{maybeModel<data::String>()}) {
+            data::String::ROContext ctxt{*ptr};
+            if (ctxt.enabled() and func_) func_();
+        } else if (func_) func_();
     }
 
     void onChange() override {

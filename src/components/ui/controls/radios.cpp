@@ -99,7 +99,10 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
         for (auto *child : childParent()->GetChildren()) {
             if (child != evt.GetEventObject()) continue;
 
-            auto res{static_cast<RadioControl *>(child)->processAction(
+            auto& bl{const_cast<data::Bool&>(
+                static_cast<RadioControl *>(child)->model<data::Bool>()
+            )};
+            auto res{bl.processUIAction(
                 std::make_unique<data::Bool::SetAction>(true)
             )};
 
