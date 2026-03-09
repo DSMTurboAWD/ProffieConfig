@@ -37,7 +37,7 @@ struct UI_EXPORT Progress {
 
     Data& data_;
 
-    wxOrientation orient_{wxVERTICAL};
+    wxOrientation orient_{wxHORIZONTAL};
     
     /**
      * Show on Taskbar/Dock
