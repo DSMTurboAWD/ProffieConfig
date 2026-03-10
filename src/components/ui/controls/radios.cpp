@@ -30,8 +30,8 @@ using namespace pcui;
 
 namespace {
 
-struct RadioControl : priv::WinBase<wxRadioButton, data::Model::Receiver> {
-    RadioControl(
+struct Control : priv::WinBase<wxRadioButton, data::Model::Receiver> {
+    Control(
         wxWindow *parent,
         const wxString& label,
         data::Bool& data,
@@ -44,15 +44,15 @@ struct RadioControl : priv::WinBase<wxRadioButton, data::Model::Receiver> {
         attach(data);
     }
 
-    ~RadioControl() override {
+    ~Control() override {
         detach();
     }
 
-    friend struct Control;
+    friend struct Manager;
 };
 
-struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
-    Control(wxWindow *parent, const Radios& desc) {
+struct Manager : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
+    Manager(wxWindow *parent, const Radios& desc) {
         create(
             wxVERTICAL,
             parent,
@@ -61,8 +61,6 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
 
         postCreation(desc.win_);
 
-        attach(desc.data_);
-
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};
             auto label{idx < desc.labels_.size()
@@ -70,7 +68,7 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
                 : "UNLABELED"
             };
 
-            auto *radio{new RadioControl(
+            auto *radio{new Control(
                 childParent(), label, bl, desc.win_
             )};
 
@@ -81,11 +79,12 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
             sizer()->Add(radio);
         }
 
-        Bind(wxEVT_RADIOBUTTON, &Control::onSet, this);
+        attach(desc.data_);
+        Bind(wxEVT_RADIOBUTTON, &Manager::onSet, this);
     }
 
-    ~Control() override {
-        Unbind(wxEVT_RADIOBUTTON, &Control::onSet, this);
+    ~Manager() override {
+        Unbind(wxEVT_RADIOBUTTON, &Manager::onSet, this);
         detach();
     }
 
@@ -94,7 +93,7 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
             if (child != evt.GetEventObject()) continue;
 
             auto& bl{const_cast<data::Bool&>(
-                static_cast<RadioControl *>(child)->model<data::Bool>()
+                static_cast<Control *>(child)->model<data::Bool>()
             )};
             auto res{bl.processUIAction(
                 std::make_unique<data::Bool::SetAction>(true)
@@ -104,7 +103,7 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
                 auto selected{model<data::Exclusive>().selected()};
                 auto *child{childParent()->GetChildren()[selected]};
 
-                static_cast<RadioControl *>(child)->SetValue(true);
+                static_cast<Control *>(child)->SetValue(true);
             }
             break;
         }
@@ -128,7 +127,7 @@ Radios::Desc::Desc(Radios&& data) :
     Radios{std::move(data)} {}
 
 wxSizerItem *Radios::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold.childParent_, *this)};
+    auto *chk{new Manager(scaffold.childParent_, *this)};
     auto *item{new wxSizerItem(chk)};
     priv::apply(base_, item);
     return item;

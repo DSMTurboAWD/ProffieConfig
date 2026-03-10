@@ -22,6 +22,7 @@
 #include "data/helpers/exclusive.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
@@ -38,7 +39,7 @@ struct UI_EXPORT Radios {
     wxString label_;
     std::vector<wxString> labels_;
 
-    std::unique_ptr<detail::Descriptor> operator()();
+    DescriptorPtr operator()();
 };
 
 struct UI_EXPORT Radios::Desc : Radios, detail::Descriptor {
