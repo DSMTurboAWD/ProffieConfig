@@ -24,6 +24,7 @@
 #include "data/generic.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
+#include "ui/types.hpp"
 #include "utils/color.hpp"
 
 #include "ui_export.h"
@@ -42,17 +43,19 @@ struct UI_EXPORT Image {
     wxStaticBitmapBase::ScaleMode scale_{wxStaticBitmapBase::Scale_AspectFill};
 
     struct LoadDetails {
-        cstring name_;
+        cstring name_{nullptr};
         struct {
             int32 dim_{-1};
-            wxOrientation orient_;
+            wxOrientation orient_{wxHORIZONTAL};
         } size_;
         color::Dynamic color_;
+
+        wxBitmap operator()() const;
     };
 
-    std::variant<wxBitmap, LoadDetails> src_;
+    wxBitmap src_;
 
-    std::unique_ptr<detail::Descriptor> operator()();
+    DescriptorPtr operator()();
 };
 
 struct UI_EXPORT Image::Desc : Image, detail::Descriptor {

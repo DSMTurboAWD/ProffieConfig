@@ -33,6 +33,7 @@
 
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
+#include "ui/types.hpp"
 #include "utils/paths.hpp"
 
 
@@ -68,7 +69,20 @@ struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
 
 } // namespace
 
-std::unique_ptr<detail::Descriptor> Image::operator()() {
+wxBitmap Image::LoadDetails::operator()() const {
+    if (size_.dim_ == -1) {
+        return loadPNG(name_);
+    }
+
+    return loadPNG(
+        name_,
+        size_.dim_,
+        size_.orient_,
+        color_.color()
+    );
+}
+
+DescriptorPtr Image::operator()() {
     return std::make_unique<Image::Desc>(std::move(*this));
 }
 
@@ -76,23 +90,7 @@ Image::Desc::Desc(Image&& data) :
     Image{std::move(data)} {}
 
 wxSizerItem *Image::Desc::build(const detail::Scaffold& scaffold) const {
-    wxBitmap bmp;
-    if (const auto *ptr{std::get_if<wxBitmap>(&src_)}) {
-        bmp = *ptr;
-    } else if (const auto *ptr{std::get_if<LoadDetails>(&src_)}) {
-        if (ptr->size_.dim_ == -1) {
-            bmp = loadPNG(ptr->name_);
-        } else {
-            bmp = loadPNG(
-                ptr->name_,
-                ptr->size_.dim_,
-                ptr->size_.orient_,
-                ptr->color_.color()
-            );
-        }
-    } else assert(0);
-
-    auto *img{new Static(scaffold.childParent_, *this, bmp)};
+    auto *img{new Static(scaffold.childParent_, *this, src_)};
     auto *item{new wxSizerItem(img)};
     priv::apply(base_, item);
     return item;
