@@ -27,8 +27,9 @@
 #include "config/blades/ws281x.hpp"
 #include "config/presets/array.hpp"
 #include "config/presets/preset.hpp"
-#include "config/priv/generate/generate.hpp"
+#include "config/priv/data.hpp"
 #include "config/priv/io.hpp"
+#include "config/priv/generate/generate.hpp"
 #include "config/priv/parse/parse.hpp"
 #include "log/context.hpp"
 #include "log/severity.hpp"
@@ -52,8 +53,6 @@ constexpr auto propsStrID(const utils::Version& ver) {
 }
 
 } // namespace
-
-data::Vector config::list;
 
 struct config::Config::SavedReceiver : Root::Receiver {
     SavedReceiver(Config& cfg) : cfg_{cfg} {
@@ -252,7 +251,7 @@ void config::Config::syncStyles() {
 config::Info::Info() = default;
 
 fs::path config::Info::path() {
-    return ::savePath(data::String::Context{name_}.val());
+    return ::savePath(data::String::Context{mName}.val());
 }
 
 std::optional<std::string> config::Info::save(
@@ -267,7 +266,7 @@ std::optional<std::string> config::Info::save(
 
     // Create context to lock.
     Config::Context ctxt{*mConfig};
-    data::String::Context name{name_};
+    data::String::Context name{mName};
 
     std::optional<std::string> err;
     std::error_code errCode;
@@ -327,9 +326,9 @@ std::optional<std::string> config::Info::load() {
 }
 
 void config::Info::unload() {
-    data::Vector::Context list{config::list};
+    data::Vector::Context list{priv::list};
 
-    data::String::Context name{name_};
+    data::String::Context name{mName};
 
     bool found{false};
     std::error_code err;
@@ -356,8 +355,12 @@ auto config::Info::config() -> const std::unique_ptr<Config>& {
     return mConfig;
 }
 
+const data::Vector& config::list() {
+    return priv::list;
+}
+
 void config::update() {
-    data::Vector::Context list{config::list};
+    data::Vector::Context list{priv::list};
 
     std::vector<std::string> files;
 
@@ -372,7 +375,7 @@ void config::update() {
     for (size idx{0}; idx < list.children().size(); ++idx) {
         auto& info{static_cast<Info&>(*list.children()[idx])};
 
-        data::String::Context name{info.name_};
+        data::String::Context name{info.mName};
 
         bool found{false};
         for (const auto& file : files) {
@@ -393,7 +396,7 @@ void config::update() {
         for (size idx{0}; idx < list.children().size(); ++idx) {
             auto& info{static_cast<Info&>(*list.children()[idx])};
 
-            data::String::Context name{info.name_};
+            data::String::Context name{info.mName};
             if (name.val() == file) {
                 found = true;
                 break;
@@ -403,7 +406,7 @@ void config::update() {
         if (found) continue;
 
         auto info{std::unique_ptr<Info>{new Info}};
-        data::String::Context{info->name_}.change(std::string{file}, 0);
+        data::String::Context{info->mName}.change(std::string{file}, 0);
         list.insert(list.children().size(), std::move(info));
     }
 
@@ -417,7 +420,7 @@ void config::update() {
 }
 
 bool config::remove(Info& info) {
-    data::Vector::Context vec{list};
+    data::Vector::Context vec{priv::list};
 
     size idx{0};
     for (;idx < vec.children().size(); ++idx) {
@@ -440,11 +443,11 @@ std::optional<std::string> config::import(
 ) {
     auto& logger{logging::Context::getGlobal().createLogger("config::import()")};
 
-    data::Vector::Context vec{list};
+    data::Vector::Context vec{priv::list};
 
     for (size idx{0}; idx < vec.children().size(); ++idx) {
         auto& info{static_cast<Info&>(*vec.children()[idx])};
-        if (data::String::Context{info.name_}.val() == name) {
+        if (data::String::ROContext{info.name()}.val() == name) {
             return priv::errorMessage(logger, wxTRANSLATE("Config with name already open"));
         }
     }

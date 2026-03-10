@@ -6,6 +6,7 @@ add_library(config SHARED
     config.cpp
     info.cpp
 
+    priv/data.cpp
     priv/parse/parse.cpp
     priv/generate/generate.cpp
 

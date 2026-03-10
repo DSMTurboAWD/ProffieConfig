@@ -88,8 +88,7 @@ private:
 };
 
 struct CONFIG_EXPORT Info : data::Model {
-    // TODO: Same issue as isSaved_
-    data::String name_;
+    const data::String& name();
 
     fs::path path();
 
@@ -107,11 +106,11 @@ private:
 
     Info();
 
+    data::String mName;
     std::unique_ptr<Config> mConfig;
 };
 
-// Another point where an observable is required...
-CONFIG_EXPORT extern data::Vector list;
+CONFIG_EXPORT const data::Vector& list();
 
 /**
  * Search disk and update list of all available configs

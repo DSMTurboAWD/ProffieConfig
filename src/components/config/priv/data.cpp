@@ -1,13 +1,13 @@
-#include "info.hpp"
+#include "data.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2025-2026 Ryan Ogurek
+ * Copyright (C) 2026 Ryan Ogurek
  *
- * components/config/info.cpp
+ * components/config/priv/data.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 4 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -19,11 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/cpp.h>
+cstring config::priv::executableVersion;
 
-#include "config/priv/data.hpp"
-
-void config::setExecutableVersion(cstring version) { priv::executableVersion = version; }
-
-cstring config::version() { return wxSTRINGIZE(BIN_VERSION); }
+data::Vector config::priv::list;
 
