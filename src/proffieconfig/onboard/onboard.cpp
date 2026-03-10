@@ -55,10 +55,6 @@ onboard::Frame::Frame() :
         wxCAPTION | wxCLIP_CHILDREN
     ) {
 
-    data::String::Context{mCancelButton}.change(_("Cancel").ToStdString());
-    data::String::Context{mSkipButton}.change(_("Skip").ToStdString());
-    data::String::Context{mBackButton}.change(_("Back").ToStdString());
-
     mPhase.responder().onChoice_ = [](const data::Choice::ROContext& ctxt) {
         auto& frame{utils::parent<&Frame::mPhase>(
             const_cast<data::Choice&>(ctxt.model<data::Choice>())
@@ -66,9 +62,9 @@ onboard::Frame::Frame() :
 
         const auto phase{static_cast<Phase>(ctxt.choice())};
 
-        data::String::Context cancelButton{frame.mCancelButton};
-        data::String::Context skipButton{frame.mSkipButton};
-        data::String::Context backButton{frame.mBackButton};
+        data::Generic::Context cancelButton{frame.mCancelButton};
+        data::Generic::Context skipButton{frame.mSkipButton};
+        data::Generic::Context backButton{frame.mBackButton};
         data::String::Context nextButton{frame.mNextButton};
 
         switch (phase) {
@@ -198,7 +194,9 @@ pcui::DescriptorPtr onboard::Frame::ui() {
           .children_={
             pcui::Spacer{10}(),
             pcui::Button{
-              .label_=mCancelButton,
+              .label_=pcui::Button::LabelWithState{
+                  _("Cancel"), mCancelButton
+              },
               .func_=[this] {
                   Close();
               }
@@ -214,7 +212,9 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                   }}
                 )
               },
-              .label_=mSkipButton,
+              .label_=pcui::Button::LabelWithState{
+                  _("Skip"), mSkipButton
+              },
               .func_=[this] {
                   auto res{pcui::showMessage(
                       _("Skipping will leave ProffieConfig and your computer unprepared.") +
@@ -232,7 +232,9 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::StretchSpacer{}(),
             pcui::Spacer{10}(),
             pcui::Button{
-              .label_=mBackButton,
+              .label_=pcui::Button::LabelWithState{
+                  _("Back"), mBackButton
+              },
               .func_=[this] {
                   data::Choice::Context phase{mPhase};
 

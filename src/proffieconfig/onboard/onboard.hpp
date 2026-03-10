@@ -20,6 +20,7 @@
  */
 
 #include "data/choice.hpp"
+#include "data/generic.hpp"
 #include "data/string.hpp"
 #include "ui/frame.hpp"
 
@@ -55,9 +56,9 @@ private:
 
     data::Choice mPhase;
 
-    data::String mCancelButton;
-    data::String mSkipButton;
-    data::String mBackButton;
+    data::Generic mCancelButton;
+    data::Generic mSkipButton;
+    data::Generic mBackButton;
     data::String mNextButton;
 
     bool mSetupDone{false};
