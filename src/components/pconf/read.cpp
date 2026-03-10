@@ -62,7 +62,18 @@ bool readSection(
     std::istream&, pconf::SectionPtr& out, logging::Branch&
 );
 
-bool readline(std::istream&, std::string&);
+enum class CommentMode {
+    /**
+     * Ignore if in a pair of `""`
+     */
+    Ignore_Quoted,
+    /**
+     * Ignore if surrounded by `""` at all. (Multiline value mode)
+     */
+    Ignore_Mutliline_Quoted,
+};
+
+bool readline(std::istream&, std::string&, CommentMode);
 
 } // namespace
 
@@ -110,7 +121,7 @@ bool readEntry(
     std::string line;
     auto prevLinePos{inStream.tellg()};
 
-    if (not readline(inStream, line)) {
+    if (not readline(inStream, line, CommentMode::Ignore_Quoted)) {
         logger.verbose("Reached end of stream.");
         return true;
     }
@@ -180,7 +191,7 @@ bool readSection(
 
     out.reset();
     std::string line;
-    if (not readline(inStream, line)) return true;
+    if (not readline(inStream, line, CommentMode::Ignore_Quoted)) return true;
 
     std::optional<std::string> name;
 
@@ -234,7 +245,7 @@ bool readSection(
         if (not entry) {
             // Check for section end
             inStream.seekg(startPos);
-            readline(inStream, line);
+            readline(inStream, line, CommentMode::Ignore_Quoted);
 
             if (line.find('}') != std::string::npos) return true;
 
@@ -357,7 +368,7 @@ bool parseMultilineValue(
 
     out = "";
     std::string buf;
-    while (readline(inStream, buf)) {
+    while (readline(inStream, buf, CommentMode::Ignore_Mutliline_Quoted)) {
         auto quoteBegin{buf.find('"')};
         auto quoteEnd{buf.rfind('"')};
         if (quoteBegin == std::string::npos or quoteBegin == quoteEnd) {
@@ -450,10 +461,48 @@ bool parseLabelNum(
     return true;
 }
 
-bool readline(std::istream& stream, std::string& out) {
+bool readline(std::istream& stream, std::string& out, CommentMode mode) {
     if (not std::getline(stream, out)) return false;
 
-    out = out.substr(0, out.find("//"));
+    if (mode == CommentMode::Ignore_Quoted) {
+        bool inQuote{false};
+        bool sawSlash{false};
+        for (size idx{0}; idx < out.size(); ++idx) {
+            char chr{out[idx]};
+
+            if (chr == '"') {
+                inQuote = not inQuote;
+            } else if (chr == '/') {
+                if (sawSlash and not inQuote) {
+                    out.erase(idx - 1);
+                    break;
+                }
+            }
+
+            sawSlash = chr == '/';
+        }
+    } else if (mode == CommentMode::Ignore_Mutliline_Quoted) {
+        auto firstQuotePos{out.find('"')};
+        auto lastQuotePos{out.rfind('"')};
+
+        bool sawSlash{false};
+        for (size idx{0}; idx < out.size(); ++idx) {
+            char chr{out[idx]};
+
+            if (
+                    chr == '/' and
+                    sawSlash and
+                    idx > firstQuotePos and
+                    idx < lastQuotePos
+               ) {
+                out.erase(idx - 1);
+                break;
+            }
+
+            sawSlash = chr == '/';
+        }
+    }
+
     return true;
 }
 
