@@ -48,9 +48,6 @@ namespace {
 
 constexpr utils::Version DEFAULT_OS_VERSION{7, 15};
 
-std::optional<std::string> downloadOS(utils::Version, logging::Branch&);
-std::optional<std::string> downloadProps(utils::Version, logging::Branch&);
-
 } // namespace
 
 void versions::loadLocal(logging::Branch *lBranch) {
@@ -358,6 +355,7 @@ std::optional<std::string> versions::fetch(logging::Branch *lBranch) {
     }
 
     stream.str(request.GetResponse().AsString().ToStdString());
+    stream.clear();
 
     if (not pconf::read(stream, data, logger.binfo("Reading ProffieOS manifest file..."))) {
         logger.error("ProffieOS Manifest Parse Failed.");
