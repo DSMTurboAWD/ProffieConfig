@@ -49,6 +49,13 @@ struct UI_EXPORT Button {
 
     bool exactFit_{false};
 
+    /**
+     * Make this the default button in the window.
+     *
+     * This should only be set for one button in a window.
+     */
+    bool default_{false};
+
     std::function<void()> func_;
 
     std::unique_ptr<detail::Descriptor> operator()();

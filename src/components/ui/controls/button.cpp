@@ -33,6 +33,11 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     Control(wxWindow *parent, const Button& desc) :
         func_{desc.func_} {
 
+        const auto commonSetup{[&] {
+            postCreation(desc.win_);
+            if (desc.default_) SetDefault();
+        }};
+
         const auto style{desc.exactFit_ ? wxBU_EXACTFIT : 0};
         if (const auto *ptr{std::get_if<0>(&desc.label_ )}) {
             Create(
@@ -44,7 +49,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
                 style 
             );
 
-            postCreation(desc.win_);
+            commonSetup();
         } else if (const auto *ptr{std::get_if<1>(&desc.label_)}) {
             const auto& [label, model]{std::get<1>(desc.label_)};
             Create(
@@ -56,7 +61,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
                 style
             );
 
-            postCreation(desc.win_);
+            commonSetup();
 
             attach(model);
         } else {
@@ -71,7 +76,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
                 style
             );
 
-            postCreation(desc.win_);
+            commonSetup();
 
             attach(model);
         }
