@@ -90,12 +90,6 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
     }
 
     void onSet(wxCommandEvent& evt) {
-        if (reinterpret_cast<size>(evt.GetClientData()) == 1) {
-            auto *child{childParent()->GetChildren()[evt.GetInt()]};
-            static_cast<wxRadioButton *>(child)->SetValue(true);
-            return;
-        }
-
         for (auto *child : childParent()->GetChildren()) {
             if (child != evt.GetEventObject()) continue;
 
@@ -117,10 +111,10 @@ struct Control : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
     }
     
     void onSelection(size idx) override {
-        auto *evt{new wxCommandEvent(wxEVT_RADIOBUTTON, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(1));
-        evt->SetInt(static_cast<int>(idx));
-        wxQueueEvent(this, evt);
+        CallAfter([this, idx] {
+            auto *child{childParent()->GetChildren()[idx]};
+            static_cast<wxRadioButton *>(child)->SetValue(true);
+        });
     }
 };
 

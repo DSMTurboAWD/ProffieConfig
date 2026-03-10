@@ -56,19 +56,6 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
     }
 
     void onSpin(wxSpinEvent& evt) {
-        const auto id{reinterpret_cast<size>(evt.GetClientData())};
-        if (id == 1) {
-            SetValue(evt.GetValue());
-            return;
-        } 
-
-        if (id == 2) {
-            auto params{context<data::Integer>().params()};
-            SetRange(params.min_, params.max_);
-            SetIncrement(params.inc_);
-            return;
-        }
-
         auto& num{const_cast<data::Integer&>(model<data::Integer>())};
         auto res{num.processUIAction(
             std::make_unique<data::Integer::SetAction>(evt.GetValue())
@@ -79,16 +66,18 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
     }
     
     void onSet() override {
-        auto *evt{new wxSpinEvent(wxEVT_SPINCTRL, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(1));
-        evt->SetValue(context<data::Integer>().val());
-        wxQueueEvent(this, evt);
+        const auto val{context<data::Integer>().val()};
+        CallAfter([this, val] {
+            SetValue(val);
+        });
     }
 
     void onUpdate() override {
-        auto *evt{new wxSpinEvent(wxEVT_SPINCTRL, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(2));
-        wxQueueEvent(this, evt);
+        auto params{context<data::Integer>().params()};
+        CallAfter([this, params] {
+            SetRange(params.min_, params.max_);
+            SetIncrement(params.inc_);
+        });
     }
 };
 
@@ -119,19 +108,6 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
     }
 
     void onSpin(wxSpinDoubleEvent& evt) {
-        const auto id{reinterpret_cast<size>(evt.GetClientData())};
-        if (id == 1) {
-            SetValue(evt.GetValue());
-            return;
-        } 
-
-        if (id == 2) {
-            auto params{context<data::Decimal>().params()};
-            SetRange(params.min_, params.max_);
-            SetIncrement(params.inc_);
-            return;
-        }
-
         auto& dec{const_cast<data::Decimal&>(model<data::Decimal>())};
         auto res{dec.processUIAction(
             std::make_unique<data::Decimal::SetAction>(evt.GetValue())
@@ -142,16 +118,18 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
     }
     
     void onSet() override {
-        auto *evt{new wxSpinDoubleEvent(wxEVT_SPINCTRLDOUBLE, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(1));
-        evt->SetValue(context<data::Decimal>().val());
-        wxQueueEvent(this, evt);
+        const auto val{context<data::Decimal>().val()};
+        CallAfter([this, val] {
+            SetValue(val);
+        });
     }
 
     void onUpdate() override {
-        auto *evt{new wxSpinDoubleEvent(wxEVT_SPINCTRLDOUBLE, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(2));
-        wxQueueEvent(this, evt);
+        auto params{context<data::Decimal>().params()};
+        CallAfter([this, params] {
+            SetRange(params.min_, params.max_);
+            SetIncrement(params.inc_);
+        });
     }
 };
 

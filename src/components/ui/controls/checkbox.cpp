@@ -51,11 +51,6 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
     }
 
     void onCheck(wxCommandEvent& evt) {
-        if (reinterpret_cast<size>(evt.GetClientData()) == 1) {
-            SetValue(evt.GetInt());
-            return;
-        }
-
         auto& bl{const_cast<data::Bool&>(model<data::Bool>())};
         auto res{bl.processUIAction(std::make_unique<data::Bool::SetAction>(
             evt.IsChecked()
@@ -66,10 +61,10 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
     }
     
     void onSet() override {
-        auto *evt{new wxCommandEvent(wxEVT_CHECKBOX, wxID_ANY)};
-        evt->SetClientData(reinterpret_cast<void *>(1));
-        evt->SetInt(context<data::Bool>().val());
-        wxQueueEvent(this, evt);
+        const auto val{context<data::Bool>().val()};
+        CallAfter([this, val] {
+            SetValue(val);
+        });
     }
 };
 
