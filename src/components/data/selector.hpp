@@ -64,7 +64,7 @@ private:
     void onRemove(size) override;
     void onSwap(size) override;
 
-    Vector *mVec{nullptr};
+    const Vector *mVec{nullptr};
 };
 
 struct DATA_EXPORT Selector::ROContext : virtual Model::ROContext {
@@ -74,7 +74,7 @@ struct DATA_EXPORT Selector::ROContext : virtual Model::ROContext {
     /**
      * Currently-bound vector
      */
-    [[nodiscard]] Vector *bound() const;
+    [[nodiscard]] const Vector *bound() const;
 };
 
 struct DATA_EXPORT Selector::Context : Model::Context, ROContext {
@@ -84,7 +84,7 @@ struct DATA_EXPORT Selector::Context : Model::Context, ROContext {
     /**
      * Bind a different vector
      */
-    void bind(Vector *) const;
+    void bind(const Vector *) const;
 };
 
 struct DATA_EXPORT Selector::Receiver : Model::Receiver {
@@ -94,19 +94,19 @@ protected:
     /**
      * Selector bound to a different Vector
      */
-    virtual void onRebound(Vector *) {}
+    virtual void onRebound(const Vector *) {}
 };
 
 struct DATA_EXPORT Selector::BindAction : Action {
-    BindAction(Vector *);
+    BindAction(const Vector *);
 
     bool setup(Model&) override;
     void perform(Model&) override;
     void retract(Model&) override;
 
 private:
-    Vector *const mVec;
-    Vector *mLast;
+    const Vector *const mVec;
+    const Vector *mLast;
     int32 mLastSel;
 };
 

@@ -86,7 +86,7 @@ void data::Selector::onChoice() {
 
 void data::Selector::onInsert(size pos) {
     Choice::Context choice{choice_};
-    Vector::Context vec{*mVec};
+    Vector::ROContext vec{*mVec};
 
     auto lastChoice{choice.choice()};
 
@@ -98,7 +98,7 @@ void data::Selector::onInsert(size pos) {
 
 void data::Selector::onRemove(size pos) {
     Choice::Context choice{choice_};
-    Vector::Context vec{*mVec};
+    Vector::ROContext vec{*mVec};
 
     auto lastChoice{choice.choice()};
 
@@ -128,7 +128,7 @@ data::Selector::ROContext::ROContext(const Selector& sel) :
 
 data::Selector::ROContext::~ROContext() = default;
 
-data::Vector *data::Selector::ROContext::bound() const {
+const data::Vector *data::Selector::ROContext::bound() const {
     return model<Selector>().mVec;
 }
 
@@ -137,13 +137,13 @@ data::Selector::Context::Context(Selector& sel) :
 
 data::Selector::Context::~Context() = default;
 
-void data::Selector::Context::bind(Vector *vec) const {
+void data::Selector::Context::bind(const Vector *vec) const {
     model().processAction(std::make_unique<BindAction>(
         vec
     ));
 }
 
-data::Selector::BindAction::BindAction(Vector *vec) : mVec{vec} {}
+data::Selector::BindAction::BindAction(const Vector *vec) : mVec{vec} {}
 
 bool data::Selector::BindAction::setup(Model& model) {
     auto& sel{static_cast<Selector&>(model)};
@@ -166,7 +166,7 @@ void data::Selector::BindAction::perform(Model& model) {
     if (sel.mVec) {
         sel.mVec->attachReceiver(static_cast<Vector::Receiver&>(sel));
 
-        Vector::Context vec{*sel.mVec};
+        Vector::ROContext vec{*sel.mVec};
         choice.update(vec.children().size());
         // TODO: Persistence here.
     } else {
@@ -187,7 +187,7 @@ void data::Selector::BindAction::retract(Model& model) {
     if (sel.mVec) {
         sel.mVec->attachReceiver(static_cast<Vector::Receiver&>(sel));
 
-        Vector::Context vec{*sel.mVec};
+        Vector::ROContext vec{*sel.mVec};
         choice.update(vec.children().size());
         choice.choose(mLastSel);
     } else {
