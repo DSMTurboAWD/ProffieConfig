@@ -27,6 +27,8 @@ add_library(ui SHARED
     controls/checkbox.cpp
     controls/radios.cpp
     controls/stepper.cpp
+    controls/text.cpp
+    controls/filepicker.cpp
 
     layout/group.cpp
     layout/selector.cpp
