@@ -73,13 +73,19 @@ struct Receiver;
 struct DATA_EXPORT Manager {
     Manager(Element&&);
 
+    /**
+     * Use with care, consider as an approximation as it may be invalidated
+     * immediately afterwards.
+     */
+    bool val() const;
+
 private:
     friend Receiver;
 
     bool mVal;
     Element mChild;
 
-    std::recursive_mutex mLock;
+    mutable std::recursive_mutex mLock;
     std::set<Receiver *> mReceivers;
 };
 

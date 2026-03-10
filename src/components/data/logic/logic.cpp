@@ -54,6 +54,11 @@ Manager::Manager(Element&& child) :
     mVal = mChild->activate(changeFunc, &mLock);
 }
 
+bool Manager::val() const {
+    std::lock_guard scopeLock{mLock};
+    return mVal;
+}
+
 Holder::Holder(Element&& child) :
     shared_ptr(new Manager(std::move(child))) {}
 
