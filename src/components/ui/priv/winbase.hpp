@@ -43,11 +43,14 @@ struct WinBase : Base, Receiver {
 
         mShow = desc.show_;
         if (mShow) mShowReceiver = std::make_unique<ShowReceiver>(this);
+
+        mEnable = desc.enable_;
+        if (mEnable) mEnableReceiver = std::make_unique<EnableReceiver>(this);
     }
 
     void onAttach() override {
         safeCall([this]() {
-            Base::Enable(Receiver::context().enabled());
+            updateEnable();
         });
     }
 
@@ -59,7 +62,7 @@ struct WinBase : Base, Receiver {
 
     void onEnabled() override {
         safeCall([this]() {
-            Base::Enable(Receiver::context().enabled());
+            updateEnable();
         });
     }
 
@@ -91,6 +94,29 @@ private:
     };
     std::unique_ptr<ShowReceiver> mShowReceiver;
     data::logic::Holder mShow;
+
+    struct EnableReceiver : data::logic::Receiver {
+        EnableReceiver(WinBase *ptr) : winbase_{ptr} {
+            attach(*winbase_->mShow);
+        }
+
+        void onChange(bool val) override {
+            winbase_->safeCall([this, val]() {
+                winbase_->updateEnable();
+            });
+        }
+
+        WinBase *winbase_;
+    };
+    std::unique_ptr<EnableReceiver> mEnableReceiver;
+    data::logic::Holder mEnable;
+
+    void updateEnable() {
+        Base::Enable(
+            Receiver::context().enabled() and
+            (not mEnable or mEnable->val())
+        );
+    }
 };
 
 } // namespace pcui::priv

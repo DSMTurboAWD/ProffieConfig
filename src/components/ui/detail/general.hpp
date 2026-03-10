@@ -65,6 +65,7 @@ struct UI_EXPORT ChildWindowBase {
     wxSize maxSize_{wxDefaultSize};
 
     data::logic::Holder show_;
+    data::logic::Holder enable_;
 
     wxString tooltip_;
 };
