@@ -34,7 +34,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
         func_{desc.func_} {
 
         const auto style{desc.exactFit_ ? wxBU_EXACTFIT : 0};
-        if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
+        if (const auto *ptr{std::get_if<0>(&desc.label_ )}) {
             Create(
                 parent,
                 wxID_ANY,
@@ -45,8 +45,22 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
             );
 
             postCreation(desc.win_);
+        } else if (const auto *ptr{std::get_if<1>(&desc.label_)}) {
+            const auto& [label, model]{std::get<1>(desc.label_)};
+            Create(
+                parent,
+                wxID_ANY,
+                label,
+                wxDefaultPosition,
+                wxDefaultSize,
+                style
+            );
+
+            postCreation(desc.win_);
+
+            attach(model);
         } else {
-            const auto& model{std::get<1>(desc.label_)};
+            const auto& model{std::get<2>(desc.label_)};
             data::String::ROContext str{model};
             Create(
                 parent,

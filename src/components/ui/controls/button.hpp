@@ -21,6 +21,7 @@
 
 #include <functional>
 
+#include "data/generic.hpp"
 #include "data/string.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
@@ -36,8 +37,13 @@ struct UI_EXPORT Button {
     detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
+    using LabelWithState = std::pair<
+        wxString, std::reference_wrapper<const data::Generic>
+    >;
+
     std::variant<
         wxString,
+        LabelWithState,
         std::reference_wrapper<const data::String>
     > label_;
 
