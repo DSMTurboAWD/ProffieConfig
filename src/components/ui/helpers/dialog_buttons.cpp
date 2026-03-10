@@ -1,0 +1,60 @@
+#include "dialog_buttons.hpp"
+/*
+ * ProffieConfig, All-In-One Proffieboard Management Utility
+ * Copyright (C) 2026 Ryan Ogurek
+ *
+ * components/ui/helpers/dialog_buttons.cpp
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <wx/sizer.h>
+#include <wx/statbox.h>
+
+#include "ui/priv/helpers.hpp"
+
+using namespace pcui;
+
+std::unique_ptr<detail::Descriptor> DialogButtons::operator()() {
+    return std::make_unique<DialogButtons::Desc>(std::move(*this));
+}
+
+DialogButtons::Desc::Desc(DialogButtons&& data) :
+    DialogButtons{std::move(data)} {}
+
+wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const {
+    detail::Scaffold childScaffold{
+        .childParent_ = scaffold.childParent_
+    };
+    auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
+
+#   ifdef _WIN32
+    // Ok then Cancel then Apply on right
+    sizer->AddStretchSpacer();
+    if (ok_) sizer->Add(ok_->build(childScaffold));
+    if (cancel_) sizer->Add(cancel_->build(childScaffold));
+    if (apply_) sizer->Add(apply_->build(childScaffold));
+#   else // macOS, GTK
+    // Apply Far left, Cancel then Ok on right
+    if (apply_) sizer->Add(apply_->build(childScaffold));
+    sizer->AddStretchSpacer();
+    if (cancel_) sizer->Add(cancel_->build(childScaffold));
+    if (ok_) sizer->Add(ok_->build(childScaffold));
+#   endif
+
+    auto *item{new wxSizerItem(sizer)};
+    priv::apply(base_, item);
+    return item;
+}
+

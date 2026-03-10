@@ -23,6 +23,8 @@ add_library(ui SHARED
 
     indication/progress.cpp
 
+    helpers/dialog_buttons.cpp
+
     controls/button.cpp
     controls/checkbox.cpp
     controls/radios.cpp
