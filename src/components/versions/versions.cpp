@@ -652,7 +652,7 @@ std::optional<std::string> versions::downloadProp(
 
     fs::create_directories(paths::propDir() / name, ec);
 
-    wxURI baseURI{paths::remoteAssets() + "/props/" + name};
+    wxURI baseURI{paths::remoteAssets() + "/props/" + name + '/'};
     
     wxURI dataURI{detail::DATA_FILE_STR};
     dataURI.Resolve(baseURI);
@@ -664,7 +664,7 @@ std::optional<std::string> versions::downloadProp(
     result = request.Execute();
 
     if (not result) {
-        logger.error("Prop data download failed\n" + result.error.ToStdString());
+        logger.error("Prop data download failed: " + dataURI.BuildUnescapedURI().ToStdString() + '\n' + result.error.ToStdString());
         return _("Could not download prop").ToStdString();
     }
 
@@ -689,7 +689,7 @@ std::optional<std::string> versions::downloadProp(
     result = request.Execute();
 
     if (not result) {
-        logger.error("Prop header download failed\n" + result.error.ToStdString());
+        logger.error("Prop header download failed: " + headerURI.BuildUnescapedURI().ToStdString() + '\n' + result.error.ToStdString());
         return _("Could not download prop").ToStdString();
     }
 
