@@ -36,7 +36,7 @@ namespace config::priv {
  * @return Error message on failure. nullopt on success
  */
 std::optional<std::string> generate(
-    const fs::path&, Config&, logging::Branch *lBranch = nullptr
+    const fs::path&, const Config&, logging::Branch *lBranch = nullptr
 );
 
 } // namespace config::priv

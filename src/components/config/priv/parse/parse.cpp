@@ -42,7 +42,7 @@
 #include "data/vector.hpp"
 #include "log/branch.hpp"
 #include "log/context.hpp"
-#include "ui/misc/message.hpp"
+#include "ui/dialogs/message.hpp"
 #include "utils/files.hpp"
 #include "utils/paths.hpp"
 #include "utils/string.hpp"
@@ -214,17 +214,17 @@ void parseTop(std::istream& file, config::Config& config) {
                 utils::trimSurroundingWhitespace(buffer);
                 if (buffer.size() < 2) continue;
 
-                data::Selector::ROContext board{config.board()};
-                if (not board.bound()) continue;
+                data::Selector::ROContext boardSel{config.boardSel()};
+                if (not boardSel.bound()) continue;
 
-                data::Vector::ROContext boards{*board.bound()};
+                data::Vector::ROContext boards{*boardSel.bound()};
                 for (size idx{0}; idx < boards.children().size(); ++idx) {
-                    auto& bInfo{static_cast<versions::os::BoardInfo&>(
+                    auto& bInfo{static_cast<versions::os::Board&>(
                         *boards.children()[idx]
                     )};
                     if (bInfo.include_ != buffer) continue;
 
-                    data::Choice::Context{config.board().choice_}.choose(
+                    data::Choice::Context{config.boardSel().choice_}.choose(
                         static_cast<int32>(idx)
                     );
                     break;
@@ -263,7 +263,7 @@ void parseTop(std::istream& file, config::Config& config) {
 
                 data::Vector::ROContext osVersions{config.osVersions()};
                 for (size idx{0}; idx < osVersions.children().size(); ++idx) {
-                    auto& osVer{static_cast<versions::os::Versioned&>(
+                    auto& osVer{static_cast<versions::os::OS&>(
                         *osVersions.children()[idx]
                     )};
 
