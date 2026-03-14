@@ -31,6 +31,8 @@
 #include "config_export.h"
 #include "log/branch.hpp"
 #include "utils/version.hpp"
+#include "versions/os.hpp"
+#include "versions/prop.hpp"
 
 namespace fs = std::filesystem;
 
@@ -45,14 +47,18 @@ struct CONFIG_EXPORT Config : data::Root {
     bool enumerate(const EnumFunc&) override;
     Model *find(uint64) override;
 
-    const data::Vector& osVersions();
+    std::optional<versions::os::OSData> osVersion() const;
+
+    const data::Vector& osVersions() const;
     const data::Selector osVersion_; 
 
-    const data::Vector *boards();
-    const data::Selector& board();
+    const data::Vector *boards() const;
+    const data::Selector& boardSel() const;
+    const versions::os::Board *board() const;
 
-    const data::Vector *props();
-    const data::Selector& propSel();
+    const data::Selector& propSel() const;
+    const data::Vector *props() const;
+    const versions::props::Prop *prop() const;
 
     Settings settings_;
     data::Vector presetArrays_;
@@ -61,9 +67,9 @@ struct CONFIG_EXPORT Config : data::Root {
     data::Vector buttons_;
     data::Vector injections_;
 
-    const data::Bool& isSaved();
+    const data::Bool& isSaved() const;
 
-    size numBlades();
+    size numBlades() const;
     void syncStyles();
 
 private:
@@ -79,7 +85,7 @@ private:
         utils::Version, data::Vector, utils::Version::RawOrderer
     > mPropMap;
     data::Selector mPropSel;
-    data::Selector mBoard;
+    data::Selector mBoardSel;
     data::Bool mIsSaved;
 
     struct SavedReceiver;
@@ -93,7 +99,7 @@ struct CONFIG_EXPORT Info : data::Model {
     fs::path path();
 
     [[nodiscard]] std::optional<std::string> save(
-        const fs::path& = {}, logging::Branch * = nullptr
+        logging::Branch * = nullptr
     );
 
     std::optional<std::string> load();
@@ -126,6 +132,10 @@ CONFIG_EXPORT bool remove(Info&);
  */
 CONFIG_EXPORT std::optional<std::string> import(
     const std::string& name, const fs::path& path
+);
+
+CONFIG_EXPORT std::optional<std::string> generate(
+    const Config&, const fs::path&, logging::Branch * = nullptr
 );
 
 } // namespace config

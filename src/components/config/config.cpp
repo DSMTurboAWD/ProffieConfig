@@ -117,46 +117,79 @@ data::Model *config::Config::find(uint64 id) {
     return nullptr;
 }
 
-const data::Vector& config::Config::osVersions() {
+std::optional<versions::os::OSData> config::Config::osVersion() const {
+    data::Choice::ROContext osSel{osVersion_.choice_};
+    if (osSel.choice() == -1) return std::nullopt;
+
+    data::Vector::ROContext osVersions{mOsVersions};
+
+    auto& osVersion{static_cast<versions::os::OS&>(
+        *osVersions.children()[osSel.choice()]
+    )};
+
+    return osVersion;
+}
+
+const data::Vector& config::Config::osVersions() const {
     return mOsVersions;
 }
 
-const data::Vector *config::Config::boards() {
-    data::Choice::Context osSel{osVersion_.choice_};
+const data::Vector *config::Config::boards() const {
+    data::Choice::ROContext osSel{osVersion_.choice_};
     if (osSel.choice() == -1) return nullptr;
 
-    data::Vector::Context osVersions{mOsVersions};
-    auto& osVersion{static_cast<versions::os::Versioned&>(
+    data::Vector::ROContext osVersions{mOsVersions};
+    auto& osVersion{static_cast<versions::os::OS&>(
         *osVersions.children()[osSel.choice()]
     )};
 
     return &osVersion.boards_;
 }
 
-const data::Selector& config::Config::board() {
-    return mBoard;
+const data::Selector& config::Config::boardSel() const {
+    return mBoardSel;
 }
 
-const data::Vector *config::Config::props() {
-    data::Choice::Context osSel{osVersion_.choice_};
-    if (osSel.choice() == -1) return nullptr;
+const versions::os::Board *config::Config::board() const {
+    data::Selector::ROContext sel{mBoardSel};
+    if (sel.bound() == nullptr) return nullptr;
 
-    data::Vector::Context osVersions{mOsVersions};
-    auto& osVersion{static_cast<versions::os::Versioned&>(
-        *osVersions.children()[osSel.choice()]
-    )};
+    data::Vector::ROContext vec{*sel.bound()};
+    data::Choice::ROContext choice{mBoardSel.choice_};
+    if (choice.choice() < 0) return nullptr;
 
-    auto iter{mPropMap.find(osVersion.version_)};
-    if (iter == mPropMap.end()) return nullptr;
-    return &iter->second;
+    return static_cast<const versions::os::Board *>(
+        // NOLINTNEXTLINE suppress lifetimebound warning
+        vec.children()[choice.choice()].get()
+    );
+
 }
 
-const data::Selector& config::Config::propSel() {
+const data::Vector *config::Config::props() const {
+    data::Selector::ROContext sel{mPropSel};
+    return sel.bound();
+}
+
+const data::Selector& config::Config::propSel() const {
     return mPropSel;
 }
 
-size config::Config::numBlades() {
-    data::Vector::Context bladeConfigs{bladeConfigs_};
+const versions::props::Prop *config::Config::prop() const {
+    data::Selector::ROContext sel{mPropSel};
+    if (sel.bound() == nullptr) return nullptr;
+
+    data::Vector::ROContext vec{*sel.bound()};
+    data::Choice::ROContext choice{mPropSel.choice_};
+    if (choice.choice() < 0) return nullptr;
+
+    return static_cast<const versions::props::Prop *>(
+        // NOLINTNEXTLINE suppress lifetimebound warning
+        vec.children()[choice.choice()].get()
+    );
+}
+
+size config::Config::numBlades() const {
+    data::Vector::ROContext bladeConfigs{bladeConfigs_};
 
     size num{0};
     for (const auto& model : bladeConfigs.children()) {
@@ -248,7 +281,7 @@ void config::Config::syncStyles() {
     }
 }
 
-config::Info::Info() = default;
+config::Info::Info() : data::Model(&priv::list) {}
 
 const data::String& config::Info::name() {
     return mName;
@@ -259,7 +292,7 @@ fs::path config::Info::path() {
 }
 
 std::optional<std::string> config::Info::save(
-    const fs::path& path, logging::Branch *lBranch
+    logging::Branch *lBranch
 ) {
     std::lock_guard scopeLock{pLock};
     auto& logger{logging::Branch::optCreateLogger("config::Info::save()", lBranch)};
@@ -268,22 +301,11 @@ std::optional<std::string> config::Info::save(
         return priv::errorMessage(logger, wxTRANSLATE("Config not loaded"));
     }
 
-    // Create context to lock.
     Config::Context ctxt{*mConfig};
     data::String::Context name{mName};
 
     std::optional<std::string> err;
     std::error_code errCode;
-    if (not path.empty()) {
-        err = priv::generate(
-            path,
-            *mConfig,
-            logger.binfo("Exporting \"" + name.val() + "\" to \"" + path.string() + "\"...")
-        );
-        if (err) fs::remove(path, errCode);
-        return err;
-    } 
-
     const auto finalPath{this->path()};
     const fs::path tmpPath{finalPath.string() + ".tmp"};
     err = priv::generate(
@@ -464,6 +486,28 @@ std::optional<std::string> config::import(
     update();
 
     return std::nullopt;
+}
+
+std::optional<std::string> config::generate(
+    const Config& config, const fs::path& path, logging::Branch *lBranch
+) {
+    auto& logger{logging::Branch::optCreateLogger("config::generate()", lBranch)};
+
+    // Create context to lock.
+    Config::ROContext ctxt{config};
+
+    std::optional<std::string> err;
+    std::error_code errCode;
+
+    err = priv::generate(
+        path,
+        config,
+        logger.binfo("Generating config at \"" + path.string() + "\"...")
+    );
+
+    if (err) fs::remove(path, errCode);
+
+    return err;
 }
 
 namespace {
