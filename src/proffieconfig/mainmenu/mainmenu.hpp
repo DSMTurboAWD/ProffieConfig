@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2024-2026 Ryan Ogurek
  *
- * proffieconfig/mainmenu/mainmenu.h
+ * proffieconfig/mainmenu/mainmenu.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,70 +19,63 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
+
 #include <wx/button.h>
 #include <wx/combobox.h>
 
+#include "data/choice.hpp"
+#include "data/selector.hpp"
+
 #include "ui/frame.hpp"
-#include "ui/notifier.h"
+#include "ui/types.hpp"
 
-#include "../editor/editorwindow.h"
+struct EditorWindow;
 
-namespace Onboard {
-
-class Overview;
-
-} // namespace Onboard
-
-class MainMenu : public pcui::Frame, private pcui::NotifyReceiver {
+class MainMenu : public pcui::Frame {
 public:
     static MainMenu* instance;
     MainMenu(wxWindow * = nullptr);
 
     void removeEditor(EditorWindow *);
 
-    pcui::ChoiceData boardSelection;
-    pcui::ChoiceData configSelection;
+    data::Choice board_;
+    data::Selector config_;
 
     enum {
         // on macOS menu items cannot have ID 0
         // on Win32, for some reason ID #1 is triggerred by hitting enter in pcTextCtrl?
-        ID_Licenses = 2,
+        eID_Licenses = 2,
 
-        ID_Docs,
-        ID_Issue,
-        ID_Logs,
+        eID_Docs,
+        eID_Issue,
+        eID_Logs,
 
-        ID_ManageVersions,
-        ID_UpdateManifest,
+        eID_Manage_Versions,
+        eID_Update_Manifest,
 
-        ID_RefreshDev,
-        ID_ApplyChanges,
+        eID_Refresh_Dev,
+        eID_Apply_Changes,
 
-        ID_OpenSerial,
-        ID_AddConfig,
-        ID_RemoveConfig,
-        ID_EditConfig,
+        eID_Open_Serial,
+        eID_Add_Config,
+        eID_Remove_Config,
+        eID_Edit_Config,
 
-        ID_BoardSelection,
-        ID_ConfigSelection,
+        eID_Board_Selection,
+        eID_Config_Selection,
 
-        ID_RunSetup,
-        ID_AsyncStart,
-        ID_AsyncDone,
+        eID_Run_Setup,
+        eID_Async_Start,
+        eID_Async_Done,
     };
 
 private:
-    Config::Config *mConfigNeedShown{nullptr};
+    // Config::Config *mConfigNeedShown{nullptr};
 
-    pcui::Notifier mNotifyData;
-    vector<EditorWindow *> mEditors;
+    std::vector<EditorWindow *> mEditors;
 
-    friend Onboard::Overview;
-    void createUI();
+    pcui::DescriptorPtr ui();
     void createMenuBar();
     void bindEvents();
-
-    void updateConfigChoices();
-
-    void handleNotification(uint32 id) final;
 };

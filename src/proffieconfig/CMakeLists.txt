@@ -7,6 +7,9 @@ add_executable(proffieconfig WIN32
 
     core/state.cpp
 
+    mainmenu/mainmenu.cpp
+    mainmenu/dialogs/manifest.cpp
+
     onboard/onboard.cpp
     onboard/pages/welcome.cpp
     onboard/pages/setup.cpp
@@ -16,7 +19,7 @@ add_executable(proffieconfig WIN32
 set_target_properties(proffieconfig PROPERTIES
     OUTPUT_NAME "ProffieConfig"
     DESCRIPTION "ProffieConfig" # Windows is stupid so this isn't actually a description
-    BIN_VERSION 1.8.8
+    BIN_VERSION 1.9.0
 )
 
 target_link_libraries(proffieconfig 

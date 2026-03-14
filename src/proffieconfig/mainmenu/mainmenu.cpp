@@ -1,4 +1,4 @@
-#include "mainmenu.h"
+#include "mainmenu.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2024-2026 Ryan Ogurek
@@ -25,112 +25,117 @@
 #include <wx/event.h>
 #include <wx/gdicmn.h>
 #include <wx/menu.h>
-#include <wx/scrolwin.h>
 #include <wx/settings.h>
-#include <wx/textctrl.h>
 #include <wx/toplevel.h>
 #include <wx/utils.h>
 
-#include "app/info.h"
-#include "config/config.h"
-#include "ui/message.hpp"
-#include "ui/plaque.h"
+#include "app/info.hpp"
+#include "config/config.hpp"
+#include "data/logic/adapter.hpp"
+#include "data/logic/operators.hpp"
+#include "ui/controls/button.hpp"
+#include "ui/controls/choice.hpp"
+#include "ui/controls/text.hpp"
+#include "ui/helpers/foreach.hpp"
+#include "ui/layout/collapsible.hpp"
+#include "ui/layout/scrolled.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/misc/message.hpp"
 #include "ui/frame.hpp"
-#include "utils/defer.h"
-#include "utils/paths.h"
-#include "utils/image.h"
-#include "utils/string.h"
-#include "dialogs/addconfig.h"
-#include "dialogs/manifest.h"
-#include "config/info.h"
-#include "log/info.h"
-#include "pconf/info.h"
+#include "ui/dialog.hpp"
+#include "ui/static/image.hpp"
+#include "ui/static/label.hpp"
+#include "utils/defer.hpp"
+#include "utils/paths.hpp"
+#include "utils/string.hpp"
+#include "dialogs/addconfig.hpp"
+#include "dialogs/manifest.hpp"
+#include "config/info.hpp"
+#include "log/info.hpp"
+#include "pconf/info.hpp"
 #include "ui/info.hpp"
-#include "utils/info.h"
-#include "versions/info.h"
-#include "versions_manager/info.h"
-#include "versions_manager/manager.h"
+#include "utils/info.hpp"
+#include "versions/info.hpp"
+// #include "versions_manager/info.h"
+// #include "versions_manager/manager.h"
 
-#include "../core/licenses.h"
-#include "../core/appstate.h"
+#include "../core/state.hpp"
+#include "../core/licenses.hpp"
+// #include "../core/appstate.h"
 #include "../core/utilities/misc.h"
-#include "../core/utilities/progress.h"
-#include "../editor/editorwindow.h"
-#include "../tools/arduino.h"
-#include "../tools/serialmonitor.h"
-#include "../onboard/onboard.h"
+// #include "../core/utilities/progress.h"
+// #include "../editor/editorwindow.h"
+// #include "../tools/arduino.h"
+// #include "../tools/serialmonitor.h"
+#include "../onboard/onboard.hpp"
 #include "wx/font.h"
 
 MainMenu *MainMenu::instance{nullptr};
 MainMenu::MainMenu(wxWindow* parent) : 
     pcui::Frame(
         parent,
-        AppState::ID_MainMenu,
+        state::eID_Main_Menu,
         "ProffieConfig",
-        wxDefaultPosition,
-        wxDefaultSize,
         wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)
     ) {
-    NotifyReceiver::create(this, mNotifyData);
-    boardSelection.setPersistence(pcui::ChoiceData::Persistence::String);
-    configSelection.setPersistence(pcui::ChoiceData::Persistence::String);
 
-    createUI();
+    // REVIEW
+    // boardSelection.setPersistence(pcui::ChoiceData::Persistence::String);
+    // configSelection.setPersistence(pcui::ChoiceData::Persistence::String);
+
     createMenuBar();
     bindEvents();
-    updateConfigChoices();
 
-    initializeNotifier();
+    pcui::build(this, ui());
+
     Show();
 }
 
 void MainMenu::bindEvents() {
     auto promptClose{[this]() -> bool {
         for (auto *editor : mEditors) {
-            if (not editor->getOpenConfig().isSaved()) {
-                auto res{pcui::showMessage(
-                    _("There is at least one editor open with unsaved changes, are you sure you want to exit?") +
-                    "\n\n"+
-                    _("All unsaved changes will be lost!"),
-                    _("Open Editor(s)"),
-                    wxYES_NO | wxNO_DEFAULT | wxCENTER | wxICON_EXCLAMATION
-                )};
-                if (res != wxYES) return false;
-                break;
-            }
+            // REVIEW
+            // if (not editor->getOpenConfig().isSaved()) {
+            //     auto res{pcui::showMessage(
+            //         _("There is at least one editor open with unsaved changes, are you sure you want to exit?") +
+            //         "\n\n"+
+            //         _("All unsaved changes will be lost!"),
+            //         _("Open Editor(s)"),
+            //         wxYES_NO | wxNO_DEFAULT | wxCENTER | wxICON_EXCLAMATION
+            //     )};
+            //     if (res != wxYES) return false;
+            //     break;
+            // }
         }
 
         return true;
     }};
 
     Bind(wxEVT_CLOSE_WINDOW, [promptClose](wxCloseEvent& event) {
-        AppState::saveState();
+        state::saveState();
         if (event.CanVeto() and not promptClose()) {
             event.Veto();
             return;
         }
         event.Skip();
     });
-    Bind(Progress::EVT_UPDATE, [&](ProgressEvent& event) { 
-        Progress::handleEvent(&event); 
-    });
-    Bind(misc::EVT_MSGBOX, [&](misc::MessageBoxEvent& event) {
-        pcui::showMessage(event.message_, event.caption_, event.style_, this);
-    });
     Bind(wxEVT_MENU, [&](wxCommandEvent&) { Close(true); }, wxID_EXIT);
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
         wxAboutDialogInfo aboutInfo;
         const auto componentVersions{
-            string{} +
+            std::string{} +
             "App: v" + app::version() + "\n"
-            "Config: v" + Config::version() + "\n"
-            "Log: v" + Log::version() + "\n"
-            "PConf: v" + PConf::version() + "\n"
+            "Config: v" + config::version() + "\n"
+            "Log: v" + logging::version() + "\n"
+            "PConf: v" + pconf::version() + "\n"
             "pcui: v" + pcui::version() + "\n"
-            "Utils: v" + Utils::version() + "\n"
-            "Versions: v" + Versions::version() + "\n"
-            "Versions Manager: v" + VersionsManager::version() + "\n"
-            "Arduino CLI: v" + Arduino::version() + "\n"
+            "Utils: v" + utils::version() + "\n"
+            "Versions: v" + versions::version() + "\n"
+            // REVIEW
+            // "Versions Manager: v" + versions_manager::version() + "\n"
+            // "Arduino CLI: v" + arduino::version() + "\n"
+            //
         };
 #       ifdef __WXOSX__
         aboutInfo.SetDescription(_("All-in-one Proffieboard Management Utility"));
@@ -156,120 +161,102 @@ void MainMenu::bindEvents() {
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
         wxLaunchDefaultApplication(paths::logDir().native());
-    }, ID_Logs);
+    }, eID_Logs);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
-        wxDialog dialog{
+        pcui::Dialog dialog{
             this,
             wxID_ANY,
             wxString::Format(_("ProffieConfig Copyright & License Info")),
-            wxDefaultPosition,
-            wxDefaultSize,
             wxDEFAULT_DIALOG_STYLE | wxCENTER | wxRESIZE_BORDER
         };
 
-        auto *scrollWin{new wxScrolledWindow(&dialog)};
-        auto *scrollWrapSizer{new wxBoxSizer(wxVERTICAL)};
-        for (const auto& info : LICENSES) {
-            auto *sizer{new wxBoxSizer(wxVERTICAL)};
-            auto *nameText{new wxStaticText(scrollWin, wxID_ANY, info.name_)};
-            auto font{nameText->GetFont()};
-            font.SetFractionalPointSize(1.2 * font.GetFractionalPointSize());
-            nameText->SetFont(font);
-            sizer->Add(nameText);
-            auto *copyrightText{new wxStaticText(
-                scrollWin,
-                wxID_ANY,
-                wxString{L"Copyright \u00A9 "} + 
-                info.date_ + ' ' + info.author_
-            )};
-            sizer->Add(copyrightText);
-            auto *detailText{new wxStaticText(scrollWin, wxID_ANY, info.detail_)};
-            sizer->Add(detailText);
+        auto licenseFont{pcui::text::detail::StyleData{}.makeFont()};
+        licenseFont.SetFamily(wxFONTFAMILY_TELETYPE);
 
-            constexpr auto SHOW_STR{"Show License"};
-            auto *pane{new wxCollapsiblePane(
-                scrollWin,
-                wxID_ANY,
-                SHOW_STR,
-                wxDefaultPosition,
-                wxDefaultSize,
-                wxCP_NO_TLW_RESIZE
-            )};
-            const auto onPaneChanged{[pane, scrollWin](
-                wxCollapsiblePaneEvent& evt
-            ) {
-                pane->SetLabel(evt.GetCollapsed() ? SHOW_STR : "Hide License");
-                scrollWin->Layout();
-                scrollWin->FitInside();
-            }};
-            pane->Bind(wxEVT_COLLAPSIBLEPANE_CHANGED, onPaneChanged);
-            auto *licenseText{new wxTextCtrl(
-                pane->GetPane(),
-                wxID_ANY,
-                info.license_,
-                wxDefaultPosition,
-                wxDefaultSize,
-                wxTE_READONLY | wxTE_MULTILINE |
-                wxTE_NO_VSCROLL | wxTE_WORDWRAP | wxTE_AUTO_URL
-            )};
-            auto licenseFont{licenseText->GetFont()};
-            licenseFont.SetFamily(wxFONTFAMILY_TELETYPE);
-            licenseText->SetFont(licenseFont);
+        const auto ui{pcui::Scrolled{
+          .win_={
+            .base_={
+              .minSize_={-1, 600},
+              .expand_=true,
+              .proportion_=1,
+            },
+          },
+          .scrollRate_={.y_=10},
+          .child_=pcui::Stack{
+            .base_={
+                .expand_=true,
+                .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT},
+            },
+            .children_={
+              pcui::ForEach{
+                .of_=LICENSES,
+                .do_=[&](const LicenseInfo& info) -> pcui::DescriptorPtr {
+                    return pcui::Stack{
+                      .base_={.expand_=true},
+                      .children_={
+                        pcui::Spacer{.size_=10}(),
+                        pcui::Label{
+                          .label_=info.name_,
+                          .style_=pcui::text::Style::Header,
+                        }(),
+                        pcui::Label{
+                          .label_=wxString{L"Copyright \u00A9 "} +
+                              info.date_ + ' ' + info.author_
+                        }(),
+                        pcui::Label{
+                          .label_=info.detail_,
+                        }(),
+                        pcui::Collapsible{
+                          .win_={.base_={.expand_=true}},
+                          .showLabel_="Show License",
+                          .hideLabel_="Hide License",
+                          .child_=pcui::Text{
+                            .win_={
+                              .base_={
+                                .minSize_={
+                                  [&] {
+                                      int x{};
+                                      int y{};
+                                      GetTextExtent(
+                                          'M',
+                                          &x, &y,
+                                          nullptr,
+                                          nullptr,
+                                          &licenseFont
+                                      );
+                                      return x * 80;
+                                  }(),
+                                  -1
+                                },
+                                .expand_=true,
+                              },
+                            },
+                            .data_=info.license_,
+                            .autoLink_=true,
+                            .style_=licenseFont,
+                            .mode_=pcui::Text::MultiLine{
+                              .scroll_={.vertical_=false, .horizontal_=false},
+                            }
+                          }(),
+                        }(),
+                      }
+                    }();
+                }
+              }(),
+              pcui::Spacer{.size_=10}(),
+            },
+          }(),
+        }()};
 
-            const auto onMouseWheel{[scrollWin](wxMouseEvent& evt) {
-                // Have to forward it up the chain manually.
-                scrollWin->HandleOnMouseWheel(evt);
-            }};
-            licenseText->Bind(wxEVT_MOUSEWHEEL, onMouseWheel);
-
-            const auto textExtent{licenseText->GetTextExtent('M')};
-            // Width needs to be set first so that the number of lines is
-            // properly calculated
-            const auto width{textExtent.x * 80};
-            licenseText->SetMinClientSize({width, -1});
-            licenseText->SetSize(licenseText->GetMinSize());
-
-            const auto height{
-                (textExtent.y * licenseText->GetNumberOfLines())
-                + (textExtent.y / 2)
-            };
-            licenseText->SetMinClientSize({width, height});
-            licenseText->SetSize(licenseText->GetMinSize());
-
-            auto *paneSizer{new wxBoxSizer(wxVERTICAL)};
-            paneSizer->Add(licenseText, 0, wxEXPAND);
-            pane->GetPane()->SetSizer(paneSizer);
-            pane->SetMinClientSize({
-                pane->GetPane()->GetBestVirtualSize().x, -1
-            });
-
-            sizer->Add(pane, 0, wxEXPAND);
-            scrollWrapSizer->AddSpacer(10);
-            scrollWrapSizer->Add(
-                sizer,
-                wxSizerFlags()
-                    .Expand()
-                    .Border(wxLEFT | wxRIGHT, 10)
-            );
-        }
-        scrollWrapSizer->AddSpacer(10);
-        scrollWin->SetSizerAndFit(scrollWrapSizer);
-        scrollWin->SetMinSize({
-            scrollWin->GetBestVirtualSize().x, 600
-        });
-        scrollWin->SetScrollRate(-1, 10);
-
-        auto *dlgSizer{new wxBoxSizer(wxVERTICAL)};
-        dlgSizer->Add(scrollWin, 1, wxEXPAND);
-        dialog.SetSizerAndFit(dlgSizer);
+        pcui::build(&dialog, ui);
 
         dialog.ShowModal();
-    }, ID_Licenses);
+    }, eID_Licenses);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
-        const auto warnPref{AppState::getPreference(
-            AppState::HIDE_EDITOR_MANAGE_VERSIONS_WARN
+        const auto warnPref{state::getPreference(
+            state::ePreference_Hide_Editor_Manage_Versions_Warn
         )};
         if (
                 not mEditors.empty() and
@@ -284,32 +271,34 @@ void MainMenu::bindEvents() {
                 wxEmptyString,
                 _("Proceed")
             )};
-            AppState::setPreference(
-                AppState::HIDE_EDITOR_MANAGE_VERSIONS_WARN,
+            state::setPreference(
+                state::ePreference_Hide_Editor_Manage_Versions_Warn,
                 res.wantsToHide_
             );
             if (res.result_ != wxID_OK) return;
         }
 
-        VersionsManager::open(this, AppState::ID_VersionsManager);
-    }, ID_ManageVersions);
+        // REVIEW
+        // versions_manager::open(this, state::eID_Versions_Manager);
+    }, eID_Manage_Versions);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
         ManifestDialog(this).ShowModal();
-    }, ID_UpdateManifest);
+    }, eID_Update_Manifest);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
         wxLaunchDefaultBrowser("https://github.com/ryancog/ProffieConfig/blob/master/docs");
-    }, ID_Docs);
+    }, eID_Docs);
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
         wxLaunchDefaultBrowser("https://github.com/ryancog/ProffieConfig/issues/new");
-    }, ID_Issue);
+    }, eID_Issue);
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
         if (Close()) {
-            Onboard::Frame::instance = new Onboard::Frame;
+            onboard::Frame::instance = new onboard::Frame;
         }
-    }, ID_RunSetup);
+    }, eID_Run_Setup);
 
+    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
         mNotifyData.notify(ID_AsyncStart);
 
@@ -340,7 +329,8 @@ void MainMenu::bindEvents() {
             progDialog->emitEvent(100, _("Done"));
             mNotifyData.notify(ID_AsyncDone);
         }}.detach();
-    }, ID_RefreshDev);
+    }, eID_Refresh_Dev);
+
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         mNotifyData.notify(ID_AsyncStart);
 
@@ -407,7 +397,10 @@ void MainMenu::bindEvents() {
             )};
             wxQueueEvent(this, evt);
         }}.detach();
-    }, ID_ApplyChanges);
+    }, eID_Apply_Changes);
+    */
+
+    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { 
         if (not SerialMonitor::instance) {
             SerialMonitor::instance = new SerialMonitor(this, boardSelection);
@@ -415,21 +408,10 @@ void MainMenu::bindEvents() {
             SerialMonitor::instance->Show();
             SerialMonitor::instance->Raise();
         }
-    }, ID_OpenSerial);
+    }, eID_Open_Serial);
+    */
 
-    configSelection.setUpdateHandler([this](uint32 id) {
-        if (id != pcui::ChoiceData::eID_Selection) return;
-        mNotifyData.notify(ID_ConfigSelection);
-    });
-    boardSelection.setUpdateHandler([this](uint32 id) { 
-        if (id == pcui::ChoiceData::eID_Choices and boardSelection == -1) {
-            boardSelection = 0;
-            return;
-        }
-        if (id != pcui::ChoiceData::eID_Selection) return;
-
-        mNotifyData.notify(ID_BoardSelection);
-    });
+    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
         mNotifyData.notify(ID_AsyncStart);
 
@@ -445,7 +427,10 @@ void MainMenu::bindEvents() {
             auto *config{std::get<Config::Config *>(res)};
             mConfigNeedShown = config;
         }}.detach();
-    }, ID_EditConfig);
+    }, eID_Edit_Config);
+    */
+
+    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { 
         auto addDialog{AddConfig{this}};
         if (addDialog.ShowModal() != wxID_OK) return;
@@ -477,7 +462,10 @@ void MainMenu::bindEvents() {
             updateConfigChoices();
             configSelection = name;
         }}.detach();
-    }, ID_AddConfig);
+    }, eID_Add_Config);
+    */
+
+    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent &) {
         if (pcui::showMessage(
                 _("Are you sure you want to deleted the selected configuration?") +
@@ -500,25 +488,24 @@ void MainMenu::bindEvents() {
 
             updateConfigChoices();
         }
-    }, ID_RemoveConfig);
+    }, eID_Remove_Config);
+    */
 }
 
+/*
 void MainMenu::updateConfigChoices() {
-    vector<string> choices{_("Select Config...").ToStdString()};
+    vector<string> choices{.ToStdString()};
     const auto configList{Config::fetchListFromDisk()};
     choices.insert(choices.end(), configList.begin(), configList.end());
     configSelection.setChoices(std::move(choices));
     if (configSelection == -1) configSelection = 0;
 }
+*/
 
+/*
 void MainMenu::handleNotification(uint32 id) {
     bool rebound{id == pcui::Notifier::eID_Rebound};
     if (rebound or id == ID_ConfigSelection) {
-        FindWindow(ID_EditConfig)->Enable(configSelection != 0);
-        FindWindow(ID_RemoveConfig)->Enable(configSelection != 0);
-        FindWindow(ID_ApplyChanges)->Enable(
-            configSelection != 0 and boardSelection != 0
-        );
     } 
     if (rebound or id == ID_BoardSelection) {
         FindWindow(ID_ApplyChanges)->Enable(
@@ -560,15 +547,16 @@ void MainMenu::handleNotification(uint32 id) {
         wxSetCursor(wxNullCursor);
     }
 }
+*/
 
 void MainMenu::createMenuBar() {
     auto *file{new wxMenu};
-    file->Append(ID_ManageVersions, _("Manage Versions..."));
-    file->Append(ID_UpdateManifest, _("Update Channel..."));
+    file->Append(eID_Manage_Versions, _("Manage Versions..."));
+    file->Append(eID_Update_Manifest, _("Update Channel..."));
     file->AppendSeparator();
-    file->Append(ID_Logs, _("Show Logs..."));
+    file->Append(eID_Logs, _("Show Logs..."));
     file->Append(wxID_ABOUT);
-    file->Append(ID_Licenses, _("Licensing Information"));
+    file->Append(eID_Licenses, _("Licensing Information"));
     file->Append(wxID_EXIT);
 
     auto* menuBar{new wxMenuBar};
@@ -583,160 +571,154 @@ void MainMenu::createMenuBar() {
             : menuBar->GetMenu(helpIdx)
     };
     help->Append(
-        ID_Docs,
+        eID_Docs,
         _("Guides...\tCtrl+H"),
         _("Open the ProffieConfig guides in your web browser")
     );
     // TODO: Make this a page that has my contact info and a button to go to
     // the issues page.
     help->Append(
-        ID_Issue,
+        eID_Issue,
         _("Help/Bug Report..."),
         _("Open GitHub to submit issue")
     );
     help->AppendSeparator();
-    help->Append(ID_RunSetup, _("Re-Run Setup"));
+    help->Append(eID_Run_Setup, _("Re-Run Setup"));
     if (helpIdx == wxNOT_FOUND) menuBar->Append(help, helpStr);
 
     SetMenuBar(menuBar);
 }
 
-void MainMenu::createUI() {
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
-
-    auto *headerSection{new wxBoxSizer(wxHORIZONTAL)};
-
-    auto *titleSection{new wxBoxSizer(wxVERTICAL)};
-    auto *title{new wxStaticText(this, wxID_ANY, "ProffieConfig")};
-    auto titleFont{title->GetFont()};
-    titleFont.MakeBold();
-#   if defined(__WXGTK__) or defined(__WXMSW__)
-    titleFont.SetPointSize(20);
-#   elif defined (__WXOSX__)
-    titleFont.SetPointSize(30);
-#   endif
-    title->SetFont(titleFont);
-    auto *subTitle{new wxStaticText(
-        this, wxID_ANY, _("Created by Ryryog25")
-    )};
-    titleSection->Add(title);
-    titleSection->Add(subTitle);
-
-    auto *appIcon{pcui::createStaticImage(
-        this, wxID_ANY, Image::loadPNG("icon")
-    )};
-    appIcon->SetMaxSize(wxSize{64, 64});
-
-    headerSection->AddSpacer(10);
-    headerSection->Add(titleSection);
-    headerSection->AddSpacer(20);
-    headerSection->AddStretchSpacer(1);
-    headerSection->Add(appIcon);
-    headerSection->AddSpacer(10);
-
-    auto *configSelectSection{new wxBoxSizer(wxHORIZONTAL)};
-    auto *configSelect{new pcui::Choice(this, configSelection)};
-
-    auto *addConfig{new wxButton(
-        this,
-        ID_AddConfig,
-#       ifdef __WXGTK__
-        " " + _("Add") + " ",
-#       else
-        _("Add"),
+pcui::DescriptorPtr MainMenu::ui() {
+    return pcui::Stack{
+      .base_={
+        .border_={.size_=10, .dirs_=wxALL},
+      },
+      .children_={
+        pcui::Spacer{.size_=10}(),
+        pcui::Stack{
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Stack{
+              .children_={
+                pcui::Label{
+                  .label_="ProffieConfig",
+#                 if defined(__WXGTK__) or defined(__WXMSW__)
+                  .style_=wxFontInfo{20}.Bold(),
+#                 elif defined (__WXOSX__)
+                  .style_=wxFontInfo{30}.Bold(),
+#                 endif
+                }(),
+                pcui::Label{
+                  .label_=_("Created by Ryryog25"),
+                }(),
+              },
+            }(),
+            pcui::Spacer{.size_=20}(),
+            pcui::StretchSpacer{}(),
+            pcui::Image{
+              .win_={.maxSize_={64, 64}},
+              .src_=pcui::Image::LoadDetails{
+                .name_="icon",
+              }()
+            }()
+          },
+        }(),
+        pcui::Spacer{.size_=20}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Choice{
+              .win_={.base_={.proportion_=1}},
+              .data_=config_.choice_,
+              .unselected_=_("Select Config..."),
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Button{
+              .label_=_("Add"),
+              .exactFit_=true,
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Button{
+              .win_={
+                .enable_=not data::logic::adapt(
+                  config_.choice_, data::logic::HasSelection{{-1}}
+                ),
+              },
+              .label_=_("Remove"),
+              .exactFit_=true,
+            }(),
+          },
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_=not data::logic::adapt(
+              config_.choice_, data::logic::HasSelection{{-1}}
+            ),
+          },
+          .label_=_("Edit Selected Configuration"),
+        }(),
+        pcui::Spacer{.size_=20}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Button{
+              .win_={
+                .tooltip_=_("Generate an up-to-date list of connected boards."),
+              },
+              .label_=_("Refresh Boards"),
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Choice{
+              .win_={
+                .base_={.proportion_=1},
+                .tooltip_=_("Select the Proffieboard to connect to.\nThese IDs are assigned by the OS, and can vary."),
+              },
+              .data_=board_,
+              .unselected_=_("Select Board..."),
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_={
+              not data::logic::adapt(
+                config_.choice_, data::logic::HasSelection{{-1}}
+              ) and not data::logic::adapt(
+                board_, data::logic::HasSelection{{-1}}
+              )
+            },
+            .tooltip_=_("Compile and upload the selected configuration to the selected Proffieboard."),
+          },
+          .label_=_("Apply Selected Configuration to Board"),
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_=not data::logic::adapt(
+              board_, data::logic::HasSelection{{-1}}
+            ),
+          },
+          .label_=_("Open Serial Monitor"),
+        }(),
+#       ifdef __WXMSW__
+        // There's a sizing issue I need to figure out... for now we give it a
+        // chin
+        pcui::Spacer{.size_=FromDIP(20)}(),
 #       endif
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *removeConfig{new wxButton(
-        this,
-        ID_RemoveConfig,
-#       ifdef __WXGTK__
-        " " + _("Remove") + " ",
-#       else
-        _("Remove"),
-#       endif
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
+      }
+    }();
 
-    configSelectSection->AddSpacer(10);
-    configSelectSection->Add(configSelect, wxSizerFlags{1}.Expand());
-    configSelectSection->AddSpacer(5);
-    configSelectSection->Add(addConfig, wxSizerFlags{}.Expand());
-    configSelectSection->AddSpacer(5);
-    configSelectSection->Add(removeConfig, wxSizerFlags{}.Expand());
-    configSelectSection->AddSpacer(10);
-
-    auto *editConfig{new wxButton(
-        this,
-        ID_EditConfig,
-        _("Edit Selected Configuration")
-    )};
-
-    auto *boardControls{new wxBoxSizer(wxHORIZONTAL)};
-    auto boardEntries{Utils::createEntries({_("Select Board...")})};
 #   if defined _WIN32 or defined __linux__
     boardEntries.emplace_back(_("BOOTLOADER RECOVERY").ToStdString());
 #   endif
-
-    boardSelection.setChoices(std::move(boardEntries));
-    boardSelection = 0;
-    auto *boardSelect{new pcui::Choice(this, boardSelection)};
-    boardSelect->SetToolTip(_("Select the Proffieboard to connect to.\nThese IDs are assigned by the OS, and can vary."));
-
-    auto *refreshButton{new wxButton(
-        this, ID_RefreshDev, _("Refresh Boards")
-    )};
-    refreshButton->SetToolTip(_("Generate an up-to-date list of connected boards."));
-
-    boardControls->AddSpacer(10);
-    boardControls->Add(refreshButton);
-    boardControls->AddSpacer(5);
-    boardControls->Add(boardSelect, wxSizerFlags{1});
-    boardControls->AddSpacer(10);
-
-    auto *applyButton{new wxButton(
-        this,
-        ID_ApplyChanges,
-        _("Apply Selected Configuration to Board")
-    )};
-    applyButton->SetToolTip(_("Apply the current configuration to the selected Proffieboard."));
-    auto *openSerial{new wxButton(
-        this, ID_OpenSerial, _("Open Serial Monitor")
-    )};
-
-    sizer->AddSpacer(20);
-    sizer->Add(headerSection, wxSizerFlags().Expand());
-    sizer->AddSpacer(20);
-    sizer->Add(configSelectSection, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(
-        editConfig,
-        wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT, 10)
-    );
-    sizer->AddSpacer(20);
-    sizer->Add(boardControls, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(
-        applyButton,
-        wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT, 10)
-    );
-    sizer->AddSpacer(10);
-    sizer->Add(
-        openSerial,
-        wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT, 10)
-    );
-#   ifdef __WXMSW__
-    // There's a sizing issue I need to figure out... for now we give it a chin
-    sizer->AddSpacer(FromDIP(30));
-#   else
-    sizer->AddSpacer(10);
-#   endif
-
-    SetSizerAndFit(sizer);
 }
 
 void MainMenu::removeEditor(EditorWindow *editor) {
