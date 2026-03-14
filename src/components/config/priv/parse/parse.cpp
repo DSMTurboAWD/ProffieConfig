@@ -217,7 +217,7 @@ void parseTop(std::istream& file, config::Config& config) {
                 data::Selector::ROContext board{config.board()};
                 if (not board.bound()) continue;
 
-                data::Vector::Context boards{*board.bound()};
+                data::Vector::ROContext boards{*board.bound()};
                 for (size idx{0}; idx < boards.children().size(); ++idx) {
                     auto& bInfo{static_cast<versions::os::BoardInfo&>(
                         *boards.children()[idx]
