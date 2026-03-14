@@ -19,22 +19,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/dialog.h>
-
 #include "data/generic.hpp"
 #include "data/helpers/exclusive.hpp"
 #include "data/string.hpp"
+#include "ui/dialog.hpp"
 #include "ui/types.hpp"
 
 #include "../mainmenu.hpp"
 
-class AddConfig : public wxDialog {
-public:
+struct AddConfig : pcui::Dialog {
     AddConfig(MainMenu *);
-    enum {
-        eID_Create_New,
-        eID_Import_Existing,
-    };
+    ~AddConfig() override;
 
     MainMenu *parent_{nullptr};
 
@@ -60,3 +55,4 @@ private:
     pcui::DescriptorPtr ui();
     void bindEvents();
 };
+

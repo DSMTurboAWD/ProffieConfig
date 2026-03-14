@@ -19,14 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/dialog.h>
-
 #include "data/string.hpp"
+#include "ui/dialog.hpp"
 
 struct MainMenu;
 
-struct ManifestDialog : public wxDialog {
+struct ManifestDialog : pcui::Dialog {
     ManifestDialog(MainMenu *);
+    ~ManifestDialog() override;
 
 private:
     data::String mText;

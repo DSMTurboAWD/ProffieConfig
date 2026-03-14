@@ -41,13 +41,10 @@
 #include "utils/parent.hpp"
 
 AddConfig::AddConfig(MainMenu *parent) : 
-    wxDialog(
+    Dialog(
         parent,
         wxID_ANY,
-        _("Add New Config"),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxDEFAULT_DIALOG_STYLE
+        _("Add New Config")
     ) {
 #   ifdef __WXOSX__
     // TODO: This should really go elsewhere... but where?
@@ -58,6 +55,10 @@ AddConfig::AddConfig(MainMenu *parent) :
 
     pcui::build(this, ui());
     bindEvents();
+}
+
+AddConfig::~AddConfig() {
+    pcui::teardown(this);
 }
 
 void AddConfig::bindEvents() {
@@ -131,8 +132,10 @@ pcui::DescriptorPtr AddConfig::ui() {
           .label_=_("Configuration to Import"),
         }(),
         pcui::FilePicker{
-          .base_{.expand_=true},
-          .win_={.show_=data::logic::adapt(mode_[eMode_Import])},
+          .win_={
+            .base_{.expand_=true},
+            .show_=data::logic::adapt(mode_[eMode_Import])
+          },
           .data_=importPath_,
           .message_=_("Choose Configuration File to Import"),
           .wildcard_=_("ProffieOS Configuration") + " (*.h)|*.h",
@@ -143,38 +146,44 @@ pcui::DescriptorPtr AddConfig::ui() {
           .label_=_("Configuration Name"),
         }(),
         pcui::Text{
-          .base_{.expand_=true},
+          .win_={.base_{.expand_=true}},
           .data_=configName_,
         }(),
         pcui::Label{
-          .base_={
-            .border_={.size_=10, .dirs_=wxRIGHT},
-            .align_=wxALIGN_RIGHT,
+          .win_={
+            .base_={
+              .border_={.size_=10, .dirs_=wxRIGHT},
+              .align_=wxALIGN_RIGHT,
+            },
+            .show_=data::logic::adapt(mNameValid)
           },
-          .win_={.show_=data::logic::adapt(mNameValid)},
           .label_=_("Please enter a valid name"),
         }(),
         pcui::Label{
-          .base_={
-            .border_={.size_=10, .dirs_=wxRIGHT},
-            .align_=wxALIGN_RIGHT,
+          .win_={
+            .base_={
+              .border_={.size_=10, .dirs_=wxRIGHT},
+              .align_=wxALIGN_RIGHT,
+            },
+            .show_=data::logic::adapt(mDupName)
           },
-          .win_={.show_=data::logic::adapt(mDupName)},
           .label_=_("Configuration with same name already exists"),
         }(),
         pcui::Label{
-          .base_={
-            .border_={.size_=10, .dirs_=wxRIGHT},
-            .align_=wxALIGN_RIGHT,
+          .win_={
+            .base_={
+              .border_={.size_=10, .dirs_=wxRIGHT},
+              .align_=wxALIGN_RIGHT,
+            },
+            .show_=data::logic::adapt(mNeedImportPath)
           },
-          .win_={.show_=data::logic::adapt(mNeedImportPath)},
           .label_=_("Please choose a configuration file to import"),
         }(),
         pcui::StretchSpacer{}(),
         pcui::DialogButtons{
           .base_={
-            .border_={.size_=10, .dirs_=wxALL},
             .expand_=true,
+            .border_={.size_=10, .dirs_=wxALL},
           },
           .ok_=pcui::Button{
             .win_{

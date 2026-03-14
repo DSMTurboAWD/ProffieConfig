@@ -27,13 +27,14 @@
 #include "ui/controls/button.hpp"
 #include "ui/controls/text.hpp"
 #include "ui/helpers/dialog_buttons.hpp"
+#include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 
 #include "../mainmenu.hpp"
 #include "../../core/state.hpp"
 
 ManifestDialog::ManifestDialog(MainMenu *mainMenu) : 
-    wxDialog{mainMenu, wxID_ANY, _("Set Update Channel")} {
+    Dialog{mainMenu, wxID_ANY, _("Set Update Channel")} {
     constexpr cstring STABLE_CHANNEL{"stable"};
 
     { data::String::Context ctxt{mText};
@@ -43,16 +44,20 @@ ManifestDialog::ManifestDialog(MainMenu *mainMenu) :
         );
     }
     const auto ui{pcui::Stack{
+      .base_={
+        .border_={.size_=10, .dirs_=wxALL},
+      },
       .children_={
         pcui::Text{
           .win_={
             .base_={
               .expand_=true,
-              .border_={.size_=12, .dirs_=wxALL},
+              .border_={.size_=2, .dirs_=wxALL},
             },
           },
           .data_=mText,
         }(),
+        pcui::Spacer{.size_=8}(),
         pcui::DialogButtons{
           .ok_=pcui::Button{
             .win_={
@@ -85,6 +90,9 @@ ManifestDialog::ManifestDialog(MainMenu *mainMenu) :
     }()};
 
     pcui::build(this, ui);
-    Fit();
+}
+
+ManifestDialog::~ManifestDialog() {
+    pcui::teardown(this);
 }
 
