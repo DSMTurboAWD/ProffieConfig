@@ -46,6 +46,7 @@ wxFont pcui::text::detail::StyleData::makeFont() const {
             return sysFont;
         case Title:
             sysFont.Scale(1.5);
+            sysFont.MakeBold();
             return sysFont;
         case Style::Header:
             return sysFont.Scale(1.2);
