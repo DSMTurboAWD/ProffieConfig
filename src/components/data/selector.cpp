@@ -92,7 +92,9 @@ void data::Selector::onInsert(size pos) {
 
     choice.update(vec.children().size());
 
-    if (choice.choice() >= pos) ++lastChoice;
+    if (lastChoice != -1 and lastChoice >= pos) {
+        ++lastChoice;
+    }
     choice.choose(lastChoice);
 }
 
