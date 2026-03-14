@@ -33,13 +33,13 @@ const std::array<os::Available::BoardInfo, 3> BOARDS{{
     },
     {
         .name_="ProffieV2",
-        .coreId_="proffieboard:stm32l4:ProffieboardV3-L452RE",
-        .include_="\"proffieboard_v3_config.h\"",
+        .coreId_="proffieboard:stm32l4:ProffieboardV2-L433CC",
+        .include_="\"proffieboard_v2_config.h\"",
     },
     {
         .name_="ProffieV1",
-        .coreId_="proffieboard:stm32l4:Proffieboard-L433CU",
-        .include_="\"proffieboard_v3_config.h\"",
+        .coreId_="proffieboard:stm32l4:Proffieboard-L433CC",
+        .include_="\"proffieboard_v1_config.h\"",
     }
 }};
 
