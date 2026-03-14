@@ -31,7 +31,12 @@ namespace pcui {
  * Build declarative UI and attach to parent as child, replacing any child the
  * parent previously had.
  */
-void UI_EXPORT build(wxWindow *parent, const DescriptorPtr&);
+void UI_EXPORT build(wxWindow *, const DescriptorPtr&);
+
+/**
+ * Call to teardown UI creation.
+ */
+void UI_EXPORT teardown(wxWindow *);
 
 } // namespace pcui
 

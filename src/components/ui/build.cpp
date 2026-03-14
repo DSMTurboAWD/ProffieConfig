@@ -20,9 +20,7 @@
  */
 
 void pcui::build(wxWindow *parent, const DescriptorPtr& desc) {
-    assert(parent);
-    parent->SetSizer(nullptr);
-    parent->DestroyChildren();
+    teardown(parent);
 
     if (not desc) return;
 
@@ -49,5 +47,16 @@ void pcui::build(wxWindow *parent, const DescriptorPtr& desc) {
     // TL;DR SetSizerAndFit() does not call Fit().
     parent->SetSizer(sizer);
     parent->Fit();
+}
+
+void pcui::teardown(wxWindow *parent) {
+    assert(parent);
+
+    // Destroy children in all the ways and delete sizer.
+    parent->DestroyChildren();
+    if (parent->GetSizer()) {
+        parent->GetSizer()->DeleteWindows();
+        parent->SetSizer(nullptr, true);
+    }
 }
 
