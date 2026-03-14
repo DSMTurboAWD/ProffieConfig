@@ -19,57 +19,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/aboutdlg.h>
-#include <wx/cursor.h>
-#include <wx/collpane.h>
-#include <wx/event.h>
-#include <wx/gdicmn.h>
 #include <wx/menu.h>
-#include <wx/settings.h>
-#include <wx/toplevel.h>
 #include <wx/utils.h>
 
-#include "app/info.hpp"
-#include "config/config.hpp"
 #include "data/logic/adapter.hpp"
 #include "data/logic/operators.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
-#include "ui/controls/text.hpp"
-#include "ui/helpers/foreach.hpp"
-#include "ui/layout/collapsible.hpp"
-#include "ui/layout/scrolled.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/misc/message.hpp"
-#include "ui/frame.hpp"
-#include "ui/dialog.hpp"
 #include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
-#include "utils/defer.hpp"
 #include "utils/paths.hpp"
-#include "utils/string.hpp"
-#include "dialogs/addconfig.hpp"
-#include "dialogs/manifest.hpp"
-#include "config/info.hpp"
-#include "log/info.hpp"
-#include "pconf/info.hpp"
-#include "ui/info.hpp"
-#include "utils/info.hpp"
-#include "versions/info.hpp"
-// #include "versions_manager/info.h"
-// #include "versions_manager/manager.h"
 
 #include "../core/state.hpp"
-#include "../core/licenses.hpp"
-// #include "../core/appstate.h"
-#include "../core/utilities/misc.h"
-// #include "../core/utilities/progress.h"
-// #include "../editor/editorwindow.h"
-// #include "../tools/arduino.h"
-// #include "../tools/serialmonitor.h"
 #include "../onboard/onboard.hpp"
-#include "wx/font.h"
+#include "dialogs/about.hpp"
+#include "dialogs/licenses.hpp"
+#include "dialogs/manifest.hpp"
 
 MainMenu *MainMenu::instance{nullptr};
 
@@ -126,43 +94,13 @@ void MainMenu::bindEvents() {
         }
         event.Skip();
     });
-    Bind(wxEVT_MENU, [&](wxCommandEvent&) { Close(true); }, wxID_EXIT);
+
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
-        wxAboutDialogInfo aboutInfo;
-        const auto componentVersions{
-            std::string{} +
-            "App: v" + app::version() + "\n"
-            "Config: v" + config::version() + "\n"
-            "Log: v" + logging::version() + "\n"
-            "PConf: v" + pconf::version() + "\n"
-            "pcui: v" + pcui::version() + "\n"
-            "Utils: v" + utils::version() + "\n"
-            "Versions: v" + versions::version() + "\n"
-            // REVIEW
-            // "Versions Manager: v" + versions_manager::version() + "\n"
-            // "Arduino CLI: v" + arduino::version() + "\n"
-            //
-        };
-#       ifdef __WXOSX__
-        aboutInfo.SetDescription(_("All-in-one Proffieboard Management Utility"));
-        aboutInfo.SetVersion(
-            wxSTRINGIZE(BIN_VERSION),
-            "Core: v" + wxString{wxSTRINGIZE(BIN_VERSION)} + "\n"
-            + componentVersions
-        );
-#       else
-        aboutInfo.SetDescription(
-            _("All-in-one Proffieboard Management Utility") + "\n\n"
-            + componentVersions
-        );
-        aboutInfo.SetVersion(wxSTRINGIZE(BIN_VERSION));
-#       endif
-#       ifdef __WXGTK__
-        aboutInfo.SetWebSite("https://proffieconfig.kafrenetrading.com");
-#       endif
-        aboutInfo.SetCopyright("Copyright (C) 2023-2026 Ryan Ogurek");
-        aboutInfo.SetName("ProffieConfig");
-        wxAboutBox(aboutInfo, this);
+        Close(true);
+    }, wxID_EXIT);
+
+    Bind(wxEVT_MENU, [&](wxCommandEvent&) {
+        showAbout(this);
     }, wxID_ABOUT);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
@@ -170,94 +108,8 @@ void MainMenu::bindEvents() {
     }, eID_Logs);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {
-        pcui::Dialog dialog{
-            this,
-            wxID_ANY,
-            wxString::Format(_("ProffieConfig Copyright & License Info")),
-            wxDEFAULT_DIALOG_STYLE | wxCENTER | wxRESIZE_BORDER
-        };
-
-        auto licenseFont{pcui::text::detail::StyleData{}.makeFont()};
-        licenseFont.SetFamily(wxFONTFAMILY_TELETYPE);
-
-        const auto ui{pcui::Scrolled{
-          .win_={
-            .base_={
-              .minSize_={-1, 600},
-              .expand_=true,
-              .proportion_=1,
-            },
-          },
-          .scrollRate_={.y_=10},
-          .child_=pcui::Stack{
-            .base_={
-                .expand_=true,
-                .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT},
-            },
-            .children_={
-              pcui::ForEach{
-                .of_=LICENSES,
-                .do_=[&](const LicenseInfo& info) -> pcui::DescriptorPtr {
-                    return pcui::Stack{
-                      .base_={.expand_=true},
-                      .children_={
-                        pcui::Spacer{.size_=10}(),
-                        pcui::Label{
-                          .label_=info.name_,
-                          .style_=pcui::text::Style::Header,
-                        }(),
-                        pcui::Label{
-                          .label_=wxString{L"Copyright \u00A9 "} +
-                              info.date_ + ' ' + info.author_
-                        }(),
-                        pcui::Label{
-                          .label_=info.detail_,
-                        }(),
-                        pcui::Collapsible{
-                          .win_={.base_={.expand_=true}},
-                          .showLabel_="Show License",
-                          .hideLabel_="Hide License",
-                          .child_=pcui::Text{
-                            .win_={
-                              .base_={
-                                .minSize_={
-                                  [&] {
-                                      int x{};
-                                      int y{};
-                                      GetTextExtent(
-                                          'M',
-                                          &x, &y,
-                                          nullptr,
-                                          nullptr,
-                                          &licenseFont
-                                      );
-                                      return x * 80;
-                                  }(),
-                                  -1
-                                },
-                                .expand_=true,
-                              },
-                            },
-                            .data_=info.license_,
-                            .autoLink_=true,
-                            .style_=licenseFont,
-                            .mode_=pcui::Text::MultiLine{
-                              .scroll_={.vertical_=false, .horizontal_=false},
-                            }
-                          }(),
-                        }(),
-                      }
-                    }();
-                }
-              }(),
-              pcui::Spacer{.size_=10}(),
-            },
-          }(),
-        }()};
-
-        pcui::build(&dialog, ui);
-
-        dialog.ShowModal();
+        LicenseDialog dlg(this);
+        dlg.ShowModal();
     }, eID_Licenses);
 
     Bind(wxEVT_MENU, [&](wxCommandEvent &) {

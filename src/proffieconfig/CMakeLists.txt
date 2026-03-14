@@ -8,6 +8,8 @@ add_executable(proffieconfig WIN32
     core/state.cpp
 
     mainmenu/mainmenu.cpp
+    mainmenu/dialogs/about.cpp
+    mainmenu/dialogs/licenses.cpp
     mainmenu/dialogs/manifest.cpp
 
     onboard/onboard.cpp
