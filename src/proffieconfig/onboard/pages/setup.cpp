@@ -42,6 +42,10 @@ onboard::Setup::Setup() {
     });
 }
 
+onboard::Setup::~Setup() {
+    delete mLoadingTimer;
+}
+
 pcui::DescriptorPtr onboard::Setup::ui() {
     auto bulletString{wxString::FromUTF8("\t• ")};
     return pcui::Stack{

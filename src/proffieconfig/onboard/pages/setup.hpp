@@ -32,6 +32,7 @@ namespace onboard {
 
 struct Setup {
     Setup();
+    ~Setup();
 
     pcui::DescriptorPtr ui();
 
