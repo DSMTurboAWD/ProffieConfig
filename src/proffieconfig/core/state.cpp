@@ -31,7 +31,7 @@
 #include "pconf/read.hpp"
 #include "pconf/write.hpp"
 #include "pconf/utils.hpp"
-#include "ui/misc/message.hpp"
+#include "ui/dialogs/message.hpp"
 #include "utils/files.hpp"
 #include "utils/paths.hpp"
 #include "utils/version.hpp"
@@ -58,17 +58,18 @@ constexpr std::array<cstring, state::ePreference_Max> PREFERENCE_STRS{
 } // namespace
 
 bool state::doneWithFirstRun{false};
+// TODO: This just... isn't locked... it's fine for now, but be careful.
 std::string state::manifestChannel;
 
 void state::init() {
     loadState();
 
-    // if (not doneWithFirstRun) {
+    if (not doneWithFirstRun) {
         onboard::Frame::instance = new onboard::Frame();
-    // } else {
-    //     doNecessaryMigrations();
-    //     MainMenu::instance = new MainMenu();
-    // }
+    } else {
+        doNecessaryMigrations();
+        MainMenu::instance = new MainMenu;
+    }
 }
 
 bool state::getPreference(Preference preference) {
@@ -166,19 +167,28 @@ void state::loadState() {
 namespace {
 
 void doNecessaryMigrations() {
-    if (lastVersion.compare(utils::Version{1, 8}) < 0) {
-        std::error_code err;
+    std::error_code err;
+    
+    // REVIEW
 
+    if (lastVersion.compare(utils::Version{1, 8}) < 0) {
         // Purge old ProffieOS and props data 
         fs::remove_all(paths::dataDir() / "ProffieOS", err);
         fs::remove_all(paths::dataDir() / "props", err);
         fs::remove_all(paths::resourceDir() / "props", err);
+    }
 
+    if (lastVersion.compare(utils::Version{1, 9}) < 0) {
         // Install new ProffieOS and props data 
-        if (versions::fetch() or versions::installDefault(true)) {
+        if (
+                versions::fetch() or
+                versions::installDefault(true) or
+                // Get new stuffage for 7.15 installation
+                versions::downloadOS({7, 15})
+           ) {
             pcui::showMessage(
-                _("Versions Download Failed"),
                 _("You should visit the versions manager to retry fetching the defaults soon."),
+                _("Versions Download Failed"),
                 wxOK | wxCENTER | wxICON_WARNING
             );
         }

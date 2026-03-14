@@ -38,6 +38,7 @@ enum Preference {
 
 enum {
     eID_Main_Menu,
+    eID_Onboard,
     eID_Editor,
     eID_Versions_Manager,
 };
