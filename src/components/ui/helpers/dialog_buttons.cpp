@@ -40,14 +40,31 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
 #   ifdef _WIN32
     // Ok then Cancel then Apply on right
     sizer->AddStretchSpacer();
-    if (ok_) sizer->Add(ok_->build(childScaffold));
-    if (cancel_) sizer->Add(cancel_->build(childScaffold));
+    if (ok_) {
+        sizer->Add(ok_->build(childScaffold));
+        sizer->AddSpacer(5);
+    }
+
+    if (cancel_) {
+        sizer->Add(cancel_->build(childScaffold));
+        sizer->AddSpacer(5);
+    }
+
     if (apply_) sizer->Add(apply_->build(childScaffold));
 #   else // macOS, GTK
     // Apply Far left, Cancel then Ok on right
-    if (apply_) sizer->Add(apply_->build(childScaffold));
+    if (apply_) {
+        sizer->Add(apply_->build(childScaffold));
+        sizer->AddSpacer(5);
+    }
+
     sizer->AddStretchSpacer();
-    if (cancel_) sizer->Add(cancel_->build(childScaffold));
+
+    if (cancel_) {
+        sizer->Add(cancel_->build(childScaffold));
+        sizer->AddSpacer(5);
+    }
+
     if (ok_) sizer->Add(ok_->build(childScaffold));
 #   endif
 
