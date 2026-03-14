@@ -42,10 +42,12 @@ struct DATA_EXPORT Base {
 protected:
     bool activate(detail::Base&, ChangeFunc);
 
+    void onChange(bool);
+
     /**
      * Perform activation routine.
      */
-    virtual bool doActivate(ChangeFunc) = 0;
+    virtual bool doActivate() = 0;
 
     std::recursive_mutex *pLock{nullptr};
 
@@ -57,6 +59,8 @@ private:
      * Calls doActivate()
      */
     bool activate(ChangeFunc, std::recursive_mutex *);
+
+    ChangeFunc mChangeFunc{nullptr};
 };
 
 } // namespace detail

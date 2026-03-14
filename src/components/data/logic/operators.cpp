@@ -28,11 +28,11 @@ auto data::logic::operator not(
         Operator(Element&& child) :
             child_{std::move(child)} {}
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            const auto onChange{[changeFunc=std::move(changeFunc)](bool val) {
-                changeFunc(not val);
+        bool doActivate() override {
+            const auto childChange{[this](bool val) {
+                onChange(not val);
             }};
-            return not activate(*child_, onChange);
+            return not activate(*child_, childChange);
         }
 
         Element child_;
@@ -48,23 +48,23 @@ auto data::logic::operator or(
         Operator(Element&& lhs, Element&& rhs) :
             lhs_{std::move(lhs)}, rhs_{std::move(rhs)} {}
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            const auto onLHSChange{[this, changeFunc](bool val) {
+        bool doActivate() override {
+            const auto onLHSChange{[this](bool val) {
                 const auto oldVal{lhsVal_};
                 lhsVal_ = val;
                 
                 if (oldVal or rhsVal_ != lhsVal_ or rhsVal_) {
-                    changeFunc(lhsVal_ or rhsVal_);
+                    onChange(lhsVal_ or rhsVal_);
                 }
             }};
             lhsVal_ = activate(*lhs_, onLHSChange);
 
-            const auto onRHSChange{[this, changeFunc](bool val) {
+            const auto onRHSChange{[this](bool val) {
                 const auto oldVal{rhsVal_};
                 rhsVal_ = val;
 
                 if (lhsVal_ or oldVal != lhsVal_ or rhsVal_) {
-                    changeFunc(lhsVal_ or rhsVal_);
+                    onChange(lhsVal_ or rhsVal_);
                 }
             }};
             rhsVal_ = activate(*rhs_, onRHSChange);
@@ -88,23 +88,23 @@ auto data::logic::operator and(
         Operator(Element&& lhs, Element&& rhs) :
             lhs_{std::move(lhs)}, rhs_{std::move(rhs)} {}
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            const auto onLHSChange{[this, changeFunc](bool val) {
+        bool doActivate() override {
+            const auto onLHSChange{[this](bool val) {
                 const auto oldVal{lhsVal_};
                 lhsVal_ = val;
                 
                 if (oldVal and rhsVal_ != lhsVal_ and rhsVal_) {
-                    changeFunc(lhsVal_ and rhsVal_);
+                    onChange(lhsVal_ and rhsVal_);
                 }
             }};
             lhsVal_ = activate(*lhs_, onLHSChange);
 
-            const auto onRHSChange{[this, changeFunc](bool val) {
+            const auto onRHSChange{[this](bool val) {
                 const auto oldVal{rhsVal_};
                 rhsVal_ = val;
 
                 if (lhsVal_ and oldVal != lhsVal_ and rhsVal_) {
-                    changeFunc(lhsVal_ and rhsVal_);
+                    onChange(lhsVal_ and rhsVal_);
                 }
             }};
             rhsVal_ = activate(*rhs_, onRHSChange);

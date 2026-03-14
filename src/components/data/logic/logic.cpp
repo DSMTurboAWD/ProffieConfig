@@ -20,6 +20,7 @@
  */
 
 #include <cassert>
+#include <utility>
 
 using namespace data::logic;
 
@@ -29,12 +30,18 @@ bool detail::Base::activate(detail::Base& base, ChangeFunc func) {
     return base.activate(std::move(func), pLock);
 }
 
+void detail::Base::onChange(bool v) {
+    assert(mChangeFunc);
+    mChangeFunc(v);
+}
+
 bool detail::Base::activate(
     ChangeFunc changeFunc,
     std::recursive_mutex *mutex
 ) {
     pLock = mutex;
-    return doActivate(std::move(changeFunc));
+    mChangeFunc = std::move(changeFunc);
+    return doActivate();
 }
 
 Manager::Manager(Element&& child) :

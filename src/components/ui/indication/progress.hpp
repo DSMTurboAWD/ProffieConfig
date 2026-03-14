@@ -31,6 +31,10 @@ struct UI_EXPORT Progress {
     struct Desc;
     struct Data;
 
+    enum class Logic {
+        Is_Done,
+    };
+
     // TODO: Make this base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
@@ -53,19 +57,47 @@ struct UI_EXPORT Progress::Desc : Progress, detail::Descriptor {
 };
 
 struct UI_EXPORT Progress::Data : data::Model {
+    struct ROContext;
+    struct Context;
     struct Receiver;
 
     Data();
     ~Data() override;
 
+    /**
+     * Due to the nature in which this data is likely to be used, these are
+     * provided; the verbosity of strictly conveying contextual semantics is
+     * violated in favor of... sanity, really.
+     */
     void set(uint32);
     void range(uint32);
 
     void pulse();
 
+    data::logic::Element operator|(Logic);
+
 private:
-    uint32 mVal{0};
+    int32 mVal{0};
     uint32 mRange{100};
+};
+
+struct UI_EXPORT Progress::Data::ROContext : virtual Model::ROContext {
+    ROContext(const Data&);
+    ~ROContext();
+
+    [[nodiscard]] int32 val() const;
+    [[nodiscard]] uint32 range() const;
+};
+
+struct UI_EXPORT Progress::Data::Context : Model::Context, ROContext {
+    Context(Data&);
+    ~Context();
+
+    void set(uint32) const;
+
+    void range(uint32) const;
+
+    void pulse() const;
 };
 
 struct UI_EXPORT Progress::Data::Receiver : Model::Receiver {
@@ -75,12 +107,12 @@ protected:
     /**
      * Value changed
      */
-    virtual void onSet(uint32) {}
+    virtual void onSet() {}
 
     /**
      * Range updated
      */
-    virtual void onRange(uint32) {}
+    virtual void onRange() {}
 
     /**
      * Pulsed.

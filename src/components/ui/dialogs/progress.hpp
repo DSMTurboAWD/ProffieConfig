@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/data/logic/adapter.hpp
+ * components/ui/dialogs/progress.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,25 +20,39 @@
  */
 
 #include "data/bool.hpp"
-#include "data/choice.hpp"
 #include "data/string.hpp"
-#include "data/logic/logic.hpp"
+#include "ui/dialog.hpp"
+#include "ui/indication/progress.hpp"
 
-#include "data_export.h"
+#include "ui_export.h"
 
-namespace data::logic {
+namespace pcui {
 
-struct IsSet {};
+struct UI_EXPORT ProgressDialog : private pcui::Dialog {
+    ProgressDialog(
+        wxWindow *parent,
+        const wxString& title, 
+        bool mayCancel = false
+    );
 
-DATA_EXPORT Element operator|(const data::Bool&, IsSet);
+    ~ProgressDialog() override;
 
-struct DATA_EXPORT HasSelection : std::set<int32> {};
+    void set(uint32, const wxString& = {});
+    void range(uint32);
 
-DATA_EXPORT Element operator|(const data::Choice&, HasSelection);
+    void pulse(const wxString& = {});
 
-struct DATA_EXPORT IsEmpty {};
+    void finish(bool modalWait = true, const wxString& = _("Done"));
 
-DATA_EXPORT Element operator|(const data::String&, IsEmpty);
+    bool cancelled();
 
-} // namespace data::logic
+private:
+    DescriptorPtr ui(bool);
+
+    data::Bool mCancelled;
+    data::String mMessage;
+    Progress::Data mData;
+};
+
+} // namespace pcui
 

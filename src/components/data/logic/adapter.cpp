@@ -19,30 +19,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-auto data::logic::adapt(const data::Bool& bl) -> Element {
+auto data::logic::operator|(const data::Bool& bl, IsSet) -> Element {
     struct Adapter : detail::Base, data::Bool::Receiver {
         Adapter(const data::Bool& bl) : bl_{bl} {}
         ~Adapter() override { detach(); }
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            changeFunc_ = std::move(changeFunc);
+        bool doActivate() override {
             attach(bl_);
             return context<Bool>().val();
         }
 
         void onSet() override {
             std::lock_guard scopeLock{*pLock};
-            changeFunc_(context<Bool>().val());
+            onChange(context<Bool>().val());
         }
 
         const data::Bool& bl_;
-        ChangeFunc changeFunc_;
     };
 
     return std::make_unique<Adapter>(bl);
 }
 
-auto data::logic::adapt(
+auto data::logic::operator|(
     const data::Choice& choice, HasSelection sels
 ) -> Element {
     struct Adapter : detail::Base, data::Choice::Receiver {
@@ -50,15 +48,14 @@ auto data::logic::adapt(
             choice_{choice}, sels_{std::move(sels)} {}
         ~Adapter() override { detach(); }
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            changeFunc_ = std::move(changeFunc);
+        bool doActivate() override {
             attach(choice_);
             return isTrue();
         }
 
         void onChoice() override {
             std::lock_guard scopeLock{*pLock};
-            changeFunc_(isTrue());
+            onChange(isTrue());
         }
 
         bool isTrue() {
@@ -67,13 +64,12 @@ auto data::logic::adapt(
 
         const data::Choice& choice_;
         HasSelection sels_;
-        ChangeFunc changeFunc_;
     };
 
     return std::make_unique<Adapter>(choice, std::move(sels));
 }
 
-auto data::logic::adapt(
+auto data::logic::operator|(
     const data::String& choice, IsEmpty
 ) -> Element {
     struct Adapter : detail::Base, data::String::Receiver {
@@ -81,15 +77,14 @@ auto data::logic::adapt(
             str_{str} {}
         ~Adapter() override { detach(); }
 
-        bool doActivate(ChangeFunc changeFunc) override {
-            changeFunc_ = std::move(changeFunc);
+        bool doActivate() override {
             attach(str_);
             return isTrue();
         }
 
         void onChange() override {
             std::lock_guard scopeLock{*pLock};
-            changeFunc_(isTrue());
+            Base::onChange(isTrue());
         }
 
         bool isTrue() {
@@ -97,7 +92,6 @@ auto data::logic::adapt(
         }
 
         const String& str_;
-        ChangeFunc changeFunc_;
     };
 
     return std::make_unique<Adapter>(choice);

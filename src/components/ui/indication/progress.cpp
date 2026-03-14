@@ -50,15 +50,15 @@ struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
     ~Indicator() override {
         detach();
     }
-    void onSet(uint32 val) override {
-        safeCall([this, val]{
-            SetValue(static_cast<int32>(val));
+    void onSet() override {
+        safeCall([this, val=context<Progress::Data>().val()] {
+            SetValue(val);
         });
     }
 
-    void onRange(uint32 val) override {
-        safeCall([this, val]{
-            SetRange(static_cast<int32>(val));
+    void onRange() override {
+        safeCall([this, range=context<Progress::Data>().range()] {
+            SetRange(static_cast<int32>(range));
         });
     }
 
@@ -89,17 +89,88 @@ Progress::Data::Data() = default;
 Progress::Data::~Data() = default;
 
 void Progress::Data::set(uint32 val) {
-    std::lock_guard scopeLock{pLock};
-    sendToReceivers(&Receiver::onSet, val);
+    Context{*this}.set(val);
 }
 
-void Progress::Data::range(uint32 val) {
-    std::lock_guard scopeLock{pLock};
-    sendToReceivers(&Receiver::onRange, val);
+void Progress::Data::range(uint32 range) {
+    Context{*this}.range(range);
 }
 
 void Progress::Data::pulse() {
-    std::lock_guard scopeLock{pLock};
-    sendToReceivers(&Receiver::onPulse);
+    Context{*this}.pulse();
+}
+
+data::logic::Element Progress::Data::operator|(Logic logic) {
+    struct DoneAdapter : data::logic::detail::Base, Receiver {
+        DoneAdapter(const Data& data) : data_{data} {}
+        ~DoneAdapter() override { detach(); }
+
+        bool doActivate() override {
+            attach(data_);
+            return isTrue();
+        }
+
+        void onSet() override {
+            std::lock_guard scopeLock{*pLock};
+            Base::onChange(isTrue());
+        }
+
+        bool isTrue() {
+            auto ctxt{context<Data>()};
+            return ctxt.val() == ctxt.range();
+        }
+
+        const Data& data_;
+    };
+
+    switch (logic) {
+        case Logic::Is_Done:
+            return std::make_unique<DoneAdapter>(*this);
+            break;
+    }
+
+    assert(0);
+    __builtin_unreachable();
+}
+
+Progress::Data::ROContext::ROContext(const Data& data) :
+    Model::ROContext(data) {}
+
+Progress::Data::ROContext::~ROContext() = default;
+
+int32 Progress::Data::ROContext::val() const {
+    const auto& data{model<Data>()};
+    return data.mVal;
+}
+
+uint32 Progress::Data::ROContext::range() const {
+    const auto& data{model<Data>()};
+    return data.mRange;
+}
+
+Progress::Data::Context::Context(Data& data) :
+    Model::Context(data), ROContext(data), Model::ROContext(data) {}
+
+Progress::Data::Context::~Context() = default;
+
+void Progress::Data::Context::set(uint32 v) const {
+    auto& data{model<Data>()};
+
+    data.mVal = static_cast<int32>(v);
+    data.sendToReceivers(&Receiver::onSet);
+}
+
+void Progress::Data::Context::range(uint32 r) const {
+    auto& data{model<Data>()};
+
+    data.mRange = r;
+    data.sendToReceivers(&Receiver::onRange);
+}
+
+void Progress::Data::Context::pulse() const {
+    auto& data{model<Data>()};
+
+    data.mVal = -1;
+    data.sendToReceivers(&Receiver::onPulse);
 }
 
