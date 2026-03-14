@@ -49,8 +49,6 @@ onboard::Frame::Frame() :
         nullptr,
         wxID_ANY,
         _("ProffieConfig First-Time Setup"),
-        wxDefaultPosition,
-        wxDefaultSize,
         wxSYSTEM_MENU | wxCLOSE_BOX | wxMINIMIZE_BOX |
         wxCAPTION | wxCLIP_CHILDREN
     ) {
@@ -114,8 +112,6 @@ onboard::Frame::Frame() :
 
     pcui::build(this, ui());
 
-    Fit();
-
     bindEvents();
     CentreOnScreen();
     Show(true);
@@ -128,11 +124,11 @@ onboard::Frame::~Frame() {
 
 pcui::DescriptorPtr onboard::Frame::ui() {
     return pcui::Stack{
-      .base_={.minSize_={900, 430},},
+      .base_={.minSize_={900, 430}},
       .children_={
         pcui::Spacer{20}(),
         pcui::Stack{
-          .base_={.proportion_=1, .expand_=true},
+          .base_={.expand_=true, .proportion_=1},
           .orient_=wxHORIZONTAL,
           .children_={
             pcui::Spacer{10}(),
@@ -140,12 +136,12 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .win_={.maxSize_={256, 256}},
               .src_=pcui::Image::LoadDetails{
                 .name_="icon",
-              },
+              }(),
             }(),
             pcui::Spacer{10}(),
             pcui::Panel{
-              .base_={.proportion_=1,},
               .win_={
+                .base_={.proportion_=1,},
                 .show_=data::logic::adapt(
                   mPhase, data::logic::HasSelection{{ePhase_Welcome}}
                 )
@@ -153,8 +149,8 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .child_=mWelcomePage.ui(),
             }(),
             pcui::Panel{
-              .base_={.proportion_=1,},
               .win_={
+                .base_={.proportion_=1,},
                 .show_=data::logic::adapt(
                   mPhase, data::logic::HasSelection{{
                     ePhase_Setup_Pre,
@@ -167,8 +163,8 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               .child_=mSetupPage.ui(),
             }(),
             pcui::Panel{
-              .base_={.proportion_=1,},
               .win_={
+                .base_={.proportion_=1},
                 .show_=data::logic::adapt(
                   mPhase, data::logic::HasSelection{{ePhase_Info}}
                 )
@@ -181,8 +177,8 @@ pcui::DescriptorPtr onboard::Frame::ui() {
         pcui::Spacer{10}(),
         pcui::Divider{
           .base_={
-            .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT,},
-            .expand_=true
+            .expand_=true,
+            .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT},
           },
         }(),
         pcui::Spacer{10}(),

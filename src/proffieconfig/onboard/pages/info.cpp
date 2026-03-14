@@ -34,7 +34,7 @@ pcui::DescriptorPtr onboard::Info::ui() {
             pcui::Spacer{20}(),
             pcui::Label{
                 .label_=_("Ready To Go!"),
-                .style_=pcui::text::Style::Header,
+                .style_=pcui::text::Style::Title,
             }(),
             pcui::Spacer{20}(),
             pcui::Label{

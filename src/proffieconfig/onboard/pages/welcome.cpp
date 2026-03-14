@@ -37,23 +37,29 @@ pcui::DescriptorPtr onboard::Welcome::ui() {
      * Why? Don't Know.
      */
     return pcui::Stack{
-      .base_={.proportion_=1, .expand_=true,},
+      .base_={.expand_=true, .proportion_=1},
       .orient_=wxVERTICAL,
       .children_={
         pcui::Spacer{20}(),
         pcui::Label{
-          .base_={.align_=wxALIGN_CENTER},
+          .win_={
+            .base_={.align_=wxALIGN_CENTER},
+          },
           .label_=wxString::Format(_("Welcome to ProffieConfig %s!"), wxSTRINGIZE(BIN_VERSION)),
-          .style_=pcui::text::Style::Header,
+          .style_=pcui::text::Style::Title,
         }(),
         pcui::Spacer{40}(),
         pcui::Label{
-          .base_={.align_=wxALIGN_CENTER,},
+          .win_={
+            .base_={.align_=wxALIGN_CENTER,},
+          },
           .label_=_("Thank you for trying out ProffieConfig, the all-in-one proffieboard management utility!"),
         }(),
         pcui::Spacer{20}(),
         pcui::Label{
-          .base_={.align_=wxALIGN_CENTER,},
+          .win_={
+            .base_={.align_=wxALIGN_CENTER,},
+          },
           .label_=_("Online guides are available at the link below:"),
         }(),
         pcui::Hyperlink{
@@ -63,7 +69,9 @@ pcui::DescriptorPtr onboard::Welcome::ui() {
         }(),
         pcui::Spacer{20}(),
         pcui::Label{
-          .base_={.align_=wxALIGN_CENTER,},
+          .win_={
+            .base_={.align_=wxALIGN_CENTER,},
+          },
           .label_=_(
             "To start, ProffieConfig needs to do some setup.\n"
             "Press \"Next\" when you're ready to continue, and we'll get started!"

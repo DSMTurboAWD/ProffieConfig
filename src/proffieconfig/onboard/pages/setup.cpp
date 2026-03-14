@@ -49,7 +49,7 @@ pcui::DescriptorPtr onboard::Setup::ui() {
         pcui::Spacer{20}(),
         pcui::Label{
           .label_=_("Setup"),
-          .style_=pcui::text::Style::Header,
+          .style_=pcui::text::Style::Title,
         }(),
         pcui::Spacer{20}(),
         pcui::Label{
@@ -88,8 +88,8 @@ pcui::DescriptorPtr onboard::Setup::ui() {
           .label_=mStatusMessage,
         }(),
         pcui::Progress{
-          .base_={.expand_=true},
           .win_={
+            .base_={.expand_=true},
             .maxSize_={300, -1},
             .show_=data::logic::adapt(
               utils::parent<&Frame::mSetupPage>(*this).mPhase,
