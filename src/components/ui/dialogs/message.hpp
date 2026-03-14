@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2024-2026 Ryan Ogurek
  *
- * components/ui/misc/message.hpp
+ * components/ui/dialogs/message.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,12 +62,6 @@ UI_EXPORT HideableInfo showHideablePrompt(
     const wxString& okText = wxEmptyString,
     const wxString& cancelText = wxEmptyString
 );
-
-#ifdef __WXMSW__
-using ProgressDialog = wxGenericProgressDialog;
-#else
-using ProgressDialog = wxProgressDialog;
-#endif
 
 } // namespace pcui
 

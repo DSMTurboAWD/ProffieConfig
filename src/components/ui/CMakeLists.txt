@@ -15,7 +15,8 @@ add_library(ui SHARED
     detail/descriptor.cpp
     detail/scaffold.cpp
 
-    misc/message.cpp
+    dialogs/message.cpp
+    dialogs/progress.cpp
 
     static/divider.cpp
     static/image.cpp
