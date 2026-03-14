@@ -25,6 +25,12 @@
 
 namespace versions::detail {
 
+enum BoardIdx {
+    eBoard_Proffie_V3,
+    eBoard_Proffie_V2,
+    eBoard_Proffie_V1,
+};
+
 const std::array<os::BoardData, 3> BOARDS{{
     {
         .name_="ProffieV3",
