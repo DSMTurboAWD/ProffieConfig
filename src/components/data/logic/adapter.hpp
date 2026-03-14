@@ -21,6 +21,7 @@
 
 #include "data/bool.hpp"
 #include "data/choice.hpp"
+#include "data/string.hpp"
 #include "data/logic/logic.hpp"
 
 #include "data_export.h"
@@ -29,9 +30,13 @@ namespace data::logic {
 
 DATA_EXPORT Element adapt(const data::Bool&);
 
-struct HasSelection : std::set<int32> {};
+struct DATA_EXPORT HasSelection : std::set<int32> {};
 
 DATA_EXPORT Element adapt(const data::Choice&, HasSelection);
+
+struct DATA_EXPORT IsEmpty {};
+
+DATA_EXPORT Element adapt(const data::String&, IsEmpty);
 
 } // namespace data::logic
 

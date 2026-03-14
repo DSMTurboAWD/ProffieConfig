@@ -73,3 +73,33 @@ auto data::logic::adapt(
     return std::make_unique<Adapter>(choice, std::move(sels));
 }
 
+auto data::logic::adapt(
+    const data::String& choice, IsEmpty
+) -> Element {
+    struct Adapter : detail::Base, data::String::Receiver {
+        Adapter(const data::String& str) :
+            str_{str} {}
+        ~Adapter() override { detach(); }
+
+        bool doActivate(ChangeFunc changeFunc) override {
+            changeFunc_ = std::move(changeFunc);
+            attach(str_);
+            return isTrue();
+        }
+
+        void onChange() override {
+            std::lock_guard scopeLock{*pLock};
+            changeFunc_(isTrue());
+        }
+
+        bool isTrue() {
+            return context<String>().val().empty();
+        }
+
+        const String& str_;
+        ChangeFunc changeFunc_;
+    };
+
+    return std::make_unique<Adapter>(choice);
+}
+
