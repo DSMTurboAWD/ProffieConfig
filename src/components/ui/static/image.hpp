@@ -35,7 +35,6 @@ struct UI_EXPORT Image {
     struct Desc;
 
     // TODO: Make this a base w/ C++ P2287.
-    detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
     std::optional<std::reference_wrapper<data::Generic>> data_;

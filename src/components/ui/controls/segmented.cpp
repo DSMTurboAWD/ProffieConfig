@@ -24,6 +24,7 @@
 #include <wx/tglbtn.h>
 
 #include "data/helpers/exclusive.hpp"
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -43,15 +44,15 @@ namespace {
 
 struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
     Control(
-        wxWindow *parent,
+        const detail::Scaffold& scaffold,
         const Segmented::Label& label,
         data::Bool& data,
         const detail::ChildWindowBase& win
     ) {
-        Create(parent, wxID_ANY, label.text_);
+        Create(scaffold.childParent_, wxID_ANY, label.text_);
         if (label.image_.IsOk()) SetBitmap(label.image_);
 
-        postCreation(win);
+        postCreation(scaffold, win);
 
         attach(data);
     }
@@ -64,16 +65,21 @@ struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
 };
 
 struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
-    Manager(wxWindow *parent, const Segmented& desc) {
-        Create(parent);
+    Manager(const detail::Scaffold& scaffold, const Segmented& desc) {
+        Create(scaffold.childParent_);
         auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
+        auto childScaffold{scaffold};
+        childScaffold.childParent_= this;
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};
             auto *ctrl{new Control(
-                this, desc.labels_[idx], bl, desc.win_
+                childScaffold,
+                desc.labels_[idx],
+                bl,
+                desc.win_
             )};
 
             sizer->Add(ctrl);
@@ -129,9 +135,9 @@ Segmented::Desc::Desc(Segmented&& data) :
     Segmented{std::move(data)} {}
 
 wxSizerItem *Segmented::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Manager(scaffold.childParent_, *this)};
+    auto *chk{new Manager(scaffold, *this)};
     auto *item{new wxSizerItem(chk)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

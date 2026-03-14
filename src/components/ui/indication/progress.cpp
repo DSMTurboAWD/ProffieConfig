@@ -22,6 +22,7 @@
 #include <wx/event.h>
 #include <wx/gauge.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 #include "ui/types.hpp"
@@ -31,9 +32,9 @@ using namespace pcui;
 namespace {
 
 struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
-    Indicator(wxWindow *parent, const Progress& desc) {
+    Indicator(const detail::Scaffold& scaffold, const Progress& desc) {
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             0,
             wxDefaultPosition,
@@ -41,7 +42,7 @@ struct Indicator : priv::WinBase<wxGauge, Progress::Data::Receiver> {
             wxGA_SMOOTH | desc.orient_ | (desc.showOnBar_ ? wxGA_PROGRESS : 0)
         );
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         attach(desc.data_);
     }
@@ -77,9 +78,9 @@ DescriptorPtr Progress::operator()() {
 Progress::Desc::Desc(Progress&& prog) : Progress(std::move(prog)) {}
 
 wxSizerItem *Progress::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *bar{new Indicator(scaffold.childParent_, *this)};
+    auto *bar{new Indicator(scaffold, *this)};
     auto *item{new wxSizerItem(bar)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

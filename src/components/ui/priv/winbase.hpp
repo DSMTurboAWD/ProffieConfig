@@ -21,6 +21,7 @@
 
 #include <wx/thread.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/detail/general.hpp"
 #include "data/logic/logic.hpp"
 
@@ -29,6 +30,11 @@ class wxWindow;
 namespace pcui::priv {
 
 void layoutAndFitFor(wxWindow *);
+void windowPostCreation(
+    const detail::Scaffold&,
+    const detail::ChildWindowBase&,
+    wxWindow *win
+);
 
 template <typename Base, typename Receiver>
 struct WinBase : Base, Receiver {
@@ -37,27 +43,20 @@ struct WinBase : Base, Receiver {
     /**
      * Post window creation, prior to receiver attachment.
      */
-    void postCreation(const detail::ChildWindowBase& desc) {
-        Base::SetToolTip(desc.tooltip_);
-        Base::SetMaxSize(desc.maxSize_);
+    void postCreation(
+        const detail::Scaffold& scaffold, const detail::ChildWindowBase& desc
+    ) {
+        mMinSize = desc.base_.minSize_;
+        mMaxSize = desc.maxSize_;
 
         mShow = desc.show_;
         if (mShow) mShowReceiver = std::make_unique<ShowReceiver>(this);
 
         mEnable = desc.enable_;
         if (mEnable) mEnableReceiver = std::make_unique<EnableReceiver>(this);
-    }
 
-    void onAttach() override {
-        safeCall([this]() {
-            updateEnable();
-        });
-    }
-
-    void onDetach() override {
-        safeCall([this]() {
-            Base::Disable();
-        });
+        windowPostCreation(scaffold, desc, this);
+        updateSizes();
     }
 
     void onEnabled() override {
@@ -75,6 +74,26 @@ struct WinBase : Base, Receiver {
     void safeCall(std::function<void()>&& func) {
         if (wxIsMainThread()) func();
         else Base::CallAfter(std::move(func));
+    }
+
+    void Fit() override {
+        updateSizes();
+    }
+
+    virtual void updateSizes() {
+        auto maxSize{mMaxSize};
+
+        Base::SetMinSize({0, 0});
+
+        auto minSize{mMinSize};
+        minSize.IncTo(Base::GetBestSize());
+
+        if (maxSize.IsFullySpecified()) {
+            minSize.DecTo(maxSize);
+        }
+
+        Base::SetMaxSize(maxSize);
+        Base::SetMinSize(minSize);
     }
 
 private:
@@ -97,7 +116,7 @@ private:
 
     struct EnableReceiver : data::logic::Receiver {
         EnableReceiver(WinBase *ptr) : winbase_{ptr} {
-            attach(*winbase_->mShow);
+            attach(*winbase_->mEnable);
         }
 
         void onChange(bool val) override {
@@ -112,11 +131,17 @@ private:
     data::logic::Holder mEnable;
 
     void updateEnable() {
+        auto *ptr{Receiver::maybeModel()};
+        using ModelType = std::decay_t<decltype(*ptr)>;
+
         Base::Enable(
-            Receiver::context().enabled() and
+            (not ptr or typename ModelType::ROContext(*ptr).enabled()) and
             (not mEnable or mEnable->val())
         );
     }
+
+    wxSize mMinSize;
+    wxSize mMaxSize;
 };
 
 } // namespace pcui::priv

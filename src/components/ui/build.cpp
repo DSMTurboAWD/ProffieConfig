@@ -26,11 +26,28 @@ void pcui::build(wxWindow *parent, const DescriptorPtr& desc) {
 
     if (not desc) return;
 
+    // In many cases this means there's a kind of unnecessary sizer in a sizer,
+    // but this is the most straightforward way to allow base (essentially just
+    // sizer) properties to work at the top level.
+    auto *sizer{new wxBoxSizer(wxVERTICAL)};
+
     detail::Scaffold scaffold{
         .childParent_=parent
     };
 
     auto *item{desc->build(scaffold)};
-    if (item->IsSizer()) parent->SetSizer(item->GetSizer());
+    sizer->Add(item);
+
+    // The sizer SetSizerAndFit, contrary to its name, does not SetSizer() and
+    // Fit(). Instead, it calls some special functions to do something similar.
+    //
+    // Since this setup places more logic into Fit() and overrides it to behave
+    // in the more expected way (such that a naive SetSizer() and Fit()) would
+    // work as the actual SetSizerAndFit(), doing calcs and setting min), it
+    // must actually be called directly.
+    //
+    // TL;DR SetSizerAndFit() does not call Fit().
+    parent->SetSizer(sizer);
+    parent->Fit();
 }
 

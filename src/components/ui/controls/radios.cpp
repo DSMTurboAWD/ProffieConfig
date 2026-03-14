@@ -22,6 +22,7 @@
 #include <wx/radiobut.h>
 
 #include "data/helpers/exclusive.hpp"
+#include "ui/detail/scaffold.hpp"
 #include "ui/layout/priv/groupbox.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
@@ -32,14 +33,14 @@ namespace {
 
 struct Control : priv::WinBase<wxRadioButton, data::Model::Receiver> {
     Control(
-        wxWindow *parent,
+        const detail::Scaffold& scaffold,
         const wxString& label,
         data::Bool& data,
         const detail::ChildWindowBase& win
     ) {
-        Create(parent, wxID_ANY, label);
+        Create(scaffold.childParent_, wxID_ANY, label);
 
-        postCreation(win);
+        postCreation(scaffold, win);
 
         attach(data);
     }
@@ -52,15 +53,17 @@ struct Control : priv::WinBase<wxRadioButton, data::Model::Receiver> {
 };
 
 struct Manager : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
-    Manager(wxWindow *parent, const Radios& desc) {
+    Manager(const detail::Scaffold& scaffold, const Radios& desc) {
         create(
             wxVERTICAL,
-            parent,
+            scaffold.childParent_,
             desc.label_
         );
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
+        auto childScaffold{scaffold};
+        childScaffold.childParent_ = childParent();
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};
             auto label{idx < desc.labels_.size()
@@ -69,7 +72,7 @@ struct Manager : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
             };
 
             auto *radio{new Control(
-                childParent(), label, bl, desc.win_
+                childScaffold, label, bl, desc.win_
             )};
 
             if (not childParent()->GetChildren().empty()) {
@@ -127,9 +130,9 @@ Radios::Desc::Desc(Radios&& data) :
     Radios{std::move(data)} {}
 
 wxSizerItem *Radios::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Manager(scaffold.childParent_, *this)};
+    auto *chk{new Manager(scaffold, *this)};
     auto *item{new wxSizerItem(chk)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

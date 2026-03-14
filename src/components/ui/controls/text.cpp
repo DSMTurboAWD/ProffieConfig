@@ -21,7 +21,9 @@
 
 #include <wx/font.h>
 #include <wx/textctrl.h>
+#include <wx/sizer.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -30,10 +32,14 @@ using namespace pcui;
 namespace {
 
 struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
-    Control(wxWindow *parent, const Text& desc) {
+    Control(const detail::Scaffold& scaffold, const Text& desc) {
+        wxString initial;
         long style{0};
-
         bool handleEnter{false};
+
+        if (desc.readOnly_) style |= wxTE_READONLY;
+        if (desc.autoLink_) style |= wxTE_AUTO_URL;
+
         if (const auto *ptr{std::get_if<Text::SingleLine>(&desc.mode_)}) {
             if (ptr->insertNewline_) {
                 handleEnter = true;
@@ -42,27 +48,53 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
         } else {
             const auto& mode{std::get<Text::MultiLine>(desc.mode_)};
             style |= wxTE_PROCESS_TAB;
+            style |= wxTE_MULTILINE;
+            switch (mode.wrap_) {
+                using enum Text::MultiLine::Wrap;
+                case None:
+                    style |= wxTE_DONTWRAP;
+                    break;
+                case Character:
+                    style |= wxTE_CHARWRAP;
+                    break;
+                case Word:
+                    style |= wxTE_WORDWRAP;
+                    break;
+                case Best:
+                    style |= wxTE_BESTWRAP;
+                    break;
+            }
+        }
+
+        if (desc.data_.index() == 0) {
+            style |= wxTE_READONLY;
+            initial = std::get<0>(desc.data_);
+        } else if (const auto *ptr{std::get_if<1>(&desc.data_)}) {
+            initial = data::String::Context{*ptr}.val();
         }
 
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
-            data::String::Context{desc.data_}.val(),
+            initial,
             wxDefaultPosition,
             wxDefaultSize,
             style
         );
 
-        postCreation(desc.win_);
-        SetFont(desc.font_);
+        postCreation(scaffold, desc.win_);
+        SetOwnFont(desc.style_.makeFont());
 
 #       ifdef __WXMAC__
-        if (desc.font_.GetFamily() == wxFONTFAMILY_TELETYPE) {
+        if (GetFont().GetFamily() == wxFONTFAMILY_TELETYPE) {
             OSXDisableAllSmartSubstitutions();
         }
 #       endif
 
-        attach(desc.data_);
+        if (const auto *ptr{std::get_if<1>(&desc.data_)}) {
+            attach(*ptr);
+        }
+
         Bind(wxEVT_TEXT, &Control::onText, this);
 
         if (handleEnter) {
@@ -123,9 +155,23 @@ Text::Desc::Desc(Text&& data) :
     Text{std::move(data)} {}
 
 wxSizerItem *Text::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold.childParent_, *this)};
-    auto *item{new wxSizerItem(chk)};
-    priv::apply(base_, item);
+    auto *ctrl{new Control(scaffold, *this)};
+    auto *item{new wxSizerItem(ctrl)};
+
+    priv::apply(win_.base_, item);
+    if (const auto *ptr{std::get_if<Text::MultiLine>(&mode_)}) {
+        if (not ptr->scroll_.vertical_) {
+            const auto lineHeight{ctrl->GetTextExtent('M').y};
+            
+            ctrl->SetMinSize({
+                ctrl->GetMinWidth(),
+                static_cast<int32>(
+                    lineHeight * (ctrl->GetNumberOfLines() + 0.5)
+                )
+            });
+        }
+    }
+
     return item;
 }
 

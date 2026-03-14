@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/static/label.hpp
+ * components/ui/controls/choice.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,37 +19,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "data/string.hpp"
+#include "data/choice.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
-#include "ui/text.hpp"
 
 #include "ui_export.h"
 
 namespace pcui {
 
-struct UI_EXPORT Label {
+struct UI_EXPORT Choice {
     struct Desc;
 
-    // TODO: Make these base w/ C++ P2287.
+    // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    std::variant<
-        wxString,
-        std::reference_wrapper<data::String>
-    > label_;
+    data::Choice& data_;
 
-    text::detail::StyleData style_;
+    using Labeler = std::function<wxString(int32)>;
+    Labeler labeler_;
+
+    /**
+     * Entry label for whenever there is no choice selected.
+     * Instead of no selection resulting in a blank control.
+     */
+    wxString unselected_;
 
     std::unique_ptr<detail::Descriptor> operator()();
 };
 
-struct UI_EXPORT Label::Desc : Label, detail::Descriptor {
-    Desc(Label&&);
+struct UI_EXPORT Choice::Desc : Choice, detail::Descriptor {
+    Desc(Choice&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
 };
 
 } // namespace pcui
-
 

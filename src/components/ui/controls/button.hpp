@@ -34,7 +34,6 @@ struct UI_EXPORT Button {
     struct Desc;
 
     // TODO: Make this a base w/ C++ P2287.
-    detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
     using LabelWithState = std::pair<

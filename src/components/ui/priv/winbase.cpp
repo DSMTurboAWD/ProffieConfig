@@ -19,6 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/event.h>
+#include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/window.h>
 
@@ -26,7 +28,7 @@ namespace {
 
 // All this stuff happens on the main thread, no locking required.
 bool updateRequested{false};
-std::set<wxWindow *> updateList;
+std::vector<std::set<wxWindow *>> updateList;
 
 void performUpdate();
 
@@ -61,7 +63,13 @@ void pcui::priv::layoutAndFitFor(wxWindow *win) {
         if (next->IsTopLevel()) break;
     }
 
-    updateList.insert(top);
+    updateList.resize(std::max(updateList.size(), hierarchy.size()));
+    for (size idx{0}; idx < hierarchy.size(); ++idx) {
+        // Insert in reverse so that updateList[0] is always a TLW, and the
+        // greatest index is the lowest-level window, so that actual processing
+        // can clearly process from lowest to highest.
+        updateList[idx].insert(hierarchy[hierarchy.size() - idx - 1]);
+    }
 
     if (not updateRequested) {
         win->CallAfter(&performUpdate);
@@ -69,19 +77,61 @@ void pcui::priv::layoutAndFitFor(wxWindow *win) {
     }
 }
 
+void pcui::priv::windowPostCreation(
+    const detail::Scaffold& scaffold,
+    const detail::ChildWindowBase& desc,
+    wxWindow *win
+) {
+    win->SetToolTip(desc.tooltip_);
+
+    if (scaffold.scrolled_) {
+        const auto onWheel{[scrolled=scaffold.scrolled_](wxMouseEvent& evt) {
+            scrolled->HandleOnMouseWheel(evt);
+
+        }};
+        win->Bind(wxEVT_MOUSEWHEEL, onWheel);
+    }
+}
+
 namespace {
 
+/**
+ * On every window, starting from the lowest in the hierarchy, Fit() is called.
+ * Top level windows have some additional handling to not shrink.
+ *
+ * Fit() is used on every window as, while wxWidgets normally only has it as a
+ * size set (no min size), it's the seemingly most semantically clear place for
+ * windows to implement min size recalculation (Layout() is not suitable as
+ * it's called during user resize, and many other times. Fit() is more
+ * programmatic in nature).
+ */
 void performUpdate() {
-    for (auto *win : updateList) {
-        auto oldSize{win->GetSize()};
+    // If an update is requested, this should never be empty.
+    assert(not updateList.empty());
 
-        win->Fit();
-        auto fitSize{win->GetSize()};
+    for (auto iter{updateList.rbegin()};; ++iter) {
+        if (std::next(iter) == updateList.rend()) {
+            // Update top levels
+            for (auto *win : *iter) {
+                auto oldSize{win->GetSize()};
 
-        fitSize.IncTo(oldSize);
-        win->SetSize(fitSize);
+                win->Fit();
+                auto fitSize{win->GetSize()};
 
-        win->Layout();
+                fitSize.IncTo(oldSize);
+                win->SetSize(fitSize);
+
+                win->Layout();
+            }
+
+            break;
+        }
+
+        // Update lower levels
+        for (auto *win : *iter) {
+            win->Fit();
+            win->Layout();
+        }
     }
 
     updateList.clear();

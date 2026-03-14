@@ -21,6 +21,7 @@
 
 #include <wx/checkbox.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -29,17 +30,17 @@ using namespace pcui;
 namespace {
 
 struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
-    Control(wxWindow *parent, const CheckBox& desc) {
+    Control(const detail::Scaffold& scaffold, const CheckBox& desc) {
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             desc.label_,
             wxDefaultPosition,
             wxDefaultSize,
-            desc.base_.align_ & wxALIGN_RIGHT
+            desc.win_.base_.align_ & wxALIGN_RIGHT
         );
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         attach(desc.data_);
         Bind(wxEVT_CHECKBOX, &Control::onCheck, this);
@@ -78,9 +79,9 @@ CheckBox::Desc::Desc(CheckBox&& data) :
     CheckBox{std::move(data)} {}
 
 wxSizerItem *CheckBox::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold.childParent_, *this)};
+    auto *chk{new Control(scaffold, *this)};
     auto *item{new wxSizerItem(chk)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

@@ -21,6 +21,7 @@
 
 #include <wx/filepicker.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -29,7 +30,7 @@ using namespace pcui;
 namespace {
 
 struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
-    Control(wxWindow *parent, const FilePicker &desc) {
+    Control(const detail::Scaffold& scaffold, const FilePicker &desc) {
         // Use textctrl default is platform-dependent, check if it exists in
         // the defaults instead of unilaterally setting it.
         long style{wxFLP_DEFAULT_STYLE & wxFLP_USE_TEXTCTRL};
@@ -44,7 +45,7 @@ struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
         }
 
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             data::String::Context{desc.data_}.val(),
             desc.message_,
@@ -54,7 +55,7 @@ struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
             style
         );
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         attach(desc.data_);
         Bind(wxEVT_FILEPICKER_CHANGED, &Control::onPick, this);
@@ -97,9 +98,9 @@ FilePicker::Desc::Desc(FilePicker&& data) :
     FilePicker{std::move(data)} {}
 
 wxSizerItem *FilePicker::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold.childParent_, *this)};
+    auto *chk{new Control(scaffold, *this)};
     auto *item{new wxSizerItem(chk)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

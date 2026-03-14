@@ -34,9 +34,7 @@ DialogButtons::Desc::Desc(DialogButtons&& data) :
     DialogButtons{std::move(data)} {}
 
 wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const {
-    detail::Scaffold childScaffold{
-        .childParent_ = scaffold.childParent_
-    };
+    detail::Scaffold childScaffold{scaffold};
     auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
 
 #   ifdef _WIN32

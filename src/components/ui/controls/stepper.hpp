@@ -33,7 +33,6 @@ struct UI_EXPORT Stepper {
     struct Desc;
 
     // TODO: Make this a base w/ C++ P2287.
-    detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
     std::variant<

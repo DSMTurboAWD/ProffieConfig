@@ -22,8 +22,14 @@
 void pcui::priv::apply(const detail::ChildBase& desc, wxSizerItem *item) {
     // wxSizerItem only calls the virtual func for a window, not a sizer,
     // So I have to do this check manually here in addition to the item call.
-    if (item->IsSizer()) item->GetSizer()->SetMinSize(desc.minSize_);
-    item->SetMinSize(desc.minSize_);
+    if (item->IsSizer()) {
+        item->GetSizer()->SetMinSize(desc.minSize_);
+    } else {
+        // Although in most cases the window min size will be handled by
+        // WinBase, there may be some that aren't, so set it here anyways.
+        // Worst case it's redundant.
+        item->SetMinSize(desc.minSize_);
+    }
 
     item->SetProportion(desc.proportion_);
     item->SetBorder(desc.border_.size_);

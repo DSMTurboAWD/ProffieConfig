@@ -21,7 +21,6 @@
 
 #include <wx/panel.h>
 
-#include "ui/build.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -30,10 +29,10 @@ using namespace pcui;
 namespace {
 
 struct Layout : priv::WinBase<wxPanel, data::Generic::Receiver> {
-    Layout(wxWindow *parent, const Panel& desc) {
-        Create(parent);
+    Layout(const detail::Scaffold& scaffold, const Panel& desc) {
+        Create(scaffold.childParent_);
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         if (desc.data_) attach(*desc.data_);
     }
@@ -53,12 +52,15 @@ Panel::Desc::Desc(Panel&& data) :
     Panel{std::move(data)} {}
 
 wxSizerItem *Panel::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *panel{new Layout(scaffold.childParent_, *this)};
+    auto *panel{new Layout(scaffold, *this)};
 
-    pcui::build(panel, child_);
+    auto *sizer{new wxBoxSizer(wxVERTICAL)};
+    auto childScaffold{scaffold};
+    childScaffold.childParent_ = panel;
+    sizer->Add(child_->build(childScaffold));
 
     auto *item{new wxSizerItem(panel)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
 
     return item;
 }

@@ -41,9 +41,9 @@ public:
     wxSizer *sizer();
     wxWindow *childParent();
 
-    bool Layout() final;
+    bool Layout() override;
 
-    wxSize DoGetBestClientSize() const final;
+    wxSize DoGetBestClientSize() const override;
 
 private:
     wxPanel *mPanel;

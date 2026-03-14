@@ -23,6 +23,7 @@
 #include <wx/gdicmn.h>
 #include <wx/stattext.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -31,12 +32,12 @@ using namespace pcui;
 namespace {
 
 struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
-    Static(wxWindow *parent, const Label& desc) {
-        const auto style{desc.base_.align_};
+    Static(const detail::Scaffold& scaffold, const Label& desc) {
+        const auto style{desc.win_.base_.align_};
 
         if (const auto *ptr{std::get_if<wxString>(&desc.label_ )}) {
             Create(
-                parent,
+                scaffold.childParent_,
                 wxID_ANY,
                 *ptr,
                 wxDefaultPosition,
@@ -44,14 +45,15 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
                 style
             );
 
-            postCreation(desc.win_);
+            SetOwnFont(desc.style_.makeFont());
+            postCreation(scaffold, desc.win_);
             return;
         } 
 
         const auto& model{std::get<1>(desc.label_)};
         data::String::ROContext str{model};
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             str.val(),
             wxDefaultPosition,
@@ -59,7 +61,8 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
             style
         );
         
-        postCreation(desc.win_);
+        SetOwnFont(desc.style_.makeFont());
+        postCreation(scaffold, desc.win_);
 
         attach(model);
     }
@@ -85,11 +88,10 @@ Label::Desc::Desc(Label&& label) :
     Label(std::move(label)) {}
 
 wxSizerItem *Label::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *text{new Static(scaffold.childParent_, *this)};
-    text->SetFont(style_.makeFont());
+    auto *text{new Static(scaffold, *this)};
 
     auto *item{new wxSizerItem(text)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
 
     return item;
 }

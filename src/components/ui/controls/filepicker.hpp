@@ -31,7 +31,6 @@ struct UI_EXPORT FilePicker {
     struct Desc;
 
     // TODO: Make this a base w/ C++ P2287.
-    detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
     data::String& data_;

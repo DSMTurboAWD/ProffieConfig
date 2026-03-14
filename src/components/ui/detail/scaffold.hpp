@@ -23,9 +23,12 @@
 
 #include "ui_export.h"
 
+struct wxScrolledWindow;
+
 namespace pcui::detail {
 
 struct UI_EXPORT Scaffold {
+    wxScrolledWindow *scrolled_{nullptr};
     wxWindow *childParent_;
 };
 

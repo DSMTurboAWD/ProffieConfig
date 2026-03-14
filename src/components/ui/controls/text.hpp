@@ -22,6 +22,7 @@
 #include "data/string.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
+#include "ui/text.hpp"
 
 #include "ui_export.h"
 
@@ -31,12 +32,21 @@ struct UI_EXPORT Text {
     struct Desc;
 
     // TODO: Make this a base w/ C++ P2287.
-    detail::ChildBase base_;
     detail::ChildWindowBase win_;
 
-    data::String& data_;
+    std::variant<wxString, std::reference_wrapper<data::String>> data_;
 
-    wxFontInfo font_;
+    /**
+     * Implicitly true if only a static string is provided for data.
+     */
+    bool readOnly_{false};
+
+    /**
+     * Generate clickable hyperlinks if URLs are found in the text.
+     */
+    bool autoLink_{false};
+
+    text::detail::StyleData style_;
 
     struct SingleLine {
         /**
@@ -45,7 +55,19 @@ struct UI_EXPORT Text {
         bool insertNewline_;
     };
 
-    struct MultiLine {};
+    struct MultiLine {
+        struct {
+            bool vertical_{true};
+            bool horizontal_{true};
+        } scroll_;
+
+        enum class Wrap {
+            None,
+            Character,
+            Word,
+            Best,
+        } wrap_{Wrap::Best};
+    };
 
     std::variant<SingleLine, MultiLine> mode_;
 

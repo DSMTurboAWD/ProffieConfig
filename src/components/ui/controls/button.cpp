@@ -22,6 +22,7 @@
 #include <wx/button.h>
 #include <wx/gdicmn.h>
 
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -30,63 +31,62 @@ using namespace pcui;
 namespace {
 
 struct Control : priv::WinBase<wxButton, data::String::Receiver> {
-    Control(wxWindow *parent, const Button& desc) :
+    Control(const detail::Scaffold& scaffold, const Button& desc) :
         func_{desc.func_} {
 
         const auto commonSetup{[&] {
-            postCreation(desc.win_);
+            postCreation(scaffold, desc.win_);
             if (desc.default_) SetDefault();
         }};
 
-        const auto style{desc.exactFit_ ? wxBU_EXACTFIT : 0};
-        if (const auto *ptr{std::get_if<0>(&desc.label_ )}) {
-            Create(
-                parent,
-                wxID_ANY,
-                *ptr,
-                wxDefaultPosition,
-                wxDefaultSize,
-                style 
-            );
+        long style{0};
+        if (desc.exactFit_) style |= wxBU_EXACTFIT;
 
-            commonSetup();
-        } else if (const auto *ptr{std::get_if<1>(&desc.label_)}) {
-            const auto& [label, model]{std::get<1>(desc.label_)};
-            Create(
-                parent,
-                wxID_ANY,
-                label,
-                wxDefaultPosition,
-                wxDefaultSize,
-                style
-            );
+        const data::Model *modelPtr{nullptr};
 
-            commonSetup();
+        Create(
+            scaffold.childParent_,
+            wxID_ANY,
+            wxEmptyString,
+            wxDefaultPosition,
+            wxDefaultSize,
+            style 
+        );
 
-            attach(model);
+        if (const auto *ptr{std::get_if<1>(&desc.label_)}) {
+            const auto& [label, model]{*ptr};
+            SetLabel(label);
+            modelPtr = &model.get();
+        } else if (const auto *ptr{std::get_if<2>(&desc.label_)}) {
+            data::String::ROContext str{*ptr};
+            SetLabel(str.val());
+            modelPtr = &ptr->get();
         } else {
-            const auto& model{std::get<2>(desc.label_)};
-            data::String::ROContext str{model};
-            Create(
-                parent,
-                wxID_ANY,
-                str.val(),
-                wxDefaultPosition,
-                wxDefaultSize,
-                style
-            );
-
-            commonSetup();
-
-            attach(model);
+            SetLabel(std::get<0>(desc.label_));
         }
 
+        commonSetup();
+
+
+        if (modelPtr) attach(*modelPtr);
         Bind(wxEVT_BUTTON, &Control::onPress, this);
     }
 
     ~Control() override {
         Unbind(wxEVT_BUTTON, &Control::onPress, this);
         detach();
+    }
+
+    void SetLabel(const wxString& str) override {
+#       ifdef __WXGTK__
+        // TODO: Does this look right?
+        const auto exactFit{GetWindowStyle() & wxBU_EXACTFIT};
+        wxButton::SetLabel(exactFit ? ' ' + str + ' ' : str);
+#       else
+        wxButton::SetLabel(str);
+#       endif
+
+        layoutAndFitFor(this);
     }
 
     void onPress(wxCommandEvent&) {
@@ -97,6 +97,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     }
 
     void onChange() override {
+        GetWindowStyle();
         safeCall([this, str=context<data::String>().val()]() {
             SetLabel(str);
         });
@@ -114,10 +115,10 @@ std::unique_ptr<detail::Descriptor> Button::operator()() {
 Button::Desc::Desc(Button&& data) :
     Button{std::move(data)} {}
 
-wxSizerItem *Button::Desc::build(const detail::Scaffold& parent) const {
-    auto *button{new Control(parent.childParent_, *this)};
+wxSizerItem *Button::Desc::build(const detail::Scaffold& scaffold) const {
+    auto *button{new Control(scaffold, *this)};
     auto *item{new wxSizerItem(button)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

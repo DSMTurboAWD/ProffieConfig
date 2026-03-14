@@ -22,6 +22,7 @@
 #include <wx/spinctrl.h>
 
 #include "data/number.hpp"
+#include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 
@@ -30,21 +31,21 @@ using namespace pcui;
 namespace {
 
 struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
-    IntCtrl(wxWindow *parent, const Stepper& desc) {
+    IntCtrl(const detail::Scaffold& scaffold, const Stepper& desc) {
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             desc.label_,
             wxDefaultPosition,
             wxDefaultSize,
-            desc.base_.align_ & wxALIGN_RIGHT
+            desc.win_.base_.align_ & wxALIGN_RIGHT
         );
 
         auto params{context<data::Integer>().params()};
         SetRange(params.min_, params.max_);
         SetIncrement(params.inc_);
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         attach(std::get<0>(desc.data_));
         Bind(wxEVT_SPINCTRL, &IntCtrl::onSpin, this);
@@ -82,17 +83,17 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
 };
 
 struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
-    DoubleCtrl(wxWindow *parent, const Stepper& desc) {
+    DoubleCtrl(const detail::Scaffold& scaffold, const Stepper& desc) {
         Create(
-            parent,
+            scaffold.childParent_,
             wxID_ANY,
             desc.label_,
             wxDefaultPosition,
             wxDefaultSize,
-            desc.base_.align_ & wxALIGN_RIGHT
+            desc.win_.base_.align_ & wxALIGN_RIGHT
         );
 
-        postCreation(desc.win_);
+        postCreation(scaffold, desc.win_);
 
         auto params{context<data::Decimal>().params()};
         SetRange(params.min_, params.max_);
@@ -146,13 +147,13 @@ wxSizerItem *Stepper::Desc::build(const detail::Scaffold& scaffold) const {
     wxWindow *spin{nullptr};
 
     if (const auto *ptr{std::get_if<0>(&data_)}) {
-        spin = new IntCtrl(scaffold.childParent_, *this);
+        spin = new IntCtrl(scaffold, *this);
     } else if (const auto *ptr{std::get_if<1>(&data_)}) {
-        spin = new DoubleCtrl(scaffold.childParent_, *this);
+        spin = new DoubleCtrl(scaffold, *this);
     }
 
     auto *item{new wxSizerItem(spin)};
-    priv::apply(base_, item);
+    priv::apply(win_.base_, item);
     return item;
 }
 

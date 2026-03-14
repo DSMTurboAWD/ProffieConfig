@@ -27,12 +27,15 @@ add_library(ui SHARED
 
     controls/button.cpp
     controls/checkbox.cpp
+    controls/choice.cpp
     controls/radios.cpp
     controls/stepper.cpp
     controls/text.cpp
     controls/filepicker.cpp
 
+    layout/collapsible.cpp
     layout/group.cpp
+    layout/scrolled.cpp
     layout/selector.cpp
     layout/spacer.cpp
     layout/stack.cpp

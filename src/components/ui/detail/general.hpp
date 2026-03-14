@@ -51,12 +51,20 @@ struct UI_EXPORT ChildBase {
  * General properties for child window items.
  */
 struct UI_EXPORT ChildWindowBase {
+    ChildBase base_;
+
     wxSize maxSize_{wxDefaultSize};
 
     data::logic::Holder show_;
     data::logic::Holder enable_;
 
     wxString tooltip_;
+
+    /**
+     * Forward mouse events upwards. I.e. skip them on this window.
+     * Useful inside scrolled.
+     */
+    bool forwardMouse_{false};
 };
 
 } // namespace pcui::detail

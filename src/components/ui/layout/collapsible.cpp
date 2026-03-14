@@ -1,0 +1,91 @@
+#include "collapsible.hpp"
+/*
+ * ProffieConfig, All-In-One Proffieboard Management Utility
+ * Copyright (C) 2026 Ryan Ogurek
+ *
+ * components/ui/layout/collapsible.cpp
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <wx/collpane.h>
+#include <wx/gdicmn.h>
+
+#include "ui/detail/scaffold.hpp"
+#include "ui/priv/helpers.hpp"
+#include "ui/priv/winbase.hpp"
+
+using namespace pcui;
+
+namespace {
+
+struct Layout : priv::WinBase<wxCollapsiblePane, data::Generic::Receiver> {
+    Layout(const detail::Scaffold& scaffold, const Collapsible& desc) {
+        long style{wxCP_DEFAULT_STYLE | wxCP_NO_TLW_RESIZE};
+        // if (not desc.autoTopLevelResize_) style |= wxCP_NO_TLW_RESIZE;
+
+        Create(
+            scaffold.childParent_,
+            wxID_ANY,
+            desc.showLabel_,
+            wxDefaultPosition,
+            wxDefaultSize,
+            style
+        );
+
+        postCreation(scaffold, desc.win_);
+
+        if (desc.data_) attach(*desc.data_);
+
+        const auto onPaneChanged{[
+            this, show=desc.showLabel_, hide=desc.hideLabel_
+        ](
+            wxCollapsiblePaneEvent& evt
+        ) {
+            SetLabel(evt.GetCollapsed() ? show : hide);
+            priv::layoutAndFitFor(this);
+        }};
+        Bind(wxEVT_COLLAPSIBLEPANE_CHANGED, onPaneChanged);
+    }
+
+    ~Layout() override {
+        detach();
+    }
+};
+
+} // namespace
+
+std::unique_ptr<detail::Descriptor> Collapsible::operator()() {
+    return std::make_unique<Collapsible::Desc>(std::move(*this));
+}
+
+Collapsible::Desc::Desc(Collapsible&& data) :
+    Collapsible{std::move(data)} {}
+
+wxSizerItem *Collapsible::Desc::build(const detail::Scaffold& scaffold) const {
+    auto *panel{new Layout(scaffold, *this)};
+
+    auto childScaffold{scaffold};
+    childScaffold.childParent_ = panel->GetPane();
+
+    auto *sizer{new wxBoxSizer(wxVERTICAL)};
+    sizer->Add(child_->build(childScaffold));
+    panel->GetPane()->SetSizer(sizer);
+
+    auto *item{new wxSizerItem(panel)};
+    priv::apply(win_.base_, item);
+
+    return item;
+}
+

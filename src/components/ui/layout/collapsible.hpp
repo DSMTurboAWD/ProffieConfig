@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/static/label.hpp
+ * components/ui/layout/collapsible.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,33 +19,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "data/string.hpp"
-#include "ui/detail/descriptor.hpp"
+#include "data/generic.hpp"
 #include "ui/detail/general.hpp"
-#include "ui/text.hpp"
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
 namespace pcui {
 
-struct UI_EXPORT Label {
+struct UI_EXPORT Collapsible {
     struct Desc;
 
-    // TODO: Make these base w/ C++ P2287.
+    // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    std::variant<
-        wxString,
-        std::reference_wrapper<data::String>
-    > label_;
+    wxString showLabel_;
+    wxString hideLabel_;
 
-    text::detail::StyleData style_;
+    OptRef<data::Generic> data_;
+    DescriptorPtr child_;
 
-    std::unique_ptr<detail::Descriptor> operator()();
+    DescriptorPtr operator()();
 };
 
-struct UI_EXPORT Label::Desc : Label, detail::Descriptor {
-    Desc(Label&&);
+struct UI_EXPORT Collapsible::Desc : Collapsible, detail::Descriptor {
+    Desc(Collapsible&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
 };

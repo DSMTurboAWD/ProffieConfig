@@ -20,6 +20,7 @@
  */
 
 #include "ui/detail/descriptor.hpp"
+#include "ui/detail/dynamic_list.hpp"
 #include "ui/detail/general.hpp"
 
 #include "ui_export.h"

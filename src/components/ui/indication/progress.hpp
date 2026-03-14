@@ -31,8 +31,7 @@ struct UI_EXPORT Progress {
     struct Desc;
     struct Data;
 
-    // TODO: Make these base w/ C++ P2287.
-    detail::ChildBase base_;
+    // TODO: Make this base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
     Data& data_;
