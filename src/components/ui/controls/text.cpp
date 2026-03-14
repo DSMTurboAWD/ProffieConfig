@@ -121,7 +121,7 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
             GetValue().ToStdString(), 0 
         ))};
         if (not res) [this, str=context<data::String>()]() {
-            SetValue(str.val());
+            ChangeValue(str.val());
             // SetInsertionPoint
         }();
     }
@@ -133,7 +133,7 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
     void onChange() override {
         const auto val{context<data::String>().val()};
         CallAfter([this, val] {
-            SetValue(val);
+            ChangeValue(val);
             // SetInsertionPoint
         });
     }
