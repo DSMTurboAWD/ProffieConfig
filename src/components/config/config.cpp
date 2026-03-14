@@ -250,6 +250,10 @@ void config::Config::syncStyles() {
 
 config::Info::Info() = default;
 
+const data::String& config::Info::name() {
+    return mName;
+}
+
 fs::path config::Info::path() {
     return ::savePath(data::String::Context{mName}.val());
 }
