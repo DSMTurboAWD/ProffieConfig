@@ -118,7 +118,7 @@ onboard::Frame::Frame() :
 }
 
 onboard::Frame::~Frame() {
-    GetSizer()->DeleteWindows();
+    pcui::teardown(this);
     instance = nullptr;
 }
 
