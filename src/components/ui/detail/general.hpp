@@ -36,13 +36,13 @@ namespace pcui::detail {
 struct UI_EXPORT ChildBase {
     wxSize minSize_{wxDefaultSize};
 
+    bool expand_{false};
     int32 proportion_{0};
 
     struct {
         int32 size_{8};
         int32 dirs_{0};
     } border_;
-    bool expand_{false};
 
     int32 align_{wxALIGN_NOT};
 };
