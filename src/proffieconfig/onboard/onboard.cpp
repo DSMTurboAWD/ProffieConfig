@@ -33,6 +33,7 @@
 #include "utils/parent.hpp"
 
 #include "../core/state.hpp"
+#include "../mainmenu/mainmenu.hpp"
 
 namespace {
 
@@ -47,7 +48,7 @@ onboard::Frame* onboard::Frame::instance{nullptr};
 onboard::Frame::Frame() : 
     pcui::Frame(
         nullptr,
-        wxID_ANY,
+        state::eID_Onboard,
         _("ProffieConfig First-Time Setup"),
         wxSYSTEM_MENU | wxCLOSE_BOX | wxMINIMIZE_BOX |
         wxCAPTION | wxCLIP_CHILDREN
@@ -275,7 +276,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                           state::doneWithFirstRun = true;
                           state::saveState();
                           Close(true);
-                          // MainMenu::instance = new MainMenu;
+                          MainMenu::instance = new MainMenu;
                           break;
                       case ePhase_Setup_Prog:
                       case ePhase_Max:
@@ -308,9 +309,10 @@ void onboard::Frame::bindEvents() {
             }
 
             if (state::doneWithFirstRun) {
-                // MainMenu::instance = new MainMenu;
+                MainMenu::instance = new MainMenu;
             }
         }
+
         event.Skip();
     });
 }

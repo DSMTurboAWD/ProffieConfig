@@ -119,6 +119,7 @@ void MainMenu::bindEvents() {
 
     Bind(wxEVT_CLOSE_WINDOW, [promptClose](wxCloseEvent& event) {
         state::saveState();
+
         if (event.CanVeto() and not promptClose()) {
             event.Veto();
             return;

@@ -32,12 +32,7 @@ namespace onboard {
 
 wxStaticText *createHeader(wxWindow *, const wxString&);
 
-class Frame : public pcui::Frame {
-public:
-    static Frame* instance;
-    Frame();
-    ~Frame() override;
-
+struct Frame : pcui::Frame {
     enum Phase {
         ePhase_Welcome,
         ePhase_Setup_Pre,
@@ -47,6 +42,11 @@ public:
         ePhase_Info,
         ePhase_Max,
     };
+
+    Frame();
+    ~Frame() override;
+
+    static Frame* instance;
 
 private:
     friend struct Setup;
