@@ -1,9 +1,9 @@
-#include "frame.hpp"
+#include "dialog.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024-2026 Ryan Ogurek
+ * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/frame.cpp
+ * components/ui/dialog.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 using namespace pcui;
 
-Frame::Frame(
+Dialog::Dialog(
     wxWindow *parent,
     wxWindowID winID,
     const wxString& title,
@@ -39,6 +39,7 @@ Frame::Frame(
 #   ifdef __WXMSW__
     SetDoubleBuffered(true);
 #   endif
+
     Create(
         parent,
         winID,
@@ -46,7 +47,7 @@ Frame::Frame(
         wxDefaultPosition,
         wxDefaultSize,
         style,
-        "pcui::Frame"
+        "pcui::Dialog"
     );
 
 #	ifdef _WIN32
@@ -69,26 +70,11 @@ Frame::Frame(
 #	endif
 }
 
-Frame::~Frame() {
-    if (mReference and *mReference) (*mReference) = nullptr;
-}
+Dialog::~Dialog() = default;
 
-void Frame::setReference(Frame** ref) {
-    mReference = ref;
-}
-
-void Frame::Fit() {
-    // IMO it's silly that the usual fit doesn't set min size. Fit is supposed
-    // to set it to fit around the children (i.e. at min size), so not making
-    // it so the sizing reflects that is a little odd. Probably historical.
-    wxFrame::Fit();
+void Dialog::Fit() {
+    // See Frame
+    wxDialog::Fit();
     SetMinSize(GetSize());
-}
-
-void Frame::appendDefaultMenuItems(wxMenuBar *menuBar) {
-#   ifdef __WXOSX__
-    menuBar->Append(new wxMenu, _("&Window"));
-    menuBar->Append(new wxMenu, _("&Help"));
-#   endif
 }
 

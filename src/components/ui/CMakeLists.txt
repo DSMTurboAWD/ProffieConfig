@@ -4,6 +4,7 @@
 
 add_library(ui SHARED
     frame.cpp
+    dialog.cpp
     build.cpp
     info.cpp
     text.cpp

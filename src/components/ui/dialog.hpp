@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024-2026 Ryan Ogurek
+ * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/frame.hpp
+ * components/ui/dialog.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,29 +19,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/frame.h>
+#include <wx/dialog.h>
 
 #include "ui_export.h"
 
 namespace pcui {
 
-class UI_EXPORT Frame : public wxFrame {
+class UI_EXPORT Dialog : public wxDialog {
 public:
-    Frame(
+    Dialog(
         wxWindow* parent,
         wxWindowID winID,
         const wxString& title,
-        long style = wxDEFAULT_FRAME_STYLE
+        long style = wxDEFAULT_DIALOG_STYLE
     );
-    ~Frame() override;
+    ~Dialog() override;
 
-    void setReference(Frame**);
     void Fit() override;
-
-    static void appendDefaultMenuItems(wxMenuBar *);
-
-private:
-    Frame** mReference{nullptr};
 };
 
 } // namespace pcui
+
