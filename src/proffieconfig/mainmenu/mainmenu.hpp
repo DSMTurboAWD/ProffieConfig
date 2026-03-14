@@ -32,16 +32,7 @@
 
 struct EditorWindow;
 
-class MainMenu : public pcui::Frame {
-public:
-    static MainMenu* instance;
-    MainMenu(wxWindow * = nullptr);
-
-    void removeEditor(EditorWindow *);
-
-    data::Choice board_;
-    data::Selector config_;
-
+struct MainMenu : pcui::Frame {
     enum {
         // on macOS menu items cannot have ID 0
         // on Win32, for some reason ID #1 is triggerred by hitting enter in pcTextCtrl?
@@ -70,6 +61,16 @@ public:
         eID_Async_Done,
     };
 
+    MainMenu(wxWindow * = nullptr);
+    ~MainMenu() override;
+
+    void removeEditor(EditorWindow *);
+
+    data::Choice board_;
+    data::Selector config_;
+
+    static MainMenu* instance;
+
 private:
     // Config::Config *mConfigNeedShown{nullptr};
 
@@ -79,3 +80,4 @@ private:
     void createMenuBar();
     void bindEvents();
 };
+

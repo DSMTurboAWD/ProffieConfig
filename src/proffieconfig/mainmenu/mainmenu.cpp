@@ -72,6 +72,7 @@
 #include "wx/font.h"
 
 MainMenu *MainMenu::instance{nullptr};
+
 MainMenu::MainMenu(wxWindow* parent) : 
     pcui::Frame(
         parent,
@@ -90,6 +91,10 @@ MainMenu::MainMenu(wxWindow* parent) :
     pcui::build(this, ui());
 
     Show();
+}
+
+MainMenu::~MainMenu() {
+    pcui::teardown(this);
 }
 
 void MainMenu::bindEvents() {
