@@ -29,43 +29,44 @@
 
 namespace versions::os {
 
-struct VERSIONS_EXPORT Available {
+struct BoardData {
+    const std::string name_;
+    const std::string coreId_;
+    const std::string include_;
+};
+
+struct VERSIONS_EXPORT OSData {
     const utils::Version version_;
 
     const std::string coreUrl_;
     const utils::Version coreVersion_;
 
-    struct BoardInfo {
-        const std::string name_;
-        const std::string coreId_;
-        const std::string include_;
-    };
-    const std::vector<BoardInfo> boards_;
+    const std::vector<BoardData> boards_;
 };
 
-struct VERSIONS_EXPORT BoardInfo : data::Model {
-    BoardInfo(
+struct VERSIONS_EXPORT Board : data::Model {
+    Board(
         std::string name,
         std::string coreId,
         std::string include
     );
 
-    BoardInfo(const BoardInfo&, data::Node *);
+    Board(const Board&, data::Node *);
 
     const std::string name_;
     const std::string coreId_;
     const std::string include_;
 };
 
-struct VERSIONS_EXPORT Versioned : data::Model {
-    Versioned(
+struct VERSIONS_EXPORT OS : data::Model {
+    OS(
         utils::Version version,
         std::string coreUrl,
         utils::Version coreVer,
-        std::vector<BoardInfo> boards
+        std::vector<Board> boards
     );
 
-    Versioned(const Versioned&, data::Node *);
+    OS(const OS&, data::Node *);
 
     const utils::Version version_;
 
@@ -73,15 +74,16 @@ struct VERSIONS_EXPORT Versioned : data::Model {
     const utils::Version coreVersion_;
 
     const data::Vector boards_;
+
+    operator OSData() const;
 };
 
 struct VERSIONS_EXPORT Context {
     Context();
     ~Context();
 
-    const std::vector<Available>& available() [[clang::lifetimebound]];
-    const std::vector<std::unique_ptr<Versioned>>&
-        list() [[clang::lifetimebound]];
+    const std::vector<OSData>& available() [[clang::lifetimebound]];
+    const std::vector<std::unique_ptr<OS>>& list() [[clang::lifetimebound]];
 };
 
 } // namespace versions::os

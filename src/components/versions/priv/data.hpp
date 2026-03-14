@@ -28,9 +28,9 @@ namespace versions::priv {
 
 extern std::recursive_mutex lock;
 extern std::vector<std::unique_ptr<props::Versioned>> props;
-extern std::vector<std::unique_ptr<os::Versioned>> os;
+extern std::vector<std::unique_ptr<os::OS>> os;
 
-extern std::vector<os::Available> availableOS;
+extern std::vector<os::OSData> availableOS;
 extern std::vector<props::Available> availableProps;
 
 } // namespace versions::priv

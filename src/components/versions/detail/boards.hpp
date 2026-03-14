@@ -25,7 +25,7 @@
 
 namespace versions::detail {
 
-const std::array<os::Available::BoardInfo, 3> BOARDS{{
+const std::array<os::BoardData, 3> BOARDS{{
     {
         .name_="ProffieV3",
         .coreId_="proffieboard:stm32l4:ProffieboardV3-L452RE",

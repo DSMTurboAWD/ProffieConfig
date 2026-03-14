@@ -112,7 +112,7 @@ void versions::loadLocal(logging::Branch *lBranch) {
 
         auto& coreURL{*coreURLEntry->value_};
 
-        std::vector<os::BoardInfo> boards;
+        std::vector<os::Board> boards;
 
         const auto boardEntries{hashedInfoData.findAll(detail::BOARD_STR)};
         for (const auto& boardEntry : boardEntries) {
@@ -154,7 +154,7 @@ void versions::loadLocal(logging::Branch *lBranch) {
             );
         }
 
-        priv::os.push_back(std::make_unique<os::Versioned>(
+        priv::os.push_back(std::make_unique<os::OS>(
             std::move(version),
             std::move(coreURL),
             std::move(coreVersion),
@@ -402,7 +402,7 @@ std::optional<std::string> versions::fetch(logging::Branch *lBranch) {
                 }
             }
 
-            std::vector<os::Available::BoardInfo> boards;
+            std::vector<os::BoardData> boards;
             auto boardEntries{propEntries.findAll(detail::BOARD_STR)};
             for (auto& boardEntry : boardEntries) {
                 if (not boardEntry->label_) {
@@ -441,14 +441,14 @@ std::optional<std::string> versions::fetch(logging::Branch *lBranch) {
                     }
                 }
 
-                boards.push_back(os::Available::BoardInfo{
+                boards.push_back(os::BoardData{
                     .name_=std::move(*boardEntry->label_),
                     .coreId_=std::move(coreId),
                     .include_=std::move(include),
                 });
             }
 
-            priv::availableOS.push_back(os::Available{
+            priv::availableOS.push_back(os::OSData{
                 .version_=std::move(ver),
                 .coreUrl_=std::move(coreUrl),
                 .coreVersion_=std::move(coreVersion),
@@ -506,7 +506,7 @@ std::optional<std::string> versions::downloadOS(
     auto& logger{logging::Branch::optCreateLogger("versions::downloadOS()", lBranch)};
 
     bool known{false};
-    const os::Available *info{};
+    const os::OSData *info{};
     for (const auto& avail : priv::availableOS) {
         if (avail.version_.compare(ver) != 0) continue;
 

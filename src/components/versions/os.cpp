@@ -25,7 +25,7 @@
 
 using namespace versions::os;
 
-BoardInfo::BoardInfo(
+Board::Board(
     std::string name,
     std::string coreId,
     std::string include
@@ -33,17 +33,17 @@ BoardInfo::BoardInfo(
     coreId_{std::move(coreId)},
     include_{std::move(include)} {}
 
-BoardInfo::BoardInfo(const BoardInfo& other, data::Node *parent) :
+Board::Board(const Board& other, data::Node *parent) :
     data::Model(parent),
     name_{other.name_},
     coreId_{other.coreId_},
     include_{other.include_} {}
 
-Versioned::Versioned(
+OS::OS(
     utils::Version version,
     std::string coreUrl,
     utils::Version coreVer,
-    std::vector<BoardInfo> boards
+    std::vector<Board> boards
 ) : version_{std::move(version)},
     coreUrl_{std::move(coreUrl)},
     coreVersion_{std::move(coreVer)},
@@ -52,30 +52,54 @@ Versioned::Versioned(
         data::Vector::Context ctxt{vec};
 
         for (auto& board : boards) {
-            ctxt.add(std::make_unique<BoardInfo>(board, &vec));
+            ctxt.add(std::make_unique<Board>(board, &vec));
         }
 
         return vec;
     }()} {}
 
-Versioned::Versioned(const Versioned& other, data::Node *parent) :
+OS::OS(const OS& other, data::Node *parent) :
     data::Model(parent),
     version_{other.version_},
     coreUrl_{other.coreUrl_},
     coreVersion_{other.coreVersion_},
     boards_{other.boards_, parent} {}
 
+OS::operator OSData() const {
+    std::lock_guard scopeLock{pLock};
+
+    std::vector<BoardData> boardsData;
+    data::Vector::ROContext boards{boards_};
+
+    boardsData.reserve(boards.children().size());
+    for (const auto& model : boards.children()) {
+        auto& board{static_cast<Board&>(*model)};
+        boardsData.push_back({
+            .name_=board.name_,
+            .coreId_=board.coreId_,
+            .include_=board.include_,
+        });
+    }
+
+    return {
+        .version_=version_,
+        .coreUrl_=coreUrl_,
+        .coreVersion_=coreVersion_,
+        .boards_=std::move(boardsData)
+    };
+}
+
 Context::Context() { priv::lock.lock(); }
 Context::~Context() { priv::lock.unlock(); }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-const std::vector<Available>& Context::available() {
+const std::vector<OSData>& Context::available() {
     std::lock_guard scopeLock{priv::lock};
     return priv::availableOS;
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-const std::vector<std::unique_ptr<Versioned>>& Context::list() {
+const std::vector<std::unique_ptr<OS>>& Context::list() {
     std::lock_guard scopeLock{priv::lock};
     return priv::os;
 }
