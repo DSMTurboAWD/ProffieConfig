@@ -1,4 +1,4 @@
-#include "addconfig.h"
+#include "addconfig.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2025-2026 Ryan Ogurek
@@ -19,11 +19,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/dialog.h>
 #include <wx/sysopt.h>
+#include <wx/filedlg.h>
 
-#include "config/config.h"
-#include "ui/notifier.h"
-#include "utils/image.h"
+#include "config/config.hpp"
+#include "data/helpers/exclusive.hpp"
+#include "data/logic/adapter.hpp"
+#include "data/logic/operators.hpp"
+#include "ui/build.hpp"
+#include "ui/controls/button.hpp"
+#include "ui/controls/filepicker.hpp"
+#include "ui/controls/segmented.hpp"
+#include "ui/controls/text.hpp"
+#include "ui/helpers/dialog_buttons.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/static/label.hpp"
+#include "ui/static/image.hpp"
+#include "ui/types.hpp"
+#include "utils/parent.hpp"
 
 AddConfig::AddConfig(MainMenu *parent) : 
     wxDialog(
@@ -35,159 +50,147 @@ AddConfig::AddConfig(MainMenu *parent) :
         wxDEFAULT_DIALOG_STYLE
     ) {
 #   ifdef __WXOSX__
+    // TODO: This should really go elsewhere... but where?
     wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES, true);
 #   endif
 
-    createUI();
-    bindEvents();
-
     FindWindow(wxID_OK)->Disable();
+
+    pcui::build(this, ui());
+    bindEvents();
 }
 
 void AddConfig::bindEvents() {
-    // We make sure to set itself to true that way it can't be deselected
-    Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) { 
-        mImportButton->SetValue(true);
-        mCreateButton->SetValue(false);
-        update(); 
-    }, eID_Import_Existing);
-    Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent&) { 
-        mCreateButton->SetValue(true);
-        mImportButton->SetValue(false);
-        importPath_ = filepath{};
-        update(); 
-    }, eID_Create_New);
+    configName_.responder().onChange_ = [](
+        const data::String::ROContext& ctxt
+    ) {
+        auto& self{utils::parent<&AddConfig::configName_>(
+            const_cast<data::String&>(ctxt.model<data::String>())
+        )};
 
-    configName_.setUpdateHandler([this](uint32 id) {
-        if (id != pcui::TextData::eID_Value) return;
-        update();
-    });
-    importPath_.setUpdateHandler([this](uint32 id) {
-        if (id != pcui::FilePickerData::eID_Path) return;
-        configName_ = static_cast<filepath>(importPath_).stem().string();
-    });
-}
+        bool dupName{false};
+        data::Vector::ROContext list{config::list()};
+        for (const auto& model : list.children()) {
+            auto& exist{static_cast<config::Info&>(*model)};
+            data::String::ROContext existName{exist.name()};
+            if (existName.val() != ctxt.val()) continue;
 
-void AddConfig::createUI() {
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
-    sizer->SetMinSize(wxSize(400, -1));
-
-    auto *addModeSizer{new wxBoxSizer(wxHORIZONTAL)};
-    mCreateButton = new wxToggleButton(
-        this, eID_Create_New, _("Create New Config")
-    );
-    mCreateButton->SetValue(true);
-    mCreateButton->SetBitmap(Image::loadPNG("new", wxSize{32, -1}));
-    mImportButton = new wxToggleButton(
-        this, eID_Import_Existing, _("Import Existing Config")
-    );
-    mImportButton->SetBitmap(Image::loadPNG("import", wxSize{32, -1}));
-    addModeSizer->Add(
-        mCreateButton,
-        wxSizerFlags(0).Border(wxLEFT | wxTOP | wxBOTTOM, 10)
-    );
-    addModeSizer->Add(
-        mImportButton,
-        wxSizerFlags(0).Border(wxRIGHT | wxTOP | wxBOTTOM, 10)
-    );
-
-    auto *importPicker{new pcui::FilePicker(
-        this,
-        importPath_,
-        wxFLP_FILE_MUST_EXIST | wxFLP_OPEN | wxFLP_USE_TEXTCTRL,
-        _("Configuration to Import"),
-        _("ProffieOS Configuration") + " (*.h)|*.h",
-        _("Choose Configuration File to Import")
-    )};
-    auto *nameEntry{new pcui::Text(
-        this,
-        configName_,
-        0,
-        false,
-        _("Configuration Name")
-    )};
-
-    mInvalidNameWarning = new wxStaticText(
-        this,
-        wxID_ANY,
-        _("Please enter a valid name")
-    );
-    mDuplicateWarning = new wxStaticText(
-        this,
-        wxID_ANY,
-        _("Configuration with same name already exists")
-    );
-    mFileSelectionWarning = new wxStaticText(
-        this,
-        wxID_ANY,
-        _("Please choose a configuration file to import")
-    );
-
-    sizer->Add(addModeSizer, wxSizerFlags(0).Center());
-    sizer->Add(
-        importPicker,
-        wxSizerFlags(0).Expand().Border(wxALL, 10)
-    );
-    sizer->Add(
-        nameEntry,
-        wxSizerFlags(0)
-            .Expand().Border(wxBOTTOM | wxLEFT | wxRIGHT, 10)
-    );
-    sizer->Add(
-        mInvalidNameWarning,
-        wxSizerFlags(0).Right().Border(wxRIGHT, 10)
-    );
-    sizer->Add(
-        mDuplicateWarning,
-        wxSizerFlags(0).Right().Border(wxRIGHT, 10)
-    );
-    sizer->Add(
-        mFileSelectionWarning,
-        wxSizerFlags(0).Right().Border(wxRIGHT, 10)
-    );
-    sizer->AddStretchSpacer(1);
-    sizer->Add(
-        CreateStdDialogButtonSizer(wxOK | wxCANCEL),
-        wxSizerFlags(0).Border(wxALL, 10).Expand()
-    );
-
-    SetSizerAndFit(sizer);
-    update();
-}
-
-void AddConfig::update() {
-    auto duplicateConfigName{[&]() { 
-        for (const auto& config : Config::fetchListFromDisk()) {
-            if (static_cast<string>(configName_) == config) return true;
+            dupName = true;
+            break;
         }
-        return false;
-    }()};
+        data::Bool::Context{self.mDupName}.set(dupName);
 
-    const auto& configNameText{static_cast<string>(configName_)};
-    bool configNameEmpty{configNameText.empty()};
-    bool configNameInvalidCharacters{
-        configNameText.find_first_of(".\\,/!#$%^&*|?<>\"'") != string::npos
+        bool nameEmpty{ctxt.val().empty()};
+        bool nameBadChars{
+            ctxt.val().find_first_of(".\\,/!#$%^&*|?<>\"'") != std::string::npos
+        };
+
+        data::Bool::Context{self.mNameValid}.set(
+            not nameEmpty and
+            not dupName and
+            not nameBadChars
+        );
     };
-    bool validConfigName{
-        not configNameEmpty and
-        not duplicateConfigName and
-        not configNameInvalidCharacters
+
+    importPath_.responder().onChange_ = [](
+        const data::String::ROContext& ctxt
+    ) {
+        auto& self{utils::parent<&AddConfig::configName_>(
+            const_cast<data::String&>(ctxt.model<data::String>())
+        )};
+
+        data::Bool::Context{self.mNeedImportPath}.set(ctxt.val().empty());
     };
-    bool importingConfig{mImportButton->GetValue()};
-    bool originFileSelected{not static_cast<filepath>(importPath_).empty()};
+}
 
-    mDuplicateWarning->Show(duplicateConfigName);
-    mInvalidNameWarning->Show(not validConfigName);
-    mFileSelectionWarning->Show(importingConfig and not originFileSelected);
-
-    FindWindow(wxID_OK)->Enable(
-        validConfigName and (originFileSelected or not importingConfig)
-    );
-
-    importPath_.show(importingConfig);
-    pcui::NotifyReceiver::sync();
-
-    GetSizer()->Layout();
-    GetSizer()->Fit(this);
+pcui::DescriptorPtr AddConfig::ui() {
+    return pcui::Stack{
+      .base_={.minSize_={400, -1}},
+      .children_={
+        pcui::Segmented{
+          .data_=mode_,
+          .labels_={
+            pcui::Segmented::Label{
+              .text_=_("Create New Config"),
+              .image_=pcui::Image::LoadDetails{
+                .name_="new",
+                .size_={.dim_=32},
+              }(),
+            },
+            pcui::Segmented::Label{
+              .text_=_("Import Existing Config"),
+              .image_=pcui::Image::LoadDetails{
+                .name_="import",
+                .size_={.dim_=32},
+              }(),
+            },
+          },
+        }(),
+        pcui::Label{
+          .win_={.show_=data::logic::adapt(mode_[eMode_Import])},
+          .label_=_("Configuration to Import"),
+        }(),
+        pcui::FilePicker{
+          .base_{.expand_=true},
+          .win_={.show_=data::logic::adapt(mode_[eMode_Import])},
+          .data_=importPath_,
+          .message_=_("Choose Configuration File to Import"),
+          .wildcard_=_("ProffieOS Configuration") + " (*.h)|*.h",
+          .mode_=pcui::FilePicker::Open{},
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Label{
+          .label_=_("Configuration Name"),
+        }(),
+        pcui::Text{
+          .base_{.expand_=true},
+          .data_=configName_,
+        }(),
+        pcui::Label{
+          .base_={
+            .border_={.size_=10, .dirs_=wxRIGHT},
+            .align_=wxALIGN_RIGHT,
+          },
+          .win_={.show_=data::logic::adapt(mNameValid)},
+          .label_=_("Please enter a valid name"),
+        }(),
+        pcui::Label{
+          .base_={
+            .border_={.size_=10, .dirs_=wxRIGHT},
+            .align_=wxALIGN_RIGHT,
+          },
+          .win_={.show_=data::logic::adapt(mDupName)},
+          .label_=_("Configuration with same name already exists"),
+        }(),
+        pcui::Label{
+          .base_={
+            .border_={.size_=10, .dirs_=wxRIGHT},
+            .align_=wxALIGN_RIGHT,
+          },
+          .win_={.show_=data::logic::adapt(mNeedImportPath)},
+          .label_=_("Please choose a configuration file to import"),
+        }(),
+        pcui::StretchSpacer{}(),
+        pcui::DialogButtons{
+          .base_={
+            .border_={.size_=10, .dirs_=wxALL},
+            .expand_=true,
+          },
+          .ok_=pcui::Button{
+            .win_{
+              .enable_={
+                data::logic::adapt(mNameValid) and
+                (not data::logic::adapt(mode_[eMode_Import]) or
+                 not data::logic::adapt(mNeedImportPath))
+              },
+            },
+            .label_=_("Ok"),
+          }(),
+          .cancel_=pcui::Button{
+            .label_=_("Cancel"),
+          }(),
+        }(),
+      },
+    }();
 }
 

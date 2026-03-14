@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2025-2026 Ryan Ogurek
  *
- * proffieconfig/mainmenu/dialogs/addconfig.h
+ * proffieconfig/mainmenu/dialogs/addconfig.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 
 #include <wx/dialog.h>
 
-#include "ui/controls/filepicker.h"
-#include "ui/controls/text.h"
+#include "data/generic.hpp"
+#include "data/helpers/exclusive.hpp"
+#include "data/string.hpp"
+#include "ui/types.hpp"
 
-#include "../../mainmenu/mainmenu.h"
+#include "../mainmenu.hpp"
 
 class AddConfig : public wxDialog {
 public:
@@ -36,17 +38,25 @@ public:
 
     MainMenu *parent_{nullptr};
 
-    pcui::FilePickerData importPath_;
-    pcui::TextData configName_;
+    enum {
+        eMode_Create,
+        eMode_Import,
+        eMode_Max,
+    };
+    data::Exclusive mode_{eMode_Max};
+    data::String importPath_;
+    data::String configName_;
+
     void update();
 
 private:
-    wxToggleButton *mCreateButton{nullptr};
-    wxToggleButton *mImportButton{nullptr};
-    wxStaticText *mInvalidNameWarning{nullptr};
-    wxStaticText *mDuplicateWarning{nullptr};
-    wxStaticText *mFileSelectionWarning{nullptr};
+    data::Generic mCreateButton;
+    data::Generic mImportButton;
 
-    void createUI();
+    data::Bool mNameValid;
+    data::Bool mDupName;
+    data::Bool mNeedImportPath;
+    
+    pcui::DescriptorPtr ui();
     void bindEvents();
 };
