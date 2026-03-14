@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/detail/general.hpp
+ * components/ui/detail/dynamic_list.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,44 +19,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/event.h>
-#include <wx/gdicmn.h>
-
-#include "data/logic/logic.hpp"
-#include "utils/types.hpp"
+#include <vector>
+#include <memory>
 
 #include "ui_export.h"
 
 namespace pcui::detail {
 
-/**
- * General properties for child items.
- * Most things here are only effective inside a Stack
- */
-struct UI_EXPORT ChildBase {
-    wxSize minSize_{wxDefaultSize};
+template <typename T>
+struct UI_EXPORT DynamicList : std::vector<std::unique_ptr<T>> {
+    template <typename ...Args>
+    DynamicList(Args&&... args) {
+        this->reserve(sizeof...(args));
+        (..., add(std::forward<Args>(args)));
+    }
 
-    int32 proportion_{0};
+private:
+    void add(std::vector<std::unique_ptr<T>>&& v) {
+        // move(v) is silly, but it shuts up the linter and probably doesn't
+        // matter.
+        for (auto& elem : std::move(v)) this->push_back(std::move(elem));
+    }
 
-    struct {
-        int32 size_{8};
-        int32 dirs_{0};
-    } border_;
-    bool expand_{false};
-
-    int32 align_{wxALIGN_NOT};
-};
-
-/**
- * General properties for child window items.
- */
-struct UI_EXPORT ChildWindowBase {
-    wxSize maxSize_{wxDefaultSize};
-
-    data::logic::Holder show_;
-    data::logic::Holder enable_;
-
-    wxString tooltip_;
+    void add(std::unique_ptr<T>&& v) {
+        this->push_back(std::move(v));
+    }
 };
 
 } // namespace pcui::detail
