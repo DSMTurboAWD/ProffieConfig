@@ -75,19 +75,15 @@ pcui::DescriptorPtr onboard::Setup::ui() {
         pcui::Spacer{10}(),
         pcui::Label{
           .win_{
-            .show_=data::logic::adapt(
-              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+            .show_=utils::parent<&Frame::mSetupPage>(*this).mPhase |
               data::logic::HasSelection{{Frame::ePhase_Setup_Done}}
-            ),
           },
           .label_=_("The installation completed successfully. Press \"Next\" to continue..."),
         }(),
         pcui::Label{
           .win_={
-            .show_=data::logic::adapt(
-              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+            .show_=utils::parent<&Frame::mSetupPage>(*this).mPhase |
               data::logic::HasSelection{{Frame::ePhase_Setup_Prog}}
-            ),
           },
           .label_=mStatusMessage,
         }(),
@@ -95,10 +91,8 @@ pcui::DescriptorPtr onboard::Setup::ui() {
           .win_={
             .base_={.expand_=true},
             .maxSize_={300, -1},
-            .show_=data::logic::adapt(
-              utils::parent<&Frame::mSetupPage>(*this).mPhase,
+            .show_=utils::parent<&Frame::mSetupPage>(*this).mPhase |
               data::logic::HasSelection{{Frame::ePhase_Setup_Prog}}
-            ),
           },
           .data_=mProgress,
         }()

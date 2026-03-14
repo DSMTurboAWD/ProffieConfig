@@ -351,16 +351,6 @@ void MainMenu::bindEvents() {
 }
 
 /*
-void MainMenu::updateConfigChoices() {
-    vector<string> choices{.ToStdString()};
-    const auto configList{Config::fetchListFromDisk()};
-    choices.insert(choices.end(), configList.begin(), configList.end());
-    configSelection.setChoices(std::move(choices));
-    if (configSelection == -1) configSelection = 0;
-}
-*/
-
-/*
 void MainMenu::handleNotification(uint32 id) {
     bool rebound{id == pcui::Notifier::eID_Rebound};
     if (rebound or id == ID_ConfigSelection) {
@@ -500,9 +490,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             pcui::Spacer{.size_=5}(),
             pcui::Button{
               .win_={
-                .enable_=not data::logic::adapt(
-                  config_.choice_, data::logic::HasSelection{{-1}}
-                ),
+                .enable_=not (config_.choice_ | data::logic::HasSelection{{-1}}),
               },
               .label_=_("Remove"),
               .exactFit_=true,
@@ -513,9 +501,7 @@ pcui::DescriptorPtr MainMenu::ui() {
         pcui::Button{
           .win_={
             .base_={.expand_=true},
-            .enable_=not data::logic::adapt(
-              config_.choice_, data::logic::HasSelection{{-1}}
-            ),
+            .enable_=not (config_.choice_ | data::logic::HasSelection{{-1}})
           },
           .label_=_("Edit Selected Configuration"),
         }(),
@@ -546,11 +532,8 @@ pcui::DescriptorPtr MainMenu::ui() {
           .win_={
             .base_={.expand_=true},
             .enable_={
-              not data::logic::adapt(
-                config_.choice_, data::logic::HasSelection{{-1}}
-              ) and not data::logic::adapt(
-                board_, data::logic::HasSelection{{-1}}
-              )
+              not (config_.choice_ | data::logic::HasSelection{{-1}}) and
+              not (board_ | data::logic::HasSelection{{-1}})
             },
             .tooltip_=_("Compile and upload the selected configuration to the selected Proffieboard."),
           },
@@ -560,9 +543,7 @@ pcui::DescriptorPtr MainMenu::ui() {
         pcui::Button{
           .win_={
             .base_={.expand_=true},
-            .enable_=not data::logic::adapt(
-              board_, data::logic::HasSelection{{-1}}
-            ),
+            .enable_=not (board_ | data::logic::HasSelection{{-1}}),
           },
           .label_=_("Open Serial Monitor"),
         }(),

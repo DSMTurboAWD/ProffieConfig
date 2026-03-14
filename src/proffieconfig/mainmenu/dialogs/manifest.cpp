@@ -61,7 +61,7 @@ ManifestDialog::ManifestDialog(MainMenu *mainMenu) :
         pcui::DialogButtons{
           .ok_=pcui::Button{
             .win_={
-              .enable_=not data::logic::adapt(mText, data::logic::IsEmpty{}),
+              .enable_=not (mText | data::logic::IsEmpty{}),
             },
             .label_=_("Save"),
             .func_=[this] {

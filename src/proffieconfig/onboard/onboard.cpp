@@ -27,7 +27,7 @@
 #include "ui/layout/panel.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
-#include "ui/misc/message.hpp"
+#include "ui/dialogs/message.hpp"
 #include "ui/static/divider.hpp"
 #include "ui/static/image.hpp"
 #include "utils/parent.hpp"
@@ -143,32 +143,26 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::Panel{
               .win_={
                 .base_={.proportion_=1,},
-                .show_=data::logic::adapt(
-                  mPhase, data::logic::HasSelection{{ePhase_Welcome}}
-                )
+                .show_=mPhase | data::logic::HasSelection{{ePhase_Welcome}}
               },
               .child_=mWelcomePage.ui(),
             }(),
             pcui::Panel{
               .win_={
                 .base_={.proportion_=1,},
-                .show_=data::logic::adapt(
-                  mPhase, data::logic::HasSelection{{
+                .show_=mPhase | data::logic::HasSelection{{
                     ePhase_Setup_Pre,
                     ePhase_Setup_Prog,
                     ePhase_Setup_Fail,
                     ePhase_Setup_Done,
                   }}
-                )
               },
               .child_=mSetupPage.ui(),
             }(),
             pcui::Panel{
               .win_={
                 .base_={.proportion_=1},
-                .show_=data::logic::adapt(
-                  mPhase, data::logic::HasSelection{{ePhase_Info}}
-                )
+                .show_=mPhase | data::logic::HasSelection{{ePhase_Info}}
               },
               .child_=mInfoPage.ui(),
             }(),
@@ -201,13 +195,11 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::Spacer{10}(),
             pcui::Button{
               .win_={
-                .show_=not data::logic::adapt(
-                  mPhase, data::logic::HasSelection{{
+                .show_=not (mPhase | data::logic::HasSelection{{
                     ePhase_Welcome,
                     ePhase_Setup_Done,
                     ePhase_Info
-                  }}
-                )
+                  }})
               },
               .label_=pcui::Button::LabelWithState{
                   _("Skip"), mSkipButton
