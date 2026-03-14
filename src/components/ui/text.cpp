@@ -19,18 +19,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-wxFontInfo pcui::text::detail::StyleData::makeFont() const {
-    if (const auto *ptr{std::get_if<wxFontInfo>(this)}) {
+#include <wx/settings.h>
+
+wxFont pcui::text::detail::StyleData::makeFont() const {
+    if (const auto *ptr{std::get_if<wxFont>(this)}) {
         return *ptr;
     } 
+
+    // So, at least on macOS, wxSYS_DEFAULT_GUI_FONT returns a font with proper
+    // spacing but incorrect size, and wxFont returns a font with proper size
+    // but incorrect spacing.
+    //
+    // I don't know why, and I can't seem to figure out how to make things
+    // more elegant. Probably some platform-specific code here to try and
+    // pierce wxWidgets would be ideal, but that's a future issue.
+    auto sysFont{[] {
+        auto guiFont{wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT)};
+        auto defaultFont{wxFont{wxFontInfo{}}};
+        guiFont.SetFractionalPointSize(defaultFont.GetFractionalPointSize());
+        return guiFont;
+    }()};
 
     switch (std::get<text::Style>(*this)) {
         using enum text::Style;
         case Normal:
-            return wxFontInfo{};
-        case Header:
-            return wxFontInfo{20}.Weight(wxFONTWEIGHT_BOLD);
-    }
+            return sysFont;
+        case Title:
+            sysFont.Scale(1.5);
+            return sysFont;
+        case Style::Header:
+            return sysFont.Scale(1.2);
+        }
 
     assert(0);
     __builtin_unreachable();

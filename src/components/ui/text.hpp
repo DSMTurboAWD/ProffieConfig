@@ -19,23 +19,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <variant>
+
 #include <wx/font.h>
+
+#include "ui_export.h"
 
 namespace pcui::text {
 
 enum class Style {
     Normal,
+    Title,
     Header,
 };
 
 namespace detail {
 
-struct StyleData : std::variant<Style, wxFontInfo> {
+struct UI_EXPORT StyleData : std::variant<Style, wxFont> {
     using variant::variant;
 
     StyleData() : variant{Style::Normal} {}
 
-    [[nodiscard]] wxFontInfo makeFont() const;
+    [[nodiscard]] wxFont makeFont() const;
 };
 
 } // namespace detail
