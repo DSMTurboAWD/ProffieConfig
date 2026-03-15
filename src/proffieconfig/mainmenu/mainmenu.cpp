@@ -22,13 +22,14 @@
 #include <wx/menu.h>
 #include <wx/utils.h>
 
+#include "config/config.hpp"
 #include "data/logic/adapter.hpp"
 #include "data/logic/operators.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
-#include "ui/misc/message.hpp"
+#include "ui/dialogs/message.hpp"
 #include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
 #include "utils/paths.hpp"
@@ -55,6 +56,12 @@ MainMenu::MainMenu(wxWindow* parent) :
 
     createMenuBar();
     bindEvents();
+
+    { data::Selector::Context ctxt{config_};
+        ctxt.bind(&config::list());
+    }
+
+    config::update();
 
     pcui::build(this, ui());
 
