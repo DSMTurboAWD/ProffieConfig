@@ -18,15 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cstddef>
 #include <wx/app.h>
-#include <wx/image.h>
 
 #include "app/app.hpp"
 #include "app/critical_dialog.hpp"
 #include "config/info.hpp"
 #include "core/state.hpp"
-#include "ui/misc/message.hpp"
+#include "ui/dialogs/message.hpp"
 #include "utils/paths.hpp"
 #include "versions/versions.hpp"
 
@@ -52,8 +50,6 @@ public:
             app::CriticalDialog dlg{_("Initialization Failed")};
             return false;
         }
-
-        wxDialog dlg{nullptr, wxID_ANY, "Title"};
 
         config::setExecutableVersion(wxSTRINGIZE(BIN_VERSION));
         versions::loadLocal();
