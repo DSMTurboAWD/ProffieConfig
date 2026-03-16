@@ -26,6 +26,7 @@ add_library(ui SHARED
     indication/progress.cpp
 
     helpers/dialog_buttons.cpp
+    helpers/if.cpp
 
     controls/button.cpp
     controls/checkbox.cpp
