@@ -93,7 +93,7 @@ void Progress::Data::set(uint32 val) {
 }
 
 void Progress::Data::range(uint32 range) {
-    Context{*this}.range(range);
+    Context{*this}.setRange(range);
 }
 
 void Progress::Data::pulse() {
@@ -160,7 +160,7 @@ void Progress::Data::Context::set(uint32 v) const {
     data.sendToReceivers(&Receiver::onSet);
 }
 
-void Progress::Data::Context::range(uint32 r) const {
+void Progress::Data::Context::setRange(uint32 r) const {
     auto& data{model<Data>()};
 
     data.mRange = r;

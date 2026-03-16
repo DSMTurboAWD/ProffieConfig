@@ -95,7 +95,7 @@ struct UI_EXPORT Progress::Data::Context : Model::Context, ROContext {
 
     void set(uint32) const;
 
-    void range(uint32) const;
+    void setRange(uint32) const;
 
     void pulse() const;
 };
