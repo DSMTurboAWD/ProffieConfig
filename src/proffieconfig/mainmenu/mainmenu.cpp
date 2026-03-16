@@ -19,6 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
+#include <thread>
+
 #include <wx/menu.h>
 #include <wx/utils.h>
 
@@ -32,11 +35,13 @@
 #include "ui/dialogs/message.hpp"
 #include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
+#include "utils/defer.hpp"
 #include "utils/paths.hpp"
 
 #include "../core/state.hpp"
 #include "../onboard/onboard.hpp"
 #include "dialogs/about.hpp"
+#include "dialogs/addconfig.hpp"
 #include "dialogs/licenses.hpp"
 #include "dialogs/manifest.hpp"
 
@@ -70,6 +75,236 @@ MainMenu::MainMenu(wxWindow* parent) :
 
 MainMenu::~MainMenu() {
     pcui::teardown(this);
+}
+
+void MainMenu::removeEditor(EditorWindow *editor) {
+    for (auto it{mEditors.begin()}; it != mEditors.end(); ++it) {
+        if (*it == editor) {
+            mEditors.erase(it);
+            break;
+        }
+    }
+}
+
+/*
+void MainMenu::handleNotification(uint32 id) {
+    bool rebound{id == pcui::Notifier::eID_Rebound};
+    if (rebound or id == ID_ConfigSelection) {
+    } 
+    if (rebound or id == ID_BoardSelection) {
+        FindWindow(ID_ApplyChanges)->Enable(
+            configSelection != 0 and boardSelection != 0
+        );
+
+        bool canOpenSerial{boardSelection != 0};
+#       if defined _WIN32 or defined __linux__
+        const auto bootloaderIdx{boardSelection.choices().size() - 1};
+        canOpenSerial &= boardSelection != bootloaderIdx;
+#       endif
+        FindWindow(ID_OpenSerial)->Enable(canOpenSerial);
+    }
+
+    if (id == ID_AsyncStart) {
+        wxSetCursor(wxCURSOR_WAIT);
+    }
+    if (rebound or id == ID_AsyncDone) {
+        if (mConfigNeedShown != nullptr) {
+            EditorWindow *editor{nullptr};
+
+            for (auto *listedEditor : mEditors) {
+                if (&listedEditor->getOpenConfig() == mConfigNeedShown) {
+                    editor = listedEditor;
+                    break;
+                }
+            }
+
+            if (editor == nullptr) {
+                editor = new EditorWindow(this, *mConfigNeedShown);
+                mEditors.push_back(editor);
+            }
+
+            editor->Show();
+            editor->Raise();
+            mConfigNeedShown = nullptr;
+        }
+
+        wxSetCursor(wxNullCursor);
+    }
+}
+*/
+
+pcui::DescriptorPtr MainMenu::ui() {
+    return pcui::Stack{
+      .base_={
+        .border_={.size_=10, .dirs_=wxALL},
+      },
+      .children_={
+        pcui::Spacer{.size_=10}(),
+        pcui::Stack{
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Stack{
+              .children_={
+                pcui::Label{
+                  .label_="ProffieConfig",
+#                 if defined(__WXGTK__) or defined(__WXMSW__)
+                  .style_=wxFontInfo{20}.Bold(),
+#                 elif defined (__WXOSX__)
+                  .style_=wxFontInfo{30}.Bold(),
+#                 endif
+                }(),
+                pcui::Label{
+                  .label_=_("Created by Ryryog25"),
+                }(),
+              },
+            }(),
+            pcui::Spacer{.size_=20}(),
+            pcui::StretchSpacer{}(),
+            pcui::Image{
+              .win_={.maxSize_={64, 64}},
+              .src_=pcui::Image::LoadDetails{
+                .name_="icon",
+              }()
+            }()
+          },
+        }(),
+        pcui::Spacer{.size_=20}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Choice{
+              .win_={.base_={.proportion_=1}},
+              .data_=configSel_.choice_,
+              .unselected_=_("Select Config..."),
+              .labeler_=[this](uint32 sel) -> pcui::Choice::Label {
+                  data::Selector::ROContext configSel{configSel_};
+                  if (not configSel.bound()) return {};
+
+                  data::Vector::ROContext vec{*configSel.bound()};
+                  if (sel >= vec.children().size()) return {};
+
+                  auto& info{static_cast<config::Info&>(*vec.children()[sel])};
+                  return info.name();
+              }
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Button{
+              .label_=_("Add"),
+              .exactFit_=true,
+              .func_=[this] { importConfig(); },
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Button{
+              .win_={
+                .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}}),
+              },
+              .label_=_("Remove"),
+              .exactFit_=true,
+            }(),
+          },
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}})
+          },
+          .label_=_("Edit Selected Configuration"),
+        }(),
+        pcui::Spacer{.size_=20}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Button{
+              .win_={
+                .tooltip_=_("Generate an up-to-date list of connected boards."),
+              },
+              .label_=_("Refresh Boards"),
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Choice{
+              .win_={
+                .base_={.proportion_=1},
+                .tooltip_=_("Select the Proffieboard to connect to.\nThese IDs are assigned by the OS, and can vary."),
+              },
+              .data_=board_,
+              .unselected_=_("Select Board..."),
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_={
+              not (configSel_.choice_ | data::logic::HasSelection{{-1}}) and
+              not (board_ | data::logic::HasSelection{{-1}})
+            },
+            .tooltip_=_("Compile and upload the selected configuration to the selected Proffieboard."),
+          },
+          .label_=_("Apply Selected Configuration to Board"),
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .enable_=not (board_ | data::logic::HasSelection{{-1}}),
+          },
+          .label_=_("Open Serial Monitor"),
+        }(),
+#       ifdef __WXMSW__
+        // There's a sizing issue I need to figure out... for now we give it a
+        // chin
+        pcui::Spacer{.size_=FromDIP(20)}(),
+#       endif
+      }
+    }();
+
+#   if defined _WIN32 or defined __linux__
+    boardEntries.emplace_back(_("BOOTLOADER RECOVERY").ToStdString());
+#   endif
+}
+
+void MainMenu::createMenuBar() {
+    auto *file{new wxMenu};
+    file->Append(eID_Manage_Versions, _("Manage Versions..."));
+    file->Append(eID_Update_Manifest, _("Update Channel..."));
+    file->AppendSeparator();
+    file->Append(eID_Logs, _("Show Logs..."));
+    file->Append(wxID_ABOUT);
+    file->Append(eID_Licenses, _("Licensing Information"));
+    file->Append(wxID_EXIT);
+
+    auto* menuBar{new wxMenuBar};
+    menuBar->Append(file, _("&File"));
+    pcui::Frame::appendDefaultMenuItems(menuBar);
+
+    const auto helpStr{_("&Help")};
+    const auto helpIdx{menuBar->FindMenu(helpStr)};
+    auto *help{
+        helpIdx == wxNOT_FOUND
+            ? new wxMenu 
+            : menuBar->GetMenu(helpIdx)
+    };
+    help->Append(
+        eID_Docs,
+        _("Guides...\tCtrl+H"),
+        _("Open the ProffieConfig guides in your web browser")
+    );
+    // TODO: Make this a page that has my contact info and a button to go to
+    // the issues page.
+    help->Append(
+        eID_Issue,
+        _("Help/Bug Report..."),
+        _("Open GitHub to submit issue")
+    );
+    help->AppendSeparator();
+    help->Append(eID_Run_Setup, _("Re-Run Setup"));
+    if (helpIdx == wxNOT_FOUND) menuBar->Append(help, helpStr);
+
+    SetMenuBar(menuBar);
 }
 
 void MainMenu::bindEvents() {
@@ -285,41 +520,6 @@ void MainMenu::bindEvents() {
     */
 
     /*
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { 
-        auto addDialog{AddConfig{this}};
-        if (addDialog.ShowModal() != wxID_OK) return;
-
-        mNotifyData.notify(ID_AsyncStart);
-
-        auto importPath{static_cast<filepath>(addDialog.importPath_)};
-        auto name{static_cast<string>(addDialog.configName_)};
-        std::thread{[this, importPath, name]() {
-            Defer defer{[&]() { mNotifyData.notify(ID_AsyncDone); }};
-
-            if (importPath.empty()) {
-                auto res{Config::open(name)};
-                if (auto *err = std::get_if<string>(&res)) {
-                    pcui::showMessage(*err, _("Failed Creating Config"));
-                    return;
-                }
-                auto& config{*std::get<Config::Config *>(res)};
-                config.save();
-                config.close();
-            } else {
-                auto err{Config::import(name, importPath)};
-                if (err) {
-                    pcui::showMessage(*err, _("Cannot Import Config"));
-                    return;
-                }
-            }
-
-            updateConfigChoices();
-            configSelection = name;
-        }}.detach();
-    }, eID_Add_Config);
-    */
-
-    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent &) {
         if (pcui::showMessage(
                 _("Are you sure you want to deleted the selected configuration?") +
@@ -346,232 +546,48 @@ void MainMenu::bindEvents() {
     */
 }
 
-/*
-void MainMenu::handleNotification(uint32 id) {
-    bool rebound{id == pcui::Notifier::eID_Rebound};
-    if (rebound or id == ID_ConfigSelection) {
-    } 
-    if (rebound or id == ID_BoardSelection) {
-        FindWindow(ID_ApplyChanges)->Enable(
-            configSelection != 0 and boardSelection != 0
-        );
+void MainMenu::importConfig() {
+    AddConfigDialog dlg(this);
+    if (dlg.ShowModal() != wxID_OK) return;
 
-        bool canOpenSerial{boardSelection != 0};
-#       if defined _WIN32 or defined __linux__
-        const auto bootloaderIdx{boardSelection.choices().size() - 1};
-        canOpenSerial &= boardSelection != bootloaderIdx;
-#       endif
-        FindWindow(ID_OpenSerial)->Enable(canOpenSerial);
-    }
+    wxBusyCursor busy;
 
-    if (id == ID_AsyncStart) {
-        wxSetCursor(wxCURSOR_WAIT);
-    }
-    if (rebound or id == ID_AsyncDone) {
-        if (mConfigNeedShown != nullptr) {
-            EditorWindow *editor{nullptr};
+    std::thread{[this, result=dlg.getResult()] {
+        using Result = AddConfigDialog::Result;
 
-            for (auto *listedEditor : mEditors) {
-                if (&listedEditor->getOpenConfig() == mConfigNeedShown) {
-                    editor = listedEditor;
-                    break;
-                }
+        if (result.mode_ == Result::Mode::Create) {
+            std::ofstream file{paths::configDir() / result.name_};
+
+            if (file.fail()) {
+                pcui::showMessage(
+                    _("File could not be created."),
+                    _("Config Add Error")
+                );
+                return;
             }
 
-            if (editor == nullptr) {
-                editor = new EditorWindow(this, *mConfigNeedShown);
-                mEditors.push_back(editor);
+            config::update();
+        } else {
+            auto err{config::import(result.name_, result.path_)};
+            if (err) {
+                pcui::showMessage(*err, _("Import Error"));
             }
-
-            editor->Show();
-            editor->Raise();
-            mConfigNeedShown = nullptr;
         }
 
-        wxSetCursor(wxNullCursor);
-    }
-}
-*/
+        data::Selector::Context configSel{configSel_};
+        data::Vector::ROContext vec{*configSel.bound()};
+        data::Choice::Context choice{configSel_.choice_};
 
-void MainMenu::createMenuBar() {
-    auto *file{new wxMenu};
-    file->Append(eID_Manage_Versions, _("Manage Versions..."));
-    file->Append(eID_Update_Manifest, _("Update Channel..."));
-    file->AppendSeparator();
-    file->Append(eID_Logs, _("Show Logs..."));
-    file->Append(wxID_ABOUT);
-    file->Append(eID_Licenses, _("Licensing Information"));
-    file->Append(wxID_EXIT);
+        for (size idx{0}; idx < vec.children().size(); ++idx) {
+            auto& info{static_cast<config::Info&>(*vec.children()[idx])};
+            data::String::ROContext nameCtxt{info.name()};
 
-    auto* menuBar{new wxMenuBar};
-    menuBar->Append(file, _("&File"));
-    pcui::Frame::appendDefaultMenuItems(menuBar);
+            if (nameCtxt.val() != result.name_) continue;
 
-    const auto helpStr{_("&Help")};
-    const auto helpIdx{menuBar->FindMenu(helpStr)};
-    auto *help{
-        helpIdx == wxNOT_FOUND
-            ? new wxMenu 
-            : menuBar->GetMenu(helpIdx)
-    };
-    help->Append(
-        eID_Docs,
-        _("Guides...\tCtrl+H"),
-        _("Open the ProffieConfig guides in your web browser")
-    );
-    // TODO: Make this a page that has my contact info and a button to go to
-    // the issues page.
-    help->Append(
-        eID_Issue,
-        _("Help/Bug Report..."),
-        _("Open GitHub to submit issue")
-    );
-    help->AppendSeparator();
-    help->Append(eID_Run_Setup, _("Re-Run Setup"));
-    if (helpIdx == wxNOT_FOUND) menuBar->Append(help, helpStr);
-
-    SetMenuBar(menuBar);
-}
-
-pcui::DescriptorPtr MainMenu::ui() {
-    return pcui::Stack{
-      .base_={
-        .border_={.size_=10, .dirs_=wxALL},
-      },
-      .children_={
-        pcui::Spacer{.size_=10}(),
-        pcui::Stack{
-          .orient_=wxHORIZONTAL,
-          .children_={
-            pcui::Stack{
-              .children_={
-                pcui::Label{
-                  .label_="ProffieConfig",
-#                 if defined(__WXGTK__) or defined(__WXMSW__)
-                  .style_=wxFontInfo{20}.Bold(),
-#                 elif defined (__WXOSX__)
-                  .style_=wxFontInfo{30}.Bold(),
-#                 endif
-                }(),
-                pcui::Label{
-                  .label_=_("Created by Ryryog25"),
-                }(),
-              },
-            }(),
-            pcui::Spacer{.size_=20}(),
-            pcui::StretchSpacer{}(),
-            pcui::Image{
-              .win_={.maxSize_={64, 64}},
-              .src_=pcui::Image::LoadDetails{
-                .name_="icon",
-              }()
-            }()
-          },
-        }(),
-        pcui::Spacer{.size_=20}(),
-        pcui::Stack{
-          .base_={.expand_=true},
-          .orient_=wxHORIZONTAL,
-          .children_={
-            pcui::Choice{
-              .win_={.base_={.proportion_=1}},
-              .data_=configSel_.choice_,
-              .unselected_=_("Select Config..."),
-              .labeler_=[this](uint32 sel) -> pcui::Choice::Label {
-                  data::Selector::ROContext configSel{configSel_};
-                  if (not configSel.bound()) return {};
-
-                  data::Vector::ROContext vec{*configSel.bound()};
-                  if (sel >= vec.children().size()) return {};
-
-                  auto& info{static_cast<config::Info&>(*vec.children()[sel])};
-                  return info.name();
-              }
-            }(),
-            pcui::Spacer{.size_=5}(),
-            pcui::Button{
-              .label_=_("Add"),
-              .exactFit_=true,
-            }(),
-            pcui::Spacer{.size_=5}(),
-            pcui::Button{
-              .win_={
-                .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}}),
-              },
-              .label_=_("Remove"),
-              .exactFit_=true,
-            }(),
-          },
-        }(),
-        pcui::Spacer{.size_=10}(),
-        pcui::Button{
-          .win_={
-            .base_={.expand_=true},
-            .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}})
-          },
-          .label_=_("Edit Selected Configuration"),
-        }(),
-        pcui::Spacer{.size_=20}(),
-        pcui::Stack{
-          .base_={.expand_=true},
-          .orient_=wxHORIZONTAL,
-          .children_={
-            pcui::Button{
-              .win_={
-                .tooltip_=_("Generate an up-to-date list of connected boards."),
-              },
-              .label_=_("Refresh Boards"),
-            }(),
-            pcui::Spacer{.size_=5}(),
-            pcui::Choice{
-              .win_={
-                .base_={.proportion_=1},
-                .tooltip_=_("Select the Proffieboard to connect to.\nThese IDs are assigned by the OS, and can vary."),
-              },
-              .data_=board_,
-              .unselected_=_("Select Board..."),
-            }(),
-          }
-        }(),
-        pcui::Spacer{.size_=10}(),
-        pcui::Button{
-          .win_={
-            .base_={.expand_=true},
-            .enable_={
-              not (configSel_.choice_ | data::logic::HasSelection{{-1}}) and
-              not (board_ | data::logic::HasSelection{{-1}})
-            },
-            .tooltip_=_("Compile and upload the selected configuration to the selected Proffieboard."),
-          },
-          .label_=_("Apply Selected Configuration to Board"),
-        }(),
-        pcui::Spacer{.size_=10}(),
-        pcui::Button{
-          .win_={
-            .base_={.expand_=true},
-            .enable_=not (board_ | data::logic::HasSelection{{-1}}),
-          },
-          .label_=_("Open Serial Monitor"),
-        }(),
-#       ifdef __WXMSW__
-        // There's a sizing issue I need to figure out... for now we give it a
-        // chin
-        pcui::Spacer{.size_=FromDIP(20)}(),
-#       endif
-      }
-    }();
-
-#   if defined _WIN32 or defined __linux__
-    boardEntries.emplace_back(_("BOOTLOADER RECOVERY").ToStdString());
-#   endif
-}
-
-void MainMenu::removeEditor(EditorWindow *editor) {
-    for (auto it{mEditors.begin()}; it != mEditors.end(); ++it) {
-        if (*it == editor) {
-            mEditors.erase(it);
+            choice.choose(static_cast<int32>(idx));
             break;
         }
-    }
+    }}.detach();
+
 }
 

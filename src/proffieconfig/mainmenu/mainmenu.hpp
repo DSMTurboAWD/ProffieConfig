@@ -77,7 +77,10 @@ private:
     std::vector<EditorWindow *> mEditors;
 
     pcui::DescriptorPtr ui();
+
     void createMenuBar();
     void bindEvents();
+
+    void importConfig();
 };
 

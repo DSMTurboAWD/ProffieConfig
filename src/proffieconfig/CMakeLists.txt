@@ -9,6 +9,7 @@ add_executable(proffieconfig WIN32
 
     mainmenu/mainmenu.cpp
     mainmenu/dialogs/about.cpp
+    mainmenu/dialogs/addconfig.cpp
     mainmenu/dialogs/licenses.cpp
     mainmenu/dialogs/manifest.cpp
 
