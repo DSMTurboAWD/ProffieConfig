@@ -117,9 +117,15 @@ void AddConfigDialog::bindEvents() {
 
 pcui::DescriptorPtr AddConfigDialog::ui() {
     return pcui::Stack{
-      .base_={.minSize_={400, -1}},
+      .base_={
+        .minSize_={400, -1},
+        .border_={.size_=10, .dirs_=wxALL},
+      },
       .children_={
         pcui::Segmented{
+          .win_={
+            .base_={.align_=wxALIGN_CENTER},
+          },
           .data_=mMode,
           .labels_={
             pcui::Segmented::Label{
@@ -140,6 +146,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         }(),
         pcui::Label{
           .win_={
+            .base_={.border_={.dirs_=wxTOP}},
             .show_=mMode[eMode_Import] | data::logic::IsSet{}
           },
           .label_=_("Configuration to Import"),
@@ -154,8 +161,8 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
           .wildcard_=_("ProffieOS Configuration") + " (*.h)|*.h",
           .mode_=pcui::FilePicker::Open{},
         }(),
-        pcui::Spacer{.size_=10}(),
         pcui::Label{
+          .win_={.base_={.border_={.dirs_=wxTOP}}},
           .label_=_("Configuration Name"),
         }(),
         pcui::Text{
@@ -164,40 +171,28 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         }(),
         pcui::Label{
           .win_={
-            .base_={
-              .border_={.size_=10, .dirs_=wxRIGHT},
-              .align_=wxALIGN_RIGHT,
-            },
+            .base_={.align_=wxALIGN_RIGHT},
             .show_=mNameValid | data::logic::IsSet{}
           },
           .label_=_("Please enter a valid name"),
         }(),
         pcui::Label{
           .win_={
-            .base_={
-              .border_={.size_=10, .dirs_=wxRIGHT},
-              .align_=wxALIGN_RIGHT,
-            },
+            .base_={.align_=wxALIGN_RIGHT},
             .show_=mDupName | data::logic::IsSet{}
           },
           .label_=_("Configuration with same name already exists"),
         }(),
         pcui::Label{
           .win_={
-            .base_={
-              .border_={.size_=10, .dirs_=wxRIGHT},
-              .align_=wxALIGN_RIGHT,
-            },
+            .base_={.align_=wxALIGN_RIGHT},
             .show_=mNeedImportPath | data::logic::IsSet{}
           },
           .label_=_("Please choose a configuration file to import"),
         }(),
         pcui::StretchSpacer{}(),
         pcui::DialogButtons{
-          .base_={
-            .expand_=true,
-            .border_={.size_=10, .dirs_=wxALL},
-          },
+          .base_={.expand_=true},
           .ok_=pcui::Button{
             .win_{
               .enable_={
