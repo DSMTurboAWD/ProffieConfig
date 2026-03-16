@@ -53,7 +53,7 @@ auto data::logic::operator or(
                 const auto oldVal{lhsVal_};
                 lhsVal_ = val;
                 
-                if (oldVal or rhsVal_ != lhsVal_ or rhsVal_) {
+                if ((oldVal or rhsVal_) != (lhsVal_ or rhsVal_)) {
                     onChange(lhsVal_ or rhsVal_);
                 }
             }};
@@ -63,7 +63,7 @@ auto data::logic::operator or(
                 const auto oldVal{rhsVal_};
                 rhsVal_ = val;
 
-                if (lhsVal_ or oldVal != lhsVal_ or rhsVal_) {
+                if ((lhsVal_ or oldVal) != (lhsVal_ or rhsVal_)) {
                     onChange(lhsVal_ or rhsVal_);
                 }
             }};
@@ -93,7 +93,7 @@ auto data::logic::operator and(
                 const auto oldVal{lhsVal_};
                 lhsVal_ = val;
                 
-                if (oldVal and rhsVal_ != lhsVal_ and rhsVal_) {
+                if ((oldVal and rhsVal_) != (lhsVal_ and rhsVal_)) {
                     onChange(lhsVal_ and rhsVal_);
                 }
             }};
@@ -103,7 +103,7 @@ auto data::logic::operator and(
                 const auto oldVal{rhsVal_};
                 rhsVal_ = val;
 
-                if (lhsVal_ and oldVal != lhsVal_ and rhsVal_) {
+                if ((lhsVal_ and oldVal) != (lhsVal_ and rhsVal_)) {
                     onChange(lhsVal_ and rhsVal_);
                 }
             }};
