@@ -556,7 +556,8 @@ void MainMenu::importConfig() {
         using Result = AddConfigDialog::Result;
 
         if (result.mode_ == Result::Mode::Create) {
-            std::ofstream file{paths::configDir() / result.name_};
+            const auto filename{result.name_ + config::RAW_FILE_EXTENSION};
+            std::ofstream file{paths::configDir() / filename};
 
             if (file.fail()) {
                 pcui::showMessage(
