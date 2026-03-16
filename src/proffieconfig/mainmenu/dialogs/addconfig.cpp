@@ -40,6 +40,8 @@
 #include "ui/types.hpp"
 #include "utils/parent.hpp"
 
+#include "../mainmenu.hpp"
+
 AddConfigDialog::AddConfigDialog(MainMenu *parent) :
     Dialog(
         parent,
@@ -61,11 +63,22 @@ AddConfigDialog::~AddConfigDialog() {
     pcui::teardown(this);
 }
 
+AddConfigDialog::Result AddConfigDialog::getResult() {
+    data::String::ROContext name{mConfigName};
+    data::String::ROContext path{mImportPath};
+
+    return {
+        .mode_=static_cast<Result::Mode>(mMode.selected()),
+        .path_=path.val(),
+        .name_=name.val(),
+    };
+}
+
 void AddConfigDialog::bindEvents() {
-    configName_.responder().onChange_ = [](
+    mConfigName.responder().onChange_ = [](
         const data::String::ROContext& ctxt
     ) {
-        auto& self{utils::parent<&AddConfigDialog::configName_>(
+        auto& self{utils::parent<&AddConfigDialog::mConfigName>(
             const_cast<data::String&>(ctxt.model<data::String>())
         )};
 
@@ -93,10 +106,10 @@ void AddConfigDialog::bindEvents() {
         );
     };
 
-    importPath_.responder().onChange_ = [](
+    mImportPath.responder().onChange_ = [](
         const data::String::ROContext& ctxt
     ) {
-        auto& self{utils::parent<&AddConfigDialog::configName_>(
+        auto& self{utils::parent<&AddConfigDialog::mConfigName>(
             const_cast<data::String&>(ctxt.model<data::String>())
         )};
 
@@ -109,7 +122,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
       .base_={.minSize_={400, -1}},
       .children_={
         pcui::Segmented{
-          .data_=mode_,
+          .data_=mMode,
           .labels_={
             pcui::Segmented::Label{
               .text_=_("Create New Config"),
@@ -129,16 +142,16 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         }(),
         pcui::Label{
           .win_={
-            .show_=mode_[eMode_Import] | data::logic::IsSet{}
+            .show_=mMode[eMode_Import] | data::logic::IsSet{}
           },
           .label_=_("Configuration to Import"),
         }(),
         pcui::FilePicker{
           .win_={
             .base_{.expand_=true},
-            .show_=mode_[eMode_Import] | data::logic::IsSet{}
+            .show_=mMode[eMode_Import] | data::logic::IsSet{}
           },
-          .data_=importPath_,
+          .data_=mImportPath,
           .message_=_("Choose Configuration File to Import"),
           .wildcard_=_("ProffieOS Configuration") + " (*.h)|*.h",
           .mode_=pcui::FilePicker::Open{},
@@ -149,7 +162,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         }(),
         pcui::Text{
           .win_={.base_{.expand_=true}},
-          .data_=configName_,
+          .data_=mConfigName,
         }(),
         pcui::Label{
           .win_={
@@ -191,7 +204,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
             .win_{
               .enable_={
                 mNameValid | data::logic::IsSet{} and
-                (not (mode_[eMode_Import] | data::logic::IsSet{}) or
+                (not (mMode[eMode_Import] | data::logic::IsSet{}) or
                  not (mNeedImportPath | data::logic::IsSet{}))
               },
             },

@@ -25,7 +25,7 @@
 #include "ui/dialog.hpp"
 #include "ui/types.hpp"
 
-#include "../mainmenu.hpp"
+struct MainMenu;
 
 struct AddConfigDialog : pcui::Dialog {
     AddConfigDialog(MainMenu *);
@@ -33,16 +33,17 @@ struct AddConfigDialog : pcui::Dialog {
 
     MainMenu *parent_{nullptr};
 
-    enum {
-        eMode_Create,
-        eMode_Import,
-        eMode_Max,
+    struct Result {
+        enum class Mode {
+            Create,
+            Import,
+        };
+        Mode mode_;
+        std::string path_;
+        std::string name_;
     };
-    data::Exclusive mode_{eMode_Max};
-    data::String importPath_;
-    data::String configName_;
 
-    void update();
+    Result getResult();
 
 private:
     data::Generic mCreateButton;
@@ -51,6 +52,15 @@ private:
     data::Bool mNameValid;
     data::Bool mDupName;
     data::Bool mNeedImportPath;
+
+    enum {
+        eMode_Create,
+        eMode_Import,
+        eMode_Max,
+    };
+    data::Exclusive mMode{eMode_Max};
+    data::String mImportPath;
+    data::String mConfigName;
     
     pcui::DescriptorPtr ui();
     void bindEvents();
