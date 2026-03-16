@@ -61,9 +61,11 @@ private:
     void onChoice() override;
 
     void onInsert(size) override;
+    void preRemove(size) override;
     void onRemove(size) override;
     void onSwap(size) override;
 
+    int32 mLastChoice;
     const Vector *mVec{nullptr};
 };
 

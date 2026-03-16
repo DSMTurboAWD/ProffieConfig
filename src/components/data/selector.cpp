@@ -98,21 +98,25 @@ void data::Selector::onInsert(size pos) {
     choice.choose(lastChoice);
 }
 
+void data::Selector::preRemove(size) {
+    // Prior to removal, clear the choice data so that any data held in proxy
+    // will be cleared. E.g. label data models
+
+    Choice::Context choice{choice_};
+    mLastChoice = choice.choice();
+    choice.update(0);
+}
+
 void data::Selector::onRemove(size pos) {
     Choice::Context choice{choice_};
     Vector::ROContext vec{*mVec};
 
-    auto lastChoice{choice.choice()};
-
     choice.update(vec.children().size());
 
-    if (choice.choice() == pos) {
-        choice.unchoose();
-        return;
-    }
+    if (mLastChoice == pos) return;
+    if (mLastChoice > pos) --mLastChoice;
 
-    if (choice.choice() > pos) --lastChoice;
-    choice.choose(lastChoice);
+    choice.choose(mLastChoice);
 }
 
 void data::Selector::onSwap(size pos) {
