@@ -31,7 +31,8 @@ namespace {
 
 struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
     Control(const detail::Scaffold& scaffold, const Choice& desc) :
-        unselected_{desc.unselected_} {
+        unselected_{desc.unselected_},
+        labeler_{desc.labeler_} {
         Create(
             scaffold.childParent_,
             wxID_ANY,
@@ -89,15 +90,33 @@ struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
         return unselected_.empty() ? choice : choice + 1;
     }
 
-    std::vector<wxString> generateChoices(uint32 num) const {
+    std::vector<wxString> generateChoices(uint32 num) {
         std::vector<wxString> choices;
 
         if (not unselected_.empty()) {
             choices.push_back(unselected_);
         }
 
-        for (int32 idx{0}; idx < num; ++idx) {
-            choices.push_back(labeler_ ? labeler_(idx) : "LABEL???");
+        rcvrs_.clear();
+
+        for (uint32 idx{0}; idx < num; ++idx) {
+            if (not labeler_) {
+                choices.emplace_back("LABEL???");
+                continue;
+            }
+
+            auto res{labeler_(idx)};
+            if (auto *ptr{std::get_if<wxString>(&res)}) {
+                choices.emplace_back(std::move(*ptr));
+                continue;
+            }
+
+            const auto& model{std::get<1>(res).get()};
+            data::String::ROContext ctxt{model};
+            choices.emplace_back(ctxt.val());
+            rcvrs_.push_back(std::make_unique<LabelReceiver>(
+                this, idx, model
+            ));
         }
 
         return choices;
@@ -105,6 +124,33 @@ struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
 
     wxString unselected_;
     pcui::Choice::Labeler labeler_;
+
+    struct LabelReceiver final : data::String::Receiver {
+        LabelReceiver(Control *ctrl, uint32 idx, const data::String& model) :
+            mCtrl{ctrl}, mIdx{idx} {
+            attach(model);
+        }
+
+        ~LabelReceiver() override {
+            detach();
+        }
+
+        void onChange() override {
+            // Capture info by value, the receiver could die before the UI
+            // updates occur.
+            mCtrl->CallAfter([
+                ctrl=mCtrl, idx=mIdx, val=context<data::String>().val()
+            ] {
+                ctrl->SetString(idx, val);
+            });
+        }
+
+    private:
+        Control *mCtrl;
+        uint32 mIdx;
+    };
+
+    std::vector<std::unique_ptr<data::String::Receiver>> rcvrs_;
 };
 
 } // namespace

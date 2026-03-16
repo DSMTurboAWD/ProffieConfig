@@ -20,8 +20,10 @@
  */
 
 #include "data/choice.hpp"
+#include "data/string.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
@@ -35,14 +37,16 @@ struct UI_EXPORT Choice {
 
     data::Choice& data_;
 
-    using Labeler = std::function<wxString(int32)>;
-    Labeler labeler_;
-
     /**
      * Entry label for whenever there is no choice selected.
      * Instead of no selection resulting in a blank control.
      */
     wxString unselected_;
+
+    using Label = std::variant<wxString, RefWrap<const data::String>>;
+    using Labeler = std::function<Label(uint32)>;
+
+    Labeler labeler_;
 
     std::unique_ptr<detail::Descriptor> operator()();
 };
