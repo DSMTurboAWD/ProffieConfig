@@ -56,3 +56,7 @@ wxFont pcui::text::detail::StyleData::makeFont() const {
     __builtin_unreachable();
 }
 
+wxFont pcui::text::operator-(Style style) {
+    return detail::StyleData{style}.makeFont();
+}
+

@@ -45,5 +45,7 @@ struct UI_EXPORT StyleData : std::variant<Style, wxFont> {
 
 } // namespace detail
 
+wxFont operator-(Style);
+
 } // namespace pcui::text
 
