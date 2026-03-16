@@ -40,7 +40,7 @@
 #include "ui/types.hpp"
 #include "utils/parent.hpp"
 
-AddConfig::AddConfig(MainMenu *parent) : 
+AddConfigDialog::AddConfigDialog(MainMenu *parent) :
     Dialog(
         parent,
         wxID_ANY,
@@ -57,15 +57,15 @@ AddConfig::AddConfig(MainMenu *parent) :
     bindEvents();
 }
 
-AddConfig::~AddConfig() {
+AddConfigDialog::~AddConfigDialog() {
     pcui::teardown(this);
 }
 
-void AddConfig::bindEvents() {
+void AddConfigDialog::bindEvents() {
     configName_.responder().onChange_ = [](
         const data::String::ROContext& ctxt
     ) {
-        auto& self{utils::parent<&AddConfig::configName_>(
+        auto& self{utils::parent<&AddConfigDialog::configName_>(
             const_cast<data::String&>(ctxt.model<data::String>())
         )};
 
@@ -96,7 +96,7 @@ void AddConfig::bindEvents() {
     importPath_.responder().onChange_ = [](
         const data::String::ROContext& ctxt
     ) {
-        auto& self{utils::parent<&AddConfig::configName_>(
+        auto& self{utils::parent<&AddConfigDialog::configName_>(
             const_cast<data::String&>(ctxt.model<data::String>())
         )};
 
@@ -104,7 +104,7 @@ void AddConfig::bindEvents() {
     };
 }
 
-pcui::DescriptorPtr AddConfig::ui() {
+pcui::DescriptorPtr AddConfigDialog::ui() {
     return pcui::Stack{
       .base_={.minSize_={400, -1}},
       .children_={
@@ -128,13 +128,15 @@ pcui::DescriptorPtr AddConfig::ui() {
           },
         }(),
         pcui::Label{
-          .win_={.show_=data::logic::adapt(mode_[eMode_Import])},
+          .win_={
+            .show_=mode_[eMode_Import] | data::logic::IsSet{}
+          },
           .label_=_("Configuration to Import"),
         }(),
         pcui::FilePicker{
           .win_={
             .base_{.expand_=true},
-            .show_=data::logic::adapt(mode_[eMode_Import])
+            .show_=mode_[eMode_Import] | data::logic::IsSet{}
           },
           .data_=importPath_,
           .message_=_("Choose Configuration File to Import"),
@@ -155,7 +157,7 @@ pcui::DescriptorPtr AddConfig::ui() {
               .border_={.size_=10, .dirs_=wxRIGHT},
               .align_=wxALIGN_RIGHT,
             },
-            .show_=data::logic::adapt(mNameValid)
+            .show_=mNameValid | data::logic::IsSet{}
           },
           .label_=_("Please enter a valid name"),
         }(),
@@ -165,7 +167,7 @@ pcui::DescriptorPtr AddConfig::ui() {
               .border_={.size_=10, .dirs_=wxRIGHT},
               .align_=wxALIGN_RIGHT,
             },
-            .show_=data::logic::adapt(mDupName)
+            .show_=mDupName | data::logic::IsSet{}
           },
           .label_=_("Configuration with same name already exists"),
         }(),
@@ -175,7 +177,7 @@ pcui::DescriptorPtr AddConfig::ui() {
               .border_={.size_=10, .dirs_=wxRIGHT},
               .align_=wxALIGN_RIGHT,
             },
-            .show_=data::logic::adapt(mNeedImportPath)
+            .show_=mNeedImportPath | data::logic::IsSet{}
           },
           .label_=_("Please choose a configuration file to import"),
         }(),
@@ -188,9 +190,9 @@ pcui::DescriptorPtr AddConfig::ui() {
           .ok_=pcui::Button{
             .win_{
               .enable_={
-                data::logic::adapt(mNameValid) and
-                (not data::logic::adapt(mode_[eMode_Import]) or
-                 not data::logic::adapt(mNeedImportPath))
+                mNameValid | data::logic::IsSet{} and
+                (not (mode_[eMode_Import] | data::logic::IsSet{}) or
+                 not (mNeedImportPath | data::logic::IsSet{}))
               },
             },
             .label_=_("Ok"),

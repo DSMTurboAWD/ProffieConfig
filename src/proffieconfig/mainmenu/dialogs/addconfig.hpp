@@ -27,9 +27,9 @@
 
 #include "../mainmenu.hpp"
 
-struct AddConfig : pcui::Dialog {
-    AddConfig(MainMenu *);
-    ~AddConfig() override;
+struct AddConfigDialog : pcui::Dialog {
+    AddConfigDialog(MainMenu *);
+    ~AddConfigDialog() override;
 
     MainMenu *parent_{nullptr};
 
