@@ -254,7 +254,7 @@ do_with_log \
 
 WX_INSTALL_PREFIX=`pwd`/install-$TARGET_PLATFORM
 
-WX_FLAGS='--without-opengl --disable-unsafe-conv-in-wxstring --disable-sys-libs --enable-debug'
+WX_FLAGS='--disable-exceptions --without-opengl --disable-unsafe-conv-in-wxstring --disable-sys-libs --enable-debug'
 
 if [ "$TARGET_PLATFORM" == "linux" ]; then
     WX_HOST='x86_64-linux'
