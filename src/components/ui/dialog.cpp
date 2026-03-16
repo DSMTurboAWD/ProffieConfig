@@ -74,6 +74,7 @@ Dialog::~Dialog() = default;
 
 void Dialog::Fit() {
     // See Frame
+    SetMinSize({0, 0});
     wxDialog::Fit();
     SetMinSize(GetSize());
 }

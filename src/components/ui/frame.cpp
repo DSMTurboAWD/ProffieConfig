@@ -81,6 +81,7 @@ void Frame::Fit() {
     // IMO it's silly that the usual fit doesn't set min size. Fit is supposed
     // to set it to fit around the children (i.e. at min size), so not making
     // it so the sizing reflects that is a little odd. Probably historical.
+    SetMinSize({0, 0});
     wxFrame::Fit();
     SetMinSize(GetSize());
 }

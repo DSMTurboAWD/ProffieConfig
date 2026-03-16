@@ -22,6 +22,7 @@
 #include <wx/event.h>
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
+#include <wx/toplevel.h>
 #include <wx/window.h>
 
 namespace {
@@ -116,10 +117,12 @@ void performUpdate() {
                 auto oldSize{win->GetSize()};
 
                 win->Fit();
-                auto fitSize{win->GetSize()};
 
-                fitSize.IncTo(oldSize);
-                win->SetSize(fitSize);
+                if (win->GetWindowStyle() & wxRESIZE_BORDER) {
+                    auto fitSize{win->GetSize()};
+                    fitSize.IncTo(oldSize);
+                    win->SetSize(fitSize);
+                }
 
                 win->Layout();
             }
