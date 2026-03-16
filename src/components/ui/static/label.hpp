@@ -23,6 +23,7 @@
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/text.hpp"
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
@@ -36,7 +37,7 @@ struct UI_EXPORT Label {
 
     std::variant<
         wxString,
-        std::reference_wrapper<data::String>
+        RefWrap<data::String>
     > label_;
 
     text::detail::StyleData style_;

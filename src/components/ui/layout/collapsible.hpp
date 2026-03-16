@@ -36,7 +36,7 @@ struct UI_EXPORT Collapsible {
     wxString showLabel_;
     wxString hideLabel_;
 
-    OptRef<data::Generic> data_;
+    std::optional<RefWrap<data::Generic>> data_;
     DescriptorPtr child_;
 
     DescriptorPtr operator()();

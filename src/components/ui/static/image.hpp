@@ -37,7 +37,7 @@ struct UI_EXPORT Image {
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    std::optional<std::reference_wrapper<data::Generic>> data_;
+    std::optional<RefWrap<data::Generic>> data_;
 
     wxStaticBitmapBase::ScaleMode scale_{wxStaticBitmapBase::Scale_AspectFill};
 

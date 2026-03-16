@@ -38,7 +38,7 @@ struct UI_EXPORT Scrolled {
         int32 y_{-1};
     } scrollRate_;
 
-    OptRef<data::Generic> data_;
+    std::optional<RefWrap<data::Generic>> data_;
 
     DescriptorPtr child_;
 

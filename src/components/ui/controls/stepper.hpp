@@ -19,12 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <functional>
-
 #include "data/number.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 
+#include "ui/types.hpp"
 #include "ui_export.h"
 
 namespace pcui {
@@ -36,8 +35,8 @@ struct UI_EXPORT Stepper {
     detail::ChildWindowBase win_;
 
     std::variant<
-        std::reference_wrapper<data::Integer>,
-        std::reference_wrapper<data::Decimal>
+        RefWrap<data::Integer>,
+        RefWrap<data::Decimal>
     > data_;
 
     wxString label_;

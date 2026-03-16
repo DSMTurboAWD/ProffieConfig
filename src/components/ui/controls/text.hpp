@@ -23,6 +23,7 @@
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/text.hpp"
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
@@ -34,7 +35,7 @@ struct UI_EXPORT Text {
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    std::variant<wxString, std::reference_wrapper<data::String>> data_;
+    std::variant<wxString, RefWrap<data::String>> data_;
 
     /**
      * Implicitly true if only a static string is provided for data.

@@ -26,6 +26,7 @@
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 
+#include "ui/types.hpp"
 #include "ui_export.h"
 
 namespace pcui {
@@ -37,13 +38,13 @@ struct UI_EXPORT Button {
     detail::ChildWindowBase win_;
 
     using LabelWithState = std::pair<
-        wxString, std::reference_wrapper<const data::Generic>
+        wxString, RefWrap<const data::Generic>
     >;
 
     std::variant<
         wxString,
         LabelWithState,
-        std::reference_wrapper<const data::String>
+        RefWrap<const data::String>
     > label_;
 
     bool exactFit_{false};
