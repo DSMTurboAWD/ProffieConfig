@@ -21,6 +21,7 @@
 
 #include <wx/dcmemory.h>
 #include <wx/display.h>
+#include <wx/gdicmn.h>
 #include <wx/log.h>
 #include <wx/rawbmp.h>
 #include <wx/sizer.h>
@@ -74,6 +75,12 @@ struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
 } // namespace
 
 wxBitmap Image::LoadDetails::operator()() const {
+#   ifdef __APPLE__
+    if (resourceIcon_) {
+        return {name_, wxBITMAP_TYPE_ICON_RESOURCE};
+    }
+#   endif
+
     if (size_.dim_ == -1) {
         return loadPNG(name_);
     }

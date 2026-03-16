@@ -43,10 +43,19 @@ struct UI_EXPORT Image {
 
     struct LoadDetails {
         cstring name_{nullptr};
+
+#       ifdef __APPLE__
+        /**
+         * If the image is an icon in the macOS bundle resources.
+         */
+        bool resourceIcon_{false};
+#       endif
+
         struct {
             int32 dim_{-1};
             wxOrientation orient_{wxHORIZONTAL};
         } size_;
+
         color::Dynamic color_;
 
         wxBitmap operator()() const;
