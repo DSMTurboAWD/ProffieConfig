@@ -100,6 +100,10 @@ bool GroupBox::Layout() {
 }
 
 wxSize GroupBox::DoGetBestClientSize() const {
+    // Early, during creation, this can be called by wxWidgets even though
+    // nothing's established yet.
+    if (not mSizer) return wxDefaultSize;
+
     int32 topBorder{};
     int32 otherBorder{};
     GetBordersForSizer(&topBorder, &otherBorder);

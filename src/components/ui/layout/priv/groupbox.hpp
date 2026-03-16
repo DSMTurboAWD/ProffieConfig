@@ -46,8 +46,8 @@ public:
     wxSize DoGetBestClientSize() const override;
 
 private:
-    wxPanel *mPanel;
-    wxSizer *mSizer;
+    wxPanel *mPanel{nullptr};
+    wxSizer *mSizer{nullptr};
 };
 
 } // namespace pcui::priv
