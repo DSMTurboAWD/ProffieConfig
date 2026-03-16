@@ -1,7 +1,7 @@
-#include "changelog.h"
+#include "changelog.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024-2025 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
  * launcher/update/changelog.cpp
  *
@@ -19,36 +19,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/button.h>
-#include <wx/sizer.h>
-#include <wx/statbox.h>
-#include <wx/statbmp.h>
-#include <wx/stattext.h>
-#include <wx/statline.h>
-#include <wx/scrolwin.h>
+#include <fstream>
+#include <ranges>
 
-#include "log/logger.h"
-#include "ui/message.hpp"
-#include "ui/static_box.h"
-#include "utils/paths.h"
-#include "utils/crypto.h"
+#include "log/logger.hpp"
+#include "ui/build.hpp"
+#include "ui/controls/button.hpp"
+#include "ui/helpers/dialog_buttons.hpp"
+#include "ui/helpers/foreach.hpp"
+#include "ui/helpers/if.hpp"
+#include "ui/layout/group.hpp"
+#include "ui/layout/scrolled.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/static/divider.hpp"
+#include "ui/static/image.hpp"
+#include "ui/static/label.hpp"
+#include "ui/text.hpp"
+#include "ui/types.hpp"
+#include "utils/hash.hpp"
+#include "utils/paths.hpp"
+#include "wx/sizer.h"
 
-namespace Update {
+namespace {
 
-} // namespace Update
+pcui::DescriptorPtr ui(
+    pcui::Dialog& dlg,
+    const Update::Data& data,
+    const Update::Changelog& log
+);
 
-[[nodiscard]] Update::Changelog Update::generateChangelog(const Data& data, const Utils::Version& currentVersion, Log::Branch& lBranch) {
+} // namespace
+
+[[nodiscard]] Update::Changelog Update::generateChangelog(
+    const Data& data,
+    const utils::Version& currentVersion,
+    logging::Branch& lBranch
+) {
     auto& logger{lBranch.createLogger("Update::generateChangelog()")};
 
-    auto getVersionInCurrent{[&data, currentVersion](const ItemID& file) -> Utils::Version {
+    auto getVersionInCurrent{[&data, currentVersion](
+        const ItemID& file
+    ) -> utils::Version {
         auto bundleIt{data.bundles.find(currentVersion)};
-        if (bundleIt == data.bundles.end()) return Utils::Version::invalidObject();
+        if (bundleIt == data.bundles.end()) return utils::Version::invalid();
 
         for (const auto& [ id, fileVer, hash] : bundleIt->second.reqs) {
             if (id == file) return fileVer;
         }
 
-        return Utils::Version::invalidObject();
+        return utils::Version::invalid();
     }};
 
     auto latestBundleIt{data.bundles.rbegin()};
@@ -59,13 +79,13 @@ namespace Update {
 
     for (const auto& [ id, version, hash] : latestBundleIt->second.reqs) {
         auto currentVersion{getVersionInCurrent(id)};
-        if (currentVersion == version) continue;
+        if (currentVersion.compare(version) == 0) continue;
 
         auto& changedFile{ret.changedFiles.emplace_back(
-                id,
-                *hash,
-                currentVersion,
-                version
+            id,
+            *hash,
+            currentVersion,
+            version
         )};
     }
 
@@ -86,212 +106,52 @@ namespace Update {
     return ret;
 }
 
-bool Update::promptWithChangelog(const Data& data, const Changelog& changelog, Log::Branch& lBranch) {
+bool Update::promptWithChangelog(
+    const Data& data, const Changelog& log, logging::Branch& lBranch
+) {
     auto& logger{lBranch.createLogger("Update::promptWithChangelog()")};
 
-    enum {
-        BUTTON_REMIND,
-        BUTTON_INSTALL,
-    };
+    pcui::Dialog dlg(
+        nullptr,
+        wxID_ANY,
+        "Update Available",
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER
+    );
 
-    auto dlg{wxDialog(nullptr, wxID_ANY, "Update Available", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)};
-    auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
+    pcui::build(&dlg, ui(dlg, data, log));
 
-    auto *iconSizer{new wxBoxSizer(wxVERTICAL)};
-#   ifdef __WXOSX__
-    auto *iconElem{new wxStaticBitmap(&dlg, wxID_ANY, wxBitmap("icon", wxBITMAP_TYPE_ICON_RESOURCE))};
-#   elif defined(_WIN32)
-    auto *iconElem{new wxStaticBitmap(&dlg, wxID_ANY, wxICON(ApplicationIcon))};
-#   elif defined(__linux__)
-    auto *iconElem{new wxStaticBitmap(&dlg, wxID_ANY, wxBitmap())};
-#   endif
-    iconElem->SetMaxSize({96, 96});
-    iconSizer->Add(iconElem, wxSizerFlags().Border(wxLEFT | wxTOP | wxBOTTOM, 20));
-
-    auto *mainSizer{new wxBoxSizer(wxVERTICAL)};
-
-    auto *updateSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *updateText{new wxStaticText(&dlg, wxID_ANY, "ProffieConfig is ready for an update!")};
-    auto *updateDeltaText{new wxStaticText(&dlg, wxID_ANY, 
-            '(' + static_cast<string>(changelog.currentBundleVersion) + 
-            " -> " + static_cast<string>(changelog.latestBundleVersion) + ')')};
-    {
-        auto font{updateText->GetFont()};
-        font.SetPointSize(static_cast<int32_t>(font.GetPointSize() * 1.5));
-        updateDeltaText->SetFont(font);
-        font.SetWeight(wxFONTWEIGHT_BOLD);
-        updateText->SetFont(font);
-    }
-    updateSizer->Add(updateText);
-    updateSizer->AddSpacer(10);
-    updateSizer->Add(updateDeltaText);
-    mainSizer->Add(updateSizer, wxSizerFlags().Border(wxBOTTOM, 10));
-
-
-    auto *whatNewText{new wxStaticText(&dlg, wxID_ANY, "What's New?")};
-    {
-        auto font{whatNewText->GetFont()};
-        font.SetPointSize(static_cast<int32_t>(font.GetPointSize() * 1.2));
-        whatNewText->SetFont(font);
-    }
-    mainSizer->Add(whatNewText, wxSizerFlags());
-
-    auto *whatNewBorder{new pcui::StaticBox(wxVERTICAL, &dlg)};
-    auto *whatNewPanel{new wxScrolledWindow(whatNewBorder->childParent())};
-    auto *whatNewSizer{new wxBoxSizer(wxVERTICAL)};
-    auto objFont{whatNewPanel->GetFont()};
-    objFont.SetWeight(wxFONTWEIGHT_BOLD);
-    objFont.SetPointSize(objFont.GetPointSize() + 2);
-    auto versionFont{whatNewPanel->GetFont()};
-    versionFont.SetStyle(wxFONTSTYLE_ITALIC);
-    versionFont.SetPointSize(versionFont.GetPointSize() - 2);
-    auto headFont{whatNewPanel->GetFont()};
-    headFont.SetWeight(wxFONTWEIGHT_BOLD);
-    auto listFont{whatNewPanel->GetFont()};
-
-    whatNewSizer->AddSpacer(5);
-
-    auto noteStartIt{changelog.currentBundleVersion ? std::next(data.bundles.find(changelog.currentBundleVersion)) : data.bundles.begin()};
-    auto noteEndIt{std::next(data.bundles.find(changelog.latestBundleVersion))};
-    for (auto noteIt{noteStartIt}; noteIt != noteEndIt; ++noteIt) {
-        if (noteIt->second.note.empty()) continue;
-
-        auto *noteText{new wxStaticText(whatNewPanel, wxID_ANY, noteIt->second.note)};
-        noteText->SetFont(listFont);
-        whatNewSizer->Add(noteText, wxSizerFlags());
-
-        whatNewSizer->AddSpacer(10);
-    }
-
-    if (noteStartIt != noteEndIt) whatNewSizer->Add(new wxStaticLine(whatNewPanel), wxSizerFlags().Expand().Border(wxBOTTOM, 5));
-
-    for (const auto& file : changelog.changedFiles) {
-        if (file.id.ignored) continue;
-        auto fileItem{data.items.at(file.id)};
-        if (fileItem.hidden) continue;
-
-        auto *objText{new wxStaticText(whatNewPanel, wxID_ANY, file.id.name)};
-        objText->SetFont(objFont);
-        whatNewSizer->Add(objText, wxSizerFlags());
-
-        auto *versText{new wxStaticText(
-                whatNewPanel, 
-                wxID_ANY, 
-                (file.currentVersion ? 
-                 static_cast<string>(file.currentVersion) : 
-                 "[NONE]") 
-                + " -> " + static_cast<string>(file.latestVersion))};
-        versText->SetFont(versionFont);
-        whatNewSizer->Add(versText, wxSizerFlags().Border(wxBOTTOM, 5));
-
-        auto outputSection{[&](const string& sectName, vector<string> ItemVersionData::*field){
-            const auto versionsStart{
-                file.currentVersion ? 
-                    std::next(fileItem.versions.find(file.currentVersion)) : 
-                    fileItem.versions.begin()
-            };
-            // Should always be end()
-            const auto versionsEnd{std::next(fileItem.versions.find(file.latestVersion))};
-
-            vector<string> itemBullets;
-            for (auto versionIt{versionsStart}; versionIt != versionsEnd; ++versionIt) {
-                const auto& versionBullets{versionIt->second.*field};
-                itemBullets.reserve(itemBullets.size() + versionBullets.size());
-                for (const auto& note : versionBullets) {
-                    itemBullets.emplace_back(note);
-                }
-            }
-
-            // Tab breaks this, so spaces are used instead!!
-            if (not itemBullets.empty()) {
-                logger.debug("Listing " + sectName + " for " + file.id.name + "...");
-                auto *headText{new wxStaticText(whatNewPanel, wxID_ANY, "    " + sectName + ':')};
-                headText->SetFont(headFont);
-                whatNewSizer->Add(headText);
-
-                for (const auto& bullet : itemBullets) {
-                    logger.debug("- " + bullet);
-                    auto *featureText{new wxStaticText(whatNewPanel, wxID_ANY, "        - " + bullet)};
-                    featureText->SetFont(listFont);
-                    whatNewSizer->Add(featureText);
-                }
-
-                whatNewSizer->AddSpacer(5);
-            }
-        }};
-
-        outputSection("Features", &ItemVersionData::features);
-        outputSection("Changes", &ItemVersionData::changes);
-        outputSection("Bug Fixes", &ItemVersionData::fixes);
-
-        whatNewSizer->AddSpacer(10);
-    }
-    whatNewPanel->SetSizerAndFit(whatNewSizer);
-    whatNewSizer->FitInside(whatNewPanel);
-    whatNewPanel->SetScrollRate(4, 4);
-    whatNewBorder->Add(whatNewPanel, wxSizerFlags(1).Expand());
-    mainSizer->Add(whatNewBorder, wxSizerFlags(1).Expand());
-
-    mainSizer->AddSpacer(20);
-
-    auto *buttonSizer{new wxBoxSizer(wxHORIZONTAL)};
-
-    auto *remindButton{new wxButton(&dlg, BUTTON_REMIND, "Remind Me Later")};
-    buttonSizer->Add(remindButton, wxSizerFlags());
-
-    buttonSizer->AddStretchSpacer();
-
-    auto *installButton{new wxButton(&dlg, BUTTON_INSTALL, "Update Now")};
-    installButton->SetDefault();
-    buttonSizer->Add(installButton, wxSizerFlags());
-
-    mainSizer->Add(buttonSizer, wxSizerFlags(0).Expand());
-
-    sizer->Add(iconSizer);
-    sizer->Add(mainSizer, wxSizerFlags(1).Expand().Border(wxALL, 20));
-
-    dlg.Bind(wxEVT_CLOSE_WINDOW, [&](wxCloseEvent&) {
-        dlg.EndModal(false);
-    });
-    dlg.Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        dlg.EndModal(false);
-    }, BUTTON_REMIND);
-    dlg.Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        dlg.EndModal(true);
-    }, BUTTON_INSTALL);
-
-    dlg.SetSizerAndFit(sizer);
-#   ifdef __linux__
-    wxSize size{800, 600};
-#   else
-    wxSize size{600, 400};
-#   endif
-    sizer->SetMinSize(size);
-    dlg.SetMinSize(wxSize{dlg.GetBestSize().x, size.y});
-    dlg.SetSize(wxSize{-1, size.y});
-
-    return dlg.ShowModal();
+    return dlg.ShowModal() == wxID_OK;
 }
 
-Utils::Version Update::determineCurrentVersion(const Data& data, pcui::ProgressDialog *prog, Log::Branch& lBranch) {
+utils::Version Update::determineCurrentVersion(
+    const Data& data,
+    pcui::ProgressDialog *prog,
+    logging::Branch& lBranch
+) {
     auto& logger{lBranch.createLogger("Update::determineCurrentVersion()")};
 
     // Ensure invalid
-    auto ret{Utils::Version::invalidObject()};
-    std::map<filepath, optional<Crypto::Hash>> hashCache;
+    auto ret{utils::Version::invalid()};
+    std::map<fs::path, std::optional<utils::hash::SHA256>> hashCache;
 
-    prog->Pulse("Determining current version...");
-    for (auto bundleIt{data.bundles.rbegin()}; bundleIt != data.bundles.rend(); ++bundleIt) {
+    prog->pulse("Determining current version...");
+
+    for (
+            auto bundleIt{data.bundles.rbegin()};
+            bundleIt != data.bundles.rend();
+            ++bundleIt
+        ) {
         const auto& [ version, bundle ]{*bundleIt};
-        auto status{"Trying version " + static_cast<string>(version)};
-        prog->Pulse(status);
+        auto status{"Trying version " + version.string()};
+        prog->pulse(status);
+
         logger.info(status);
 
         bool filesMatch{true};
         for (const auto& [ id, fileVer, hash] : bundle.reqs) {
             if (id.ignored) continue;
             auto fileItem{data.items.at(id)};
-            filepath itemPath;
+            fs::path itemPath;
             switch (id.type) {
                 case ItemType::EXEC:
                     itemPath = paths::binaryDir();
@@ -311,28 +171,28 @@ Utils::Version Update::determineCurrentVersion(const Data& data, pcui::ProgressD
 
 #           ifdef __APPLE__
             if (fileItem.path == "ProffieConfig") {
-                itemPath /= filepath{"ProffieConfig.app"} / "Contents" / "MacOS" / "ProffieConfig";
+                itemPath /= fs::path{"ProffieConfig.app"} / "Contents" / "MacOS" / "ProffieConfig";
             } else {
                 itemPath /= fileItem.path;
             }
 #           else
             itemPath /= filepath{fileItem.path};
 #           endif
-            status = "Testing file " + id.name + ", " + static_cast<string>(fileVer);
+            status = "Testing file " + id.name + ", " + fileVer.string();
             logger.debug(status + " at path: " + itemPath.string());
-            prog->Pulse(status);
+            prog->pulse(status);
 
             auto cachedHash{hashCache.find(itemPath)};
-            optional<Crypto::Hash> itemHash;
+            std::optional<utils::hash::SHA256> itemHash;
             if (cachedHash == hashCache.end()) {
                 std::ifstream fileStream{itemPath};
 
                 if (fileStream.fail()) {
                     status = "Could not open " + itemPath.string() + ", does it exist?";
                     logger.info(status);
-                    prog->Pulse(status);
+                    prog->pulse(status);
                 } else {
-                    itemHash = Crypto::Hash::stream(fileStream);
+                    itemHash = utils::hash::SHA256::stream(fileStream);
                 }
 
                 // Place even if nullopt to be consistent w/ cache pulls
@@ -344,16 +204,16 @@ Utils::Version Update::determineCurrentVersion(const Data& data, pcui::ProgressD
             if (itemHash != fileItem.versions.at(fileVer).hash) {
                 status = "Hash check failed";
                 logger.info(status);
-                prog->Pulse(status);
+                prog->pulse(status);
                 filesMatch = false;
                 break;
             }
         }
 
         if (filesMatch) {
-            status = "Bundle version " + static_cast<string>(version) + " matches installed files.";
+            status = "Bundle version " + version.string() + " matches installed files.";
             logger.info(status);
-            prog->Update(90, status);
+            prog->set(90, status);
             ret = version;
             break;
         }
@@ -362,4 +222,238 @@ Utils::Version Update::determineCurrentVersion(const Data& data, pcui::ProgressD
     return ret;
 }
 
+namespace {
+
+pcui::DescriptorPtr ui(
+    pcui::Dialog& dlg,
+    const Update::Data& data,
+    const Update::Changelog& log
+) {
+    auto objFont{- pcui::text::Style::Normal};
+    objFont.SetWeight(wxFONTWEIGHT_BOLD);
+    objFont.SetPointSize(objFont.GetPointSize() + 2);
+
+    auto versionFont{- pcui::text::Style::Normal};
+    versionFont.SetStyle(wxFONTSTYLE_ITALIC);
+    versionFont.SetPointSize(versionFont.GetPointSize() - 2);
+
+    auto headFont{- pcui::text::Style::Normal};
+    headFont.SetWeight(wxFONTWEIGHT_BOLD);
+
+    auto listFont{- pcui::text::Style::Normal};
+
+    // TODO: This logic seems a little silly.
+    auto noteStartIt{log.currentBundleVersion
+        ? std::next(data.bundles.find(log.currentBundleVersion))
+        : data.bundles.begin()
+    };
+    auto noteEndIt{std::next(data.bundles.find(log.latestBundleVersion))};
+    std::ranges::subrange notesRange{noteStartIt, noteEndIt};
+
+    const auto makeNoteItem{[&](
+        Update::Bundles::const_reference bundle
+    ) -> pcui::DescriptorPtr {
+        return pcui::If{
+          .cond_=not bundle.second.note.empty(),
+          .then_=pcui::Label{
+            .win_={.base_={.border_={.size_=10, .dirs_=wxBOTTOM}}},
+            .label_=bundle.second.note,
+            .style_=listFont,
+          }(),
+        }();
+    }};
+
+    const auto makeFileItem{[&](
+        const Update::Changelog::ChangedFile& file
+    ) -> pcui::DescriptorPtr {
+        if (file.id.ignored) return pcui::NoneElement{}();
+
+        auto fileItem{data.items.at(file.id)};
+        if (fileItem.hidden) return pcui::NoneElement{}();
+
+        auto section{[&](
+            const std::string& sectName,
+            std::vector<std::string> Update::ItemVersionData::*field
+        ) -> pcui::DescriptorPtr {
+            const auto versionsStart{
+                file.currentVersion ? 
+                    std::next(fileItem.versions.find(file.currentVersion)) : 
+                    fileItem.versions.begin()
+            };
+
+            // Should always be end()
+            const auto versionsEnd{std::next(fileItem.versions.find(file.latestVersion))};
+
+            std::vector<std::string> itemBullets;
+            for (auto versionIt{versionsStart}; versionIt != versionsEnd; ++versionIt) {
+                const auto& versionBullets{versionIt->second.*field};
+                itemBullets.reserve(itemBullets.size() + versionBullets.size());
+                for (const auto& note : versionBullets) {
+                    itemBullets.emplace_back(note);
+                }
+            }
+
+            if (itemBullets.empty()) return pcui::NoneElement{}();
+
+            return pcui::Stack{
+              .children_={
+                pcui::Label{
+                  // Tab breaks this, so spaces are used instead!!
+                  .label_="    " + sectName + ':',
+                  .style_=headFont,
+                }(),
+                pcui::ForEach{
+                  .of_=itemBullets,
+                  .do_=[&](const std::string& bullet) {
+                    return pcui::Label{
+                      .label_="        - " + bullet,
+                      .style_=listFont,
+                    }();
+                  }
+                }(),
+                pcui::Spacer{.size_=5}(),
+              }
+            }();
+        }};
+
+        return pcui::Stack{
+          .children_={
+            pcui::Label{
+              .label_=file.id.name,
+              .style_=objFont,
+            }(),
+            pcui::Label{
+              .label_=(file.currentVersion
+                ? file.currentVersion.string()
+                : "[NONE]") + " -> " + file.latestVersion.string(),
+              .style_=versionFont,
+            }(),
+            pcui::Spacer{.size_=5}(),
+            pcui::Spacer{.size_=10}(),
+            section("Features", &Update::ItemVersionData::features),
+            section("Changes", &Update::ItemVersionData::changes),
+            section("Bug Fixes", &Update::ItemVersionData::fixes),
+          }
+        }();
+    }};
+
+    return pcui::Stack{
+      .base_={.expand_=true, .proportion_=1},
+      .orient_=wxHORIZONTAL,
+      .children_={
+        pcui::Stack{
+          .children_={
+            // TODO: Why is this in its own sizer?
+            pcui::Image{
+              .win_={
+                .base_={
+                  .border_={
+                    .size_=20,
+                    .dirs_=wxLEFT | wxTOP | wxBOTTOM
+                  }
+                },
+                .maxSize_={96, 96}
+              },
+              .src_={
+#               if defined(__APPLE__)
+                pcui::Image::LoadDetails{
+                  .name_="icon",
+                  .resourceIcon_=true,
+                }(),
+#               elif defined(_WIN32)
+                wxICON(ApplicationIcon)
+#               endif
+              },
+            }(),
+          }
+        }(),
+        pcui::Stack{
+          .base_={
+            .minSize_={600, 400},
+            .expand_=true,
+            .proportion_=1,
+            .border_={.size_=20, .dirs_=wxALL},
+          },
+          .children_={
+            pcui::Stack{
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Label{
+                  .label_="ProffieConfig is ready for an update!",
+                  .style_=pcui::text::Style::Title,
+                }(),
+                pcui::Spacer{.size_=10}(),
+                pcui::Label{
+                  .label_={
+                    '(' + log.currentBundleVersion.string() + " -> " +
+                    log.latestBundleVersion.string() + ')'
+                  },
+                  .style_=[]() {
+                    auto font{- pcui::text::Style::Title};
+                    font.SetWeight(wxFONTWEIGHT_NORMAL);
+                    return font;
+                  }(),
+                }(),
+              }
+            }(),
+            pcui::Spacer{.size_=10}(),
+            pcui::Label{
+              .label_="What's New?",
+              .style_=pcui::text::Style::Header,
+            }(),
+            pcui::Group{
+              .base_={.expand_=true, .proportion_=1},
+              .children_={
+                pcui::Scrolled{
+                  .win_={
+                    .base_={
+                      .expand_=true,
+                      .proportion_=1
+                    }
+                  },
+                  .scrollRate_={.x_=4, .y_=4},
+                  .child_=pcui::Stack{
+                    .base_={.border_={.size_=10, .dirs_=wxALL}},
+                    .children_={
+                      pcui::ForEach{
+                        .of_=notesRange,
+                        .do_=makeNoteItem,
+                      }(),
+                      pcui::If{
+                        .cond_=not notesRange.empty(),
+                        .then_=pcui::Divider{}(),
+                      }(),
+                      pcui::ForEach{
+                        .of_=log.changedFiles,
+                        .do_=makeFileItem,
+                      }(),
+                    }
+                  }(),
+                }(),
+              }
+            }(),
+            pcui::Spacer{.size_=20}(),
+            pcui::DialogButtons{
+              .base_={.expand_=true},
+              .ok_=pcui::Button{
+                .label_="Update Now",
+                .default_=true,
+                .func_=[&dlg] {
+                  dlg.EndModal(wxID_OK);
+                }
+              }(),
+              .cancel_=pcui::Button{
+                .label_="Remind Me Later",
+                .func_=[&dlg] {
+                  dlg.EndModal(wxID_CANCEL);
+                }
+              }(),
+            }(),
+          }
+        }(),
+      }
+    }();
+}
+
+} // namespace
 

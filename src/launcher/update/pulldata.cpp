@@ -1,4 +1,4 @@
-#include "pulldata.h"
+#include "pulldata.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2024 Ryan Ogurek
@@ -27,31 +27,45 @@
 #include <wx/utils.h>
 #include <wx/richmsgdlg.h>
 
-#include "log/logger.h"
-#include "utils/paths.h"
-#include "pconf/pconf.h"
-#include "pconf/utils.h"
+#include "log/logger.hpp"
+#include "ui/dialogs/message.hpp"
+#include "utils/files.hpp"
+#include "utils/hash.hpp"
+#include "utils/paths.hpp"
+#include "pconf/read.hpp"
+#include "pconf/write.hpp"
+#include "pconf/utils.hpp"
 
-#include "update.h"
+#include "update.hpp"
 
 namespace {
 
 /**
  * @return True if a fatal message was found.
  */
-[[nodiscard]] bool checkMessages(const PConf::HashedData&, Log::Branch&);
+[[nodiscard]] bool checkMessages(const pconf::HashedData&, logging::Branch&);
 
-[[nodiscard]] std::map<Update::ItemID, Update::Item> findItems(const PConf::HashedData&, Log::Branch&);
+[[nodiscard]] std::map<Update::ItemID, Update::Item> findItems(
+    const pconf::HashedData&, logging::Branch&
+);
 
-[[nodiscard]] optional<std::pair<string, Update::Item>> parseItem(const PConf::EntryPtr&, Log::Logger&);
+[[nodiscard]] std::optional<std::pair<std::string, Update::Item>> parseItem(
+    const pconf::EntryPtr&, logging::Logger&
+);
 
-[[nodiscard]] std::map<Utils::Version, Update::Bundle> resolveBundles(const PConf::HashedData&, Log::Branch&);
+[[nodiscard]] Update::Bundles resolveBundles(
+    const pconf::HashedData&, logging::Branch&
+);
 
-void verifyBundles(const std::map<Update::ItemID, Update::Item>& items, std::map<Utils::Version, Update::Bundle>& bundles, Log::Branch&);
+void verifyBundles(
+    const std::map<Update::ItemID, Update::Item>& items,
+    Update::Bundles& bundles,
+    logging::Branch&
+);
 
 } // namespace
 
-bool Update::pullData(pcui::ProgressDialog *prog, Log::Branch& lBranch) {
+bool Update::pullData(pcui::ProgressDialog *prog, logging::Branch& lBranch) {
     auto& logger{lBranch.createLogger("Update::pullData()")};
 
     bool requestComplete{false};
@@ -70,14 +84,14 @@ bool Update::pullData(pcui::ProgressDialog *prog, Log::Branch& lBranch) {
         }
     }};
 
-    auto stateFile{paths::openInputFile(paths::stateFile())};
-    PConf::Data stateFileData;
-    PConf::read(stateFile, stateFileData, logger.binfo("Reading manifest to fetch..."));
-    const auto hashedStateFileData{PConf::hash(stateFileData)};
+    auto stateFile{files::openInput(paths::stateFile())};
+    pconf::Data stateFileData;
+    pconf::read(stateFile, stateFileData, logger.binfo("Reading manifest to fetch..."));
+    const auto hashedStateFileData{pconf::hash(stateFileData)};
     const auto updateManifestEntry{hashedStateFileData.find("UPDATE_MANIFEST")};
     auto pullFrom{paths::remoteUpdateAssets()};
-    if (updateManifestEntry and updateManifestEntry->value) {
-        pullFrom += "/manifest-" + *updateManifestEntry->value + ".pconf";
+    if (updateManifestEntry and updateManifestEntry->value_) {
+        pullFrom += "/manifest-" + *updateManifestEntry->value_ + ".pconf";
     } else {
         pullFrom += "/manifest.pconf";
     }
@@ -89,11 +103,13 @@ bool Update::pullData(pcui::ProgressDialog *prog, Log::Branch& lBranch) {
 
     constexpr cstring MSG{"Pulling version data..."};
     logger.info(MSG);
-    prog->Pulse(MSG);
+    prog->pulse(MSG);
     request.Start();
 
     while (not requestComplete) {
-        if (not prog->Pulse()) {
+        prog->pulse();
+
+        if (prog->cancelled()) {
             logger.info("Canceled.");
             return false;
         }
@@ -117,46 +133,60 @@ bool Update::pullData(pcui::ProgressDialog *prog, Log::Branch& lBranch) {
     return true;
 }
 
-optional<Update::Data> Update::parseData(pcui::ProgressDialog *prog, Log::Branch& lBranch, bool heedMessages) {
+std::optional<Update::Data> Update::parseData(
+    pcui::ProgressDialog *prog, logging::Branch& lBranch, bool heedMessages
+) {
     auto& logger{lBranch.createLogger("Update::pullData()")};
 
-    if (not prog->Update(20, "Parsing manifest...")) {
+    prog->set(20, "Parsing manifest...");
+
+    if (prog->cancelled()) {
         logger.info("Canceled");
-        return nullopt;
+        return std::nullopt;
     }
 
-    auto stream{paths::openInputFile(manifestFile())};
-    PConf::Data rawData;
-    PConf::read(stream, rawData, logger.binfo("Parsing manifest..."));
+    auto stream{files::openInput(manifestFile())};
+    pconf::Data rawData;
+    pconf::read(stream, rawData, logger.binfo("Parsing manifest..."));
     stream.close();
-    auto hashedRawData{PConf::hash(rawData)};
+    auto hashedRawData{pconf::hash(rawData)};
 
     if (heedMessages) {
-        if (not prog->Update(30, "Checking for messages...")) {
+        prog->set(30, "Checking for messages...");
+
+        if (prog->cancelled()) {
             logger.info("Canceled.");
-            return nullopt;
+            return std::nullopt;
         }
+
         if (checkMessages(hashedRawData, *logger.binfo("Checking Messages..."))) {
             logger.info("Canceling due to critical message.");
-            return nullopt;
+            return std::nullopt;
         }
     }
 
-    if (not prog->Update(50, "Finding items...")) {
+    prog->set(50, "Finding items...");
+
+    if (prog->cancelled()) {
         logger.info("Canceled.");
-        return nullopt;
+        return std::nullopt;
     }
+
     auto items{findItems(hashedRawData, *logger.binfo("Finding items..."))};
 
-    if (not prog->Update(60, "Resolving bundles...")) {
+    prog->set(60, "Resolving bundles...");
+
+    if (prog->cancelled()) {
         logger.info("Canceled");
-        return nullopt;
+        return std::nullopt;
     }
     auto bundles{resolveBundles(hashedRawData, *logger.binfo("Resolving bundles..."))};
 
-    if (not prog->Update(80, "Verifying bundles...")) {
+    prog->set(80, "Verifying bundles...");
+
+    if (prog->cancelled()) {
         logger.info("Canceled");
-        return nullopt;
+        return std::nullopt;
     }
     verifyBundles(items, bundles, *logger.binfo("Verifying bundles..."));
 
@@ -165,29 +195,36 @@ optional<Update::Data> Update::parseData(pcui::ProgressDialog *prog, Log::Branch
 
 namespace {
 
-bool checkMessages(const PConf::HashedData& hashedRawData, Log::Branch& lBranch) {
+bool checkMessages(
+    const pconf::HashedData& hashedRawData, logging::Branch& lBranch
+) {
     auto& logger{lBranch.createLogger("Update::checkMessages()")};
 
-    Utils::Version launcherVersion{wxSTRINGIZE(BIN_VERSION)};
+    utils::Version launcherVersion{wxSTRINGIZE(BIN_VERSION)};
     if (not launcherVersion) {
-        logger.error("This launcher's version is invalid (" + static_cast<string>(launcherVersion) + "), messages will not be available!!");
+        logger.error("This launcher's version is invalid (" + static_cast<std::string>(launcherVersion) + "), messages will not be available!!");
         return false;
     }
 
     constexpr cstring IGNORED_MESSAGES_STR{"IGNORED_MESSAGES"};
-    PConf::Data stateData;
-    PConf::EntryPtr ignoreMessageEntry;
-    vector<string> ignoreMessageList;
-    std::unordered_set<string> ignoredMessages;
+    pconf::Data stateData;
+    pconf::EntryPtr ignoreMessageEntry;
+    std::vector<std::string> ignoreMessageList;
+    std::unordered_set<std::string> ignoredMessages;
 
-    auto stateFile{paths::openInputFile(paths::stateFile())};
-    PConf::read(stateFile, stateData, logger.bdebug("Parsing state file..."));
+    auto stateFile{files::openInput(paths::stateFile())};
+    pconf::read(stateFile, stateData, logger.bdebug("Parsing state file..."));
     stateFile.close();
     for (const auto& entry : stateData) {
-        if (entry->name != IGNORED_MESSAGES_STR or not entry->value) continue;
+        if (entry->name_ != IGNORED_MESSAGES_STR or not entry->value_) {
+            continue;
+        }
 
-        ignoreMessageList = PConf::valueAsList(entry->value);
-        ignoredMessages = {ignoreMessageList.begin(), ignoreMessageList.end()};
+        ignoreMessageList = pconf::valueAsList(entry->value_);
+        ignoredMessages = {
+            ignoreMessageList.begin(),
+            ignoreMessageList.end()
+        };
         ignoreMessageEntry = entry;
         break;
     }
@@ -200,24 +237,24 @@ bool checkMessages(const PConf::HashedData& hashedRawData, Log::Branch& lBranch)
             continue;
         }
 
-        if (not messageEntry->label) {
+        if (not messageEntry->label_) {
             logger.warn("Message without version specified is unacceptable.");
             continue;
         }
 
-        auto hashedEntries{PConf::hash(messageEntry.section()->entries)};
+        auto hashedEntries{pconf::hash(messageEntry.section()->entries_)};
         auto contentEntry{hashedEntries.find("CONTENT")};
         if (not contentEntry) {
             logger.warn("Message missing content!");
             continue;
         }
-        if (not contentEntry->value) {
+        if (not contentEntry->value_) {
             logger.warn("Message content entry missing value!");
             continue;
         }
         bool isFatal{hashedEntries.find("FATAL")};
 
-        auto label{*messageEntry->label};
+        auto label{*messageEntry->label_};
         Update::Comparator comp{};
         if (label.length() > 1) {
             if (label[0] == '<') comp = Update::Comparator::LESS_THAN;
@@ -229,53 +266,61 @@ bool checkMessages(const PConf::HashedData& hashedRawData, Log::Branch& lBranch)
             }
         }
         if (not std::isdigit(label[0])) label = label.substr(1);
-        Utils::Version version{label};
+        utils::Version version{label};
         if (not version) {
-            logger.warn("Failed to parse message version: " + static_cast<string>(version));
+            logger.warn("Failed to parse message version: " + static_cast<std::string>(version));
             continue;
         }
 
         bool messageApplicable{};
         switch (comp) {
             case Update::Comparator::EQUAL:
-                messageApplicable = launcherVersion == version;
+                messageApplicable = version.compare(launcherVersion) == 0;
                 break;
             case Update::Comparator::LESS_THAN:
-                messageApplicable = launcherVersion < version;
+                // This looks backwards, because the `<>` in the pconf is
+                // comparing to the launcher version (i.e. "launcher version
+                // is less than"), but to maybe handle permissive versions
+                // better we invert it evaluate permissive nums on the version
+                // in pconf and then compare against launcherVersion. (i.e.
+                // "greater than launcher version")
+                //
+                // Logically equivalent
+                messageApplicable = version.compare(launcherVersion) > 0;
                 break;
             case Update::Comparator::GREATER_THAN:
-                messageApplicable = launcherVersion > version;
+                messageApplicable = version.compare(launcherVersion) < 0;
                 break;
         }
         if (not messageApplicable) continue;
 
         const auto idEntry{hashedEntries.find("ID")};
-        if (idEntry and idEntry->value) {
-            if (ignoredMessages.contains(*idEntry->value)) {
-                logger.verbose("User ignored message " + *idEntry->value + "...");
+        if (idEntry and idEntry->value_) {
+            if (ignoredMessages.contains(*idEntry->value_)) {
+                logger.verbose("User ignored message " + *idEntry->value_ + "...");
                 continue;
             }
         }
 
         wxRichMessageDialog dialog{
             nullptr,
-            *contentEntry->value,
+            *contentEntry->value_,
             isFatal ? _("ProffieConfig Launcher Critical Notice") : _("ProffieConfig Launcher Alert")
         };
 
         dialog.ShowCheckBox("Do Not Show Again");
         if (dialog.IsCheckBoxChecked()) {
-            ignoreMessageList.push_back(*contentEntry->value);
+            ignoreMessageList.push_back(*contentEntry->value_);
         }
 
         if (isFatal) hadFatal = true;
     }
 
-    if (not ignoreMessageEntry) ignoreMessageEntry = PConf::Section::create(IGNORED_MESSAGES_STR);
-    ignoreMessageEntry->value = PConf::listAsValue(ignoreMessageList);
+    if (not ignoreMessageEntry) ignoreMessageEntry = pconf::Section::create(IGNORED_MESSAGES_STR);
+    ignoreMessageEntry->value_ = pconf::listAsValue(ignoreMessageList);
     const auto tmpPath{paths::stateFile().append(".tmp")};
-    auto tmpFile{paths::openOutputFile(tmpPath)};
-    PConf::write(tmpFile, stateData, logger.bdebug("Writing statefile..."));
+    auto tmpFile{files::openOutput(tmpPath)};
+    pconf::write(tmpFile, stateData, logger.bdebug("Writing statefile..."));
     tmpFile.close();
     std::error_code err;
     fs::rename(tmpPath, paths::stateFile(), err);
@@ -284,17 +329,17 @@ bool checkMessages(const PConf::HashedData& hashedRawData, Log::Branch& lBranch)
 }
 
 std::map<Update::ItemID, Update::Item> findItems(
-    const PConf::HashedData& rawHashedData,
-    Log::Branch& lBranch
+    const pconf::HashedData& rawHashedData,
+    logging::Branch& lBranch
 ) {
     auto& logger{lBranch.createLogger("Update::enumerateItems()")};
 
     std::map<Update::ItemID, Update::Item> ret;
 
     auto findType{[&logger, &ret](
-        const vector<PConf::EntryPtr>& entries,
+        const std::vector<pconf::EntryPtr>& entries,
         Update::ItemType type,
-        const string& typeStr
+        const std::string& typeStr
     ) {
         for (const auto& entry : entries) {
             auto parsed{parseItem(entry, logger)};
@@ -316,20 +361,20 @@ std::map<Update::ItemID, Update::Item> findItems(
     return ret;
 }
 
-optional<std::pair<string, Update::Item>> parseItem(
-    const PConf::EntryPtr& entry,
-    Log::Logger& logger
+std::optional<std::pair<std::string, Update::Item>> parseItem(
+    const pconf::EntryPtr& entry,
+    logging::Logger& logger
 ) {
-    if (not entry->label) {
+    if (not entry->label_) {
         logger.warn("Item missing name!");
-        return nullopt; 
+        return std::nullopt; 
     }
 
-    auto name{*entry->label};
+    auto name{*entry->label_};
 
     if (not entry.section()) {
         logger.warn("Item \"" + name + "\" not a section!");
-        return nullopt;
+        return std::nullopt;
     }
 
 #   ifdef _WIN32
@@ -343,20 +388,20 @@ optional<std::pair<string, Update::Item>> parseItem(
     constexpr cstring HASH_KEY{"HASH_Linux"};
 #   endif
 
-    auto hashedEntries{PConf::hash(entry.section()->entries)};
+    auto hashedEntries{pconf::hash(entry.section()->entries_)};
     auto pathEntry{hashedEntries.find(PATH_KEY)};
-    if (not pathEntry or not pathEntry->value) {
+    if (not pathEntry or not pathEntry->value_) {
         logger.info("Item \"" + name + "\" missing platform path, ignoring.");
-        return nullopt;
+        return std::nullopt;
     }
 
     Update::Item item;
     item.hidden = static_cast<bool>(hashedEntries.find("HIDDEN"));
-    item.path = *pathEntry->value;
+    item.path = *pathEntry->value_;
 
     auto versionEntries{hashedEntries.findAll("VERSION")};
     for (const auto& versionEntry : versionEntries) {
-        if (not versionEntry->label) {
+        if (not versionEntry->label_) {
             logger.warn("Item \"" + name + "\" version unlabeled.");
             continue;
         }
@@ -365,45 +410,47 @@ optional<std::pair<string, Update::Item>> parseItem(
             continue;
         }
 
-        Utils::Version version{*versionEntry->label};
-        if (version.err) {
-            string errMsg{"Item \""};
+        utils::Version version{*versionEntry->label_};
+        if (not version) {
+            std::string errMsg{"Item \""};
             errMsg += name;
             errMsg += "\" version \"";
-            errMsg += *versionEntry->label;
-            errMsg += "\" invalid version str: " + static_cast<string>(version);
+            errMsg += *versionEntry->label_;
+            errMsg += "\" invalid version str: " + *versionEntry->label_;
             logger.warn(errMsg);
             continue;
         }
 
-        auto hashedVersionEntries{PConf::hash(versionEntry.section()->entries)};
+        auto hashedVersionEntries{pconf::hash(versionEntry.section()->entries_)};
 
         auto versionHashEntry{hashedVersionEntries.find(HASH_KEY)};
         if (not versionHashEntry) {
-            string errMsg{"Item \""}; 
+            std::string errMsg{"Item \""}; 
             errMsg += name;
             errMsg += "\" version "; 
-            errMsg += static_cast<string>(version);
+            errMsg += version.string();
             errMsg += " does not have hash for this OS, skipping.";
             logger.info(errMsg);
             continue;
         }
-        if (not versionHashEntry->value) {
-            string errMsg{"Item \""}; 
+        if (not versionHashEntry->value_) {
+            std::string errMsg{"Item \""}; 
             errMsg += name;
             errMsg += "\" version ";
-            errMsg += static_cast<string>(version);
+            errMsg += version.string();
             errMsg += " hash missing value.";
             logger.warn(errMsg);
             continue;
         }
 
-        const auto hash{Crypto::Hash::parseString(*versionHashEntry->value)};
+        const auto hash{utils::hash::SHA256::parseString(
+            *versionHashEntry->value_
+        )};
         if (not hash) {
-            string errMsg{"Item \""}; 
+            std::string errMsg{"Item \""}; 
             errMsg += name;
             errMsg += "\" version ";
-            errMsg += static_cast<string>(version);
+            errMsg += version.string();
             errMsg += " has invalid hash.";
             logger.warn(errMsg);
             continue;
@@ -413,44 +460,44 @@ optional<std::pair<string, Update::Item>> parseItem(
 
         auto fixEntries{hashedVersionEntries.findAll("FIX")};
         for (const auto& fixEntry : fixEntries) {
-            if (not fixEntry->value) {
-                string errMsg{"Item \""}; 
+            if (not fixEntry->value_) {
+                std::string errMsg{"Item \""}; 
                 errMsg += name;
                 errMsg += "\" version "; 
-                errMsg += static_cast<string>(version);
+                errMsg += version.string();
                 errMsg += " fix missing value.";
                 logger.warn(errMsg);
                 continue;
             }
-            versionData.fixes.push_back(*fixEntry->value);
+            versionData.fixes.push_back(*fixEntry->value_);
         }
 
         auto changeEntries{hashedVersionEntries.findAll("CHANGE")};
         for (const auto& changeEntry : changeEntries) {
-            if (not changeEntry->value) {
-                string errMsg{"Item \""}; 
+            if (not changeEntry->value_) {
+                std::string errMsg{"Item \""}; 
                 errMsg += name;
                 errMsg += "\" version ";
-                errMsg += static_cast<string>(version);
+                errMsg += version.string();
                 errMsg += " change missing value.";
                 logger.warn(errMsg);
                 continue;
             }
-            versionData.changes.push_back(*changeEntry->value);
+            versionData.changes.push_back(*changeEntry->value_);
         }
 
         auto featureEntries{hashedVersionEntries.findAll("FEAT")};
         for (const auto& featureEntry : featureEntries) {
-            if (not featureEntry->value) {
-                string errMsg{"Item \""}; 
+            if (not featureEntry->value_) {
+                std::string errMsg{"Item \""}; 
                 errMsg += name;
                 errMsg += "\" version ";
-                errMsg += static_cast<string>(version);
+                errMsg += version.string();
                 errMsg += " feature missing value.";
                 logger.warn(errMsg);
                 continue;
             }
-            versionData.features.push_back(*featureEntry->value);
+            versionData.features.push_back(*featureEntry->value_);
         }
 
         item.versions.emplace(version, versionData);
@@ -459,62 +506,67 @@ optional<std::pair<string, Update::Item>> parseItem(
     return std::pair{ name, item };
 }
 
-std::map<Utils::Version, Update::Bundle> resolveBundles(const PConf::HashedData& hashedRawData, Log::Branch& lBranch) {
+Update::Bundles resolveBundles(
+    const pconf::HashedData& hashedRawData, logging::Branch& lBranch
+) {
     auto& logger{lBranch.createLogger("Update::resolveBundles()")};
 
-    std::map<Utils::Version, Update::Bundle> ret;
+    Update::Bundles ret;
 
     auto bundleEntries{hashedRawData.findAll("BUNDLE")};
     for (const auto& bundleEntry : bundleEntries) {
-        if (not bundleEntry->label) {
+        if (not bundleEntry->label_) {
             logger.warn("Bundle unlabeled.");
             continue;
         }
         if (not bundleEntry.section()) {
-            logger.warn("Bundle \"" + bundleEntry->label.value() + "\" not a section.");
+            logger.warn("Bundle \"" + bundleEntry->label_.value() + "\" not a section.");
             continue;
         }
 
-        Utils::Version version{*bundleEntry->label};
-        if (version.err) {
-            logger.warn("Bundle \"" + *bundleEntry->label + "\" version invalid: " + static_cast<string>(version));
+        utils::Version version{*bundleEntry->label_};
+        if (not version) {
+            logger.warn("Bundle \"" + *bundleEntry->label_ + "\" version invalid: " + version.string());
             continue;
         }
 
-        auto hashedEntries{PConf::hash(bundleEntry.section()->entries)};
+        auto hashedEntries{pconf::hash(bundleEntry.section()->entries_)};
         Update::Bundle bundle;
 
         auto noteEntry{hashedEntries.find("NOTE")};
         if (noteEntry) {
-            if (not noteEntry->value) logger.warn("Bundle \"" + static_cast<string>(version) + "\" note missing value");
-            else bundle.note = noteEntry->value.value();
+            if (not noteEntry->value_) logger.warn("Bundle \"" + version.string() + "\" note missing value");
+            else bundle.note = noteEntry->value_.value();
         }
 
-        auto parseReqItem{[&logger](const std::shared_ptr<PConf::Entry>& item) -> optional<std::pair<string, Utils::Version>> {
-            if (not item->label) {
+        auto parseReqItem{[&logger](
+            const std::shared_ptr<pconf::Entry>& item
+        ) -> std::optional<std::pair<std::string, utils::Version>> {
+            if (not item->label_) {
                 logger.warn("Item is unlabeled");
-                return nullopt;
+                return std::nullopt;
             }
-            if (not item->value) {
-                logger.warn("Item \"" + item->label.value() + "\" is unversioned.");
-                return nullopt;
-            }
-            Utils::Version version{*item->value};
-            if (not version) {
-                logger.warn("Item \"" + item->label.value() + "\" version \"" + item->value.value() + "\" is invalid: " + static_cast<string>(version));
-                return nullopt;
+            if (not item->value_) {
+                logger.warn("Item \"" + item->label_.value() + "\" is unversioned.");
+                return std::nullopt;
             }
 
-            return std::pair{ *item->label, version };
+            utils::Version version{*item->value_};
+            if (not version) {
+                logger.warn("Item \"" + item->label_.value() + "\" version \"" + item->value_.value() + "\" is invalid: " + version.string());
+                return std::nullopt;
+            }
+
+            return std::pair{ *item->label_, version };
         }};
 
         auto fillReqFiles{[&](
-            const vector<PConf::EntryPtr>& entries, Update::ItemType type
+            const std::vector<pconf::EntryPtr>& entries, Update::ItemType type
         ) {
             for (const auto& entry : entries) {
                 auto parsed{parseReqItem(entry)};
                 if (parsed) {
-                    logger.debug("Added to Bundle " + static_cast<string>(version) + ": " + parsed->first + ", " + static_cast<string>(parsed->second));
+                    logger.debug("Added to Bundle " + version.string() + ": " + parsed->first + ", " + parsed->second.string());
                     bundle.reqs.emplace_back(
                         Update::ItemID{.type=type, .name=parsed->first},
                         parsed->second
@@ -528,7 +580,7 @@ std::map<Utils::Version, Update::Bundle> resolveBundles(const PConf::HashedData&
         fillReqFiles(hashedEntries.findAll("COMP"), Update::ItemType::COMP);
         fillReqFiles(hashedEntries.findAll("RSRC"), Update::ItemType::RSRC);
 
-        logger.info("Parsed bundle " + static_cast<string>(version));
+        logger.info("Parsed bundle " + version.string());
         ret.emplace(version, bundle);
     }
 
@@ -537,8 +589,8 @@ std::map<Utils::Version, Update::Bundle> resolveBundles(const PConf::HashedData&
 
 void verifyBundles(
     const std::map<Update::ItemID, Update::Item>& items,
-    std::map<Utils::Version, Update::Bundle>& bundles,
-    Log::Branch& lBranch
+    Update::Bundles& bundles,
+    logging::Branch& lBranch
 ) {
     auto& logger{lBranch.createLogger("Update::verifyBundles()")};
 
@@ -549,10 +601,10 @@ void verifyBundles(
         for (auto& [ fileID, fileVer, hash] : bundle.reqs) {
             auto itemIt{items.find(fileID)};
             if (itemIt == items.end()) {
-                string message{"Bundle "};
-                message += static_cast<string>(version);
+                std::string message{"Bundle "};
+                message += version.string();
                 message += " contains an item (";
-                message += fileID.name + ':' + static_cast<string>(fileVer);
+                message += fileID.name + ':' + fileVer.string();
                 message += ") which is not registered for this OS, ignoring the item.";
                 logger.debug(message);
                 fileID.ignored = true;
@@ -561,10 +613,10 @@ void verifyBundles(
 
             auto itemVerIt{itemIt->second.versions.find(fileVer)};
             if (itemVerIt == itemIt->second.versions.end()) {
-                string message{"Bundle "};
-                message += static_cast<string>(version);
+                std::string message{"Bundle "};
+                message += version.string();
                 message += " contains a version of an item (";
-                message += fileID.name + ':' + static_cast<string>(fileVer);
+                message += fileID.name + ':' + fileVer.string();
                 message += ") which is not registered for this OS, ignoring the bundle.";
                 logger.debug(message);
                 eraseBundle = true;

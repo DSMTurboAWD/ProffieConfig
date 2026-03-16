@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
- * launcher/update/update.h
+ * launcher/update/update.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <filesystem>
 #include <map>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include <wx/event.h>
 
-#include "utils/types.h"
-#include "utils/version.h"
-#include "utils/crypto.h"
+#include "utils/types.hpp"
+#include "utils/version.hpp"
+#include "utils/hash.hpp"
+
+namespace fs = std::filesystem;
 
 namespace Update {
 
@@ -45,43 +51,48 @@ enum class Comparator {
 
 struct ItemID {
     ItemType type;
-    string name;
+    std::string name;
     bool ignored{false};
 
     auto operator<=>(const ItemID&) const = default;
 };
 
 struct ItemVersionData {
-    Crypto::Hash hash;
+    utils::hash::SHA256 hash;
 
-    vector<string> fixes;
-    vector<string> changes;
-    vector<string> features;
+    std::vector<std::string> fixes;
+    std::vector<std::string> changes;
+    std::vector<std::string> features;
 };
 
 struct Item {
-    string path;
+    std::string path;
 
-    std::map<Utils::Version, ItemVersionData> versions;
+    using Versions = std::map<
+        utils::Version, ItemVersionData, utils::Version::RawOrderer
+    >;
+    Versions versions;
     bool hidden;
 };
 
 struct Bundle {
-    string note;
+    std::string note;
 
     struct RequiredItem {
-        RequiredItem(ItemID id, Utils::Version version) : 
+        RequiredItem(ItemID id, utils::Version version) : 
             id{std::move(id)}, version{std::move(version)} {}
 
         ItemID id;
-        Utils::Version version;
-        optional<Crypto::Hash> hash;
+        utils::Version version;
+        std::optional<utils::hash::SHA256> hash;
     };
-    vector<RequiredItem> reqs;
+    std::vector<RequiredItem> reqs;
 };
 
 using Items = std::map<ItemID, Item>;
-using Bundles = std::map<Utils::Version, Bundle>;
+using Bundles = std::map<
+    utils::Version, Bundle, utils::Version::RawOrderer
+>;
 
 struct Data {
     Items items;
@@ -91,7 +102,7 @@ struct Data {
 void init();
 [[nodiscard]] wxEvtHandler *getEventHandler();
 
-filepath typeFolder(ItemType);
+fs::path typeFolder(ItemType);
 
 } // namespace Update
 

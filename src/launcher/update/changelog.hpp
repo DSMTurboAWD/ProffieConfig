@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
- * launcher/update/changelog.h
+ * launcher/update/changelog.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,33 +19,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "log/branch.h"
-#include "ui/message.hpp"
+#include "log/branch.hpp"
+#include "ui/dialogs/progress.hpp"
+#include "utils/hash.hpp"
 
-#include "update.h"
+#include "update.hpp"
 
 namespace Update {
 
 struct Changelog {
-    Utils::Version currentBundleVersion;
-    Utils::Version latestBundleVersion;
+    utils::Version currentBundleVersion;
+    utils::Version latestBundleVersion;
 
     struct ChangedFile {
         ItemID id;
-        Crypto::Hash hash;
-        Utils::Version currentVersion;
-        Utils::Version latestVersion;
+        utils::hash::SHA256 hash;
+        utils::Version currentVersion;
+        utils::Version latestVersion;
     };
 
-    vector<ChangedFile> changedFiles;
-    vector<ItemID> removedFiles;
+    std::vector<ChangedFile> changedFiles;
+    std::vector<ItemID> removedFiles;
 };
 
-[[nodiscard]] Changelog generateChangelog(const Data&, const Utils::Version& currentVersion, Log::Branch&);
+[[nodiscard]] Changelog generateChangelog(
+    const Data&, const utils::Version& currentVersion, logging::Branch&
+);
 
-[[nodiscard]] bool promptWithChangelog(const Data&, const Changelog&, Log::Branch&);
+[[nodiscard]] bool promptWithChangelog(
+    const Data&, const Changelog&, logging::Branch&
+);
 
-[[nodiscard]] Utils::Version determineCurrentVersion(const Data&, pcui::ProgressDialog *, Log::Branch&);
+[[nodiscard]] utils::Version determineCurrentVersion(
+    const Data&, pcui::ProgressDialog *, logging::Branch&
+);
 
 } // namespace Update
 

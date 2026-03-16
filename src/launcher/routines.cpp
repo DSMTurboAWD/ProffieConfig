@@ -1,7 +1,7 @@
-#include "routines.h" 
+#include "routines.hpp" 
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
  * launcher/routines.cpp
  *
@@ -21,12 +21,6 @@
 
 #include <filesystem>
 
-#include <app/app.h>
-#include <utils/types.h>
-#include <utils/paths.h>
-#include <ui/message.h>
-#include <log/logger.h>
-
 #ifdef _WIN32
 #include <fstream>
 #include <shlobj.h>
@@ -38,18 +32,20 @@
 #include <pwd.h>
 #endif
 
-namespace Routine {
+#include "app/app.hpp"
+#include "ui/dialogs/message.hpp"
+#include "utils/paths.hpp"
+#include "log/logger.hpp"
+
+namespace {
 
 #ifdef _WIN32
 constexpr auto SUB_KEY{LR"(Software\Microsoft\Windows\CurrentVersion\Uninstall\ProffieConfig)"};
 #endif
 
+} // namespace
 
-} // namespace Routine
-
-
-
-void Routine::launch(Log::Branch& lBranch) {
+void routine::launch(logging::Branch& lBranch) {
     auto& logger{lBranch.createLogger("Routine::launch()")};
     logger.info("Launching ProffieConfig...");
     auto exec{paths::executable(paths::Executable::Main)};
@@ -66,7 +62,7 @@ void Routine::launch(Log::Branch& lBranch) {
 #   endif
 }
 
-void Routine::platformInstall(Log::Branch& lBranch) {
+void routine::platformInstall(logging::Branch& lBranch) {
     auto& logger{lBranch.createLogger("Routine::platformInstall()")};
 
     std::error_code err;
@@ -173,7 +169,7 @@ void Routine::platformInstall(Log::Branch& lBranch) {
 #   endif
 }
 
-void Routine::platformUninstall() {
+void routine::platformUninstall() {
 #   ifdef _WIN32
     // Remove start menu shortcut
     LPWSTR rawStr{nullptr};

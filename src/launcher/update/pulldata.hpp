@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
- * launcher/update/install.h
+ * launcher/update/pulldata.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,26 +19,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ui/message.h>
+#include "log/branch.hpp"
+#include "ui/dialogs/progress.hpp"
+#include "utils/paths.hpp"
 
-#include "update.h"
-#include "changelog.h"
+#include "update.hpp"
 
 namespace Update {
 
-[[nodiscard]] bool pullNewFiles(
-    const Changelog& changelog,
-    const Data& data,
-    pcui::ProgressDialog *,
-    Log::Branch&
+/**
+ * Attempts to download latest version of `MANIFEST_FILE`
+ */
+[[nodiscard]] bool pullData(pcui::ProgressDialog *, logging::Branch&);
+
+/**
+ * Reads data from `MANIFEST_FILE`
+ */
+[[nodiscard]] std::optional<Data> parseData(
+    pcui::ProgressDialog *, logging::Branch&, bool heedMessages = true
 );
 
-void installFiles(
-    const Changelog& changelog,
-    const Data& data,
-    pcui::ProgressDialog *,
-    Log::Branch&
-);
+inline fs::path manifestFile() { return paths::dataDir() / "manifest.pconf"; }
 
 } // namespace Update
 

@@ -1,7 +1,7 @@
-#include "install.h"
+#include "install.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
  * launcher/update/install.cpp
  *
@@ -27,19 +27,20 @@
 #include <wx/filefn.h>
 #include <wx/uri.h>
 
-#include <app/app.h>
-#include <log/logger.h>
-#include <utils/paths.h>
-#include <utils/defer.h>
+#include "app/app.hpp"
+#include "log/logger.hpp"
+#include "ui/dialogs/message.hpp"
+#include "utils/files.hpp"
+#include "utils/paths.hpp"
+#include "utils/defer.hpp"
 
-#include "update.h"
-#include "wx/utils.h"
+#include "update.hpp"
 
 namespace {
 
-inline filepath stagingFolder() { return paths::dataDir() / "staging"; }
+inline fs::path stagingFolder() { return paths::dataDir() / "staging"; }
 
-string convertSize(uint64 size);
+std::string convertSize(uint64 size);
 
 } // namespace
 
@@ -47,13 +48,13 @@ bool Update::pullNewFiles(
     const Changelog& changelog,
     const Data& data,
     pcui::ProgressDialog *prog,
-    Log::Branch& lBranch
+    logging::Branch& lBranch
 ) {
     auto& logger{lBranch.createLogger("Update::pullNewFiles()")};
 
-    prog->Update(0, "Preparing to download new files...");
+    prog->set(0, "Preparing to download new files...");
     bool requestDone{};
-    filepath downloadedFilename;
+    fs::path downloadedFilename;
     Update::ItemType type{};
 
     fs::remove_all(stagingFolder());
@@ -80,17 +81,18 @@ bool Update::pullNewFiles(
     }};
 
     getEventHandler()->Bind(wxEVT_WEBREQUEST_STATE, stateHandler);
-    Defer deferUnbind{[&](){ getEventHandler()->Unbind(wxEVT_WEBREQUEST_STATE, stateHandler); }};
+    defer { getEventHandler()->Unbind(wxEVT_WEBREQUEST_STATE, stateHandler); };
 
     for (uint64 idx{0}; idx < changelog.changedFiles.size(); ++idx) {
         const auto& file{changelog.changedFiles[idx]};
         if (file.id.ignored) continue;
         const auto& item{data.items.at(file.id)};
 
-        string itemURLString{paths::remoteUpdateAssets()};
+        std::string itemURLString{paths::remoteUpdateAssets()};
         type = file.id.type;
         itemURLString += '/' + typeFolder(type).string() + '/';
-        itemURLString += static_cast<string>(file.hash);
+        itemURLString += static_cast<std::string>(file.hash);
+
         wxURI url{itemURLString};
         auto request{wxWebSession::GetDefault().CreateRequest(getEventHandler(), url.BuildURI())};
         request.SetStorage(wxWebRequestBase::Storage_File);
@@ -122,11 +124,10 @@ bool Update::pullNewFiles(
             }
             statusMessage += '(' + std::to_string(idx + 1) + '/' + std::to_string(changelog.changedFiles.size()) + ')';
 
-            if (
-                    dataTotal == -1 ? 
-                    not prog->Pulse(statusMessage) : 
-                    not prog->Update(static_cast<int32>(progress), statusMessage)
-               ) {
+            if (dataTotal == -1) prog->pulse(statusMessage);
+            else prog->set(static_cast<int32>(progress), statusMessage);
+
+            if (prog->cancelled()) {
                 logger.info("Downloads canceled.");
                 request.Cancel();
                 fs::remove_all(stagingFolder());
@@ -141,7 +142,9 @@ bool Update::pullNewFiles(
             auto response{request.GetResponse()};
             auto statusText{response.GetStatusText()};
             logger.error("Download failed! " + (statusText.empty() ? "UError" : statusText.ToStdString()) + " (" + std::to_string(response.GetStatus()) + ')');
+
             pcui::showMessage(_("Failed to download file."), app::getName());
+
             fs::remove_all(stagingFolder());
             return false;
         }
@@ -154,11 +157,11 @@ void Update::installFiles(
     const Changelog& changelog,
     const Data& data,
     pcui::ProgressDialog * /*prog*/,
-    Log::Branch& lBranch
+    logging::Branch& lBranch
 ) {
     auto& logger{lBranch.createLogger("Update::pullNewFiles()")};
 
-    auto baseTypePath{[](ItemType type) -> filepath {
+    auto baseTypePath{[](ItemType type) -> fs::path {
         switch (type) {
         case ItemType::EXEC:
             return paths::binaryDir();
@@ -206,7 +209,10 @@ void Update::installFiles(
                 fs::copy_options::overwrite_existing
             );
 
-            auto infoStream{paths::openOutputFile(paths::executable(paths::Executable::Main).parent_path().parent_path() / "Info.plist")};
+            auto infoStream{files::openOutput(
+                paths::executable(paths::Executable::Main)
+                    .parent_path().parent_path() / "Info.plist"
+            )};
             infoStream << 
                 R"(<?xml version="1.0" encoding="UTF-8"?>)" "\n"
                 R"(<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">)" "\n"
@@ -232,7 +238,7 @@ void Update::installFiles(
                 "</plist>\n";
             infoStream.close();
         } else {
-            path /= filepath{item.path};
+            path /= fs::path{item.path};
             fs::remove(path);
             fs::create_directories(path.parent_path());
             fs::copy_file(stagingFolder() / typeFolder(file.id.type) / item.path, path, fs::copy_options::overwrite_existing);
@@ -251,8 +257,8 @@ void Update::installFiles(
 
 namespace {
 
-string convertSize(uint64 size) {
-    constexpr array<cstring, 4> SIZES{ "B", "KB", "MB", "GB" };
+std::string convertSize(uint64 size) {
+    constexpr std::array<cstring, 4> SIZES{ "B", "KB", "MB", "GB" };
     auto scale{0};
     auto result{static_cast<float128>(size)};
 

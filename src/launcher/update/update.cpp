@@ -1,7 +1,7 @@
-#include "update.h"
+#include "update.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2024 Ryan Ogurek
+ * Copyright (C) 2024-2026 Ryan Ogurek
  *
  * launcher/update/update.cpp
  *
@@ -19,10 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <tomcrypt.h>
-
-#include <utils/types.h>
-
 namespace {
 
 wxEvtHandler *handler{nullptr};
@@ -35,7 +31,7 @@ void Update::init() {
 
 wxEvtHandler *Update::getEventHandler() { return handler; }
 
-filepath Update::typeFolder(ItemType type) {
+fs::path Update::typeFolder(ItemType type) {
     switch (type) {
         case ItemType::EXEC: return "bin";
         case ItemType::LIB:  return "lib";
