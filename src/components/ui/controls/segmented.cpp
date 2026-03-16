@@ -54,6 +54,9 @@ struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
 
         postCreation(scaffold, win);
 
+        data::Bool::Context ctxt{data};
+        if (ctxt.val()) SetValue(true);
+
         attach(data);
     }
 
@@ -72,7 +75,7 @@ struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
         postCreation(scaffold, desc.win_);
 
         auto childScaffold{scaffold};
-        childScaffold.childParent_= this;
+        childScaffold.childParent_ = this;
         for (auto idx{0}; idx < desc.data_.data().size(); ++idx) {
             auto& bl{*desc.data_.data()[idx]};
             auto *ctrl{new Control(
@@ -88,11 +91,11 @@ struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
         SetSizer(sizer);
 
         attach(desc.data_);
-        Bind(wxEVT_RADIOBUTTON, &Manager::onSet, this);
+        Bind(wxEVT_TOGGLEBUTTON, &Manager::onSet, this);
     }
 
     ~Manager() override {
-        Unbind(wxEVT_RADIOBUTTON, &Manager::onSet, this);
+        Unbind(wxEVT_TOGGLEBUTTON, &Manager::onSet, this);
         detach();
     }
 
@@ -119,8 +122,12 @@ struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
     
     void onSelection(size idx) override {
         CallAfter([this, idx] {
-            auto *child{GetChildren()[idx]};
-            static_cast<wxToggleButton *>(child)->SetValue(true);
+            auto& children{GetChildren()};
+
+            for (size childIdx{0}; childIdx < children.size(); ++childIdx) {
+                auto *child{static_cast<wxToggleButton *>(children[childIdx])};
+                child->SetValue(childIdx == idx);
+            }
         });
     }
 };
