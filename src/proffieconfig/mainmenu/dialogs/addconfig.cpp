@@ -27,6 +27,7 @@
 #include "data/helpers/exclusive.hpp"
 #include "data/logic/adapter.hpp"
 #include "data/logic/operators.hpp"
+#include "data/string.hpp"
 #include "ui/build.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/filepicker.hpp"
@@ -103,16 +104,23 @@ void AddConfigDialog::bindEvents() {
             not nameBadChars
         );
     };
+    mConfigName.responder().onChange_(mConfigName);
 
     mImportPath.responder().onChange_ = [](
         const data::String::ROContext& ctxt
     ) {
-        auto& self{utils::parent<&AddConfigDialog::mConfigName>(
+        auto& self{utils::parent<&AddConfigDialog::mImportPath>(
             const_cast<data::String&>(ctxt.model<data::String>())
         )};
 
         data::Bool::Context{self.mNeedImportPath}.set(ctxt.val().empty());
+
+        fs::path path{ctxt.val()};
+        if (path.has_stem()) {
+            data::String::Context{self.mConfigName}.change(path.stem());
+        }
     };
+    mImportPath.responder().onChange_(mImportPath);
 }
 
 pcui::DescriptorPtr AddConfigDialog::ui() {
@@ -172,7 +180,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         pcui::Label{
           .win_={
             .base_={.align_=wxALIGN_RIGHT},
-            .show_=mNameValid | data::logic::IsSet{}
+            .show_=not (mNameValid | data::logic::IsSet{})
           },
           .label_=_("Please enter a valid name"),
         }(),
@@ -186,7 +194,10 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
         pcui::Label{
           .win_={
             .base_={.align_=wxALIGN_RIGHT},
-            .show_=mNeedImportPath | data::logic::IsSet{}
+            .show_={
+              (mNeedImportPath | data::logic::IsSet{}) and
+              (mMode[eMode_Import] | data::logic::IsSet{})
+            }
           },
           .label_=_("Please choose a configuration file to import"),
         }(),
@@ -202,9 +213,11 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
               },
             },
             .label_=_("Ok"),
+            .func_=[this] { EndModal(wxID_OK); }
           }(),
           .cancel_=pcui::Button{
             .label_=_("Cancel"),
+            .func_=[this] { EndModal(wxID_CANCEL); }
           }(),
         }(),
       },
