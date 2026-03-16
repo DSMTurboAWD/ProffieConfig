@@ -53,8 +53,6 @@ AddConfigDialog::AddConfigDialog(MainMenu *parent) :
     wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES, true);
 #   endif
 
-    FindWindow(wxID_OK)->Disable();
-
     pcui::build(this, ui());
     bindEvents();
 }
