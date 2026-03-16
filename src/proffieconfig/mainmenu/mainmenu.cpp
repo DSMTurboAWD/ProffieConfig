@@ -57,7 +57,7 @@ MainMenu::MainMenu(wxWindow* parent) :
     createMenuBar();
     bindEvents();
 
-    { data::Selector::Context ctxt{config_};
+    { data::Selector::Context ctxt{configSel_};
         ctxt.bind(&config::list());
     }
 
@@ -241,17 +241,6 @@ void MainMenu::bindEvents() {
                 return;
             }
             const auto& result{std::get<Arduino::Result>(res)};
-
-            wxString message{_("Changes Successfully Applied to ProffieBoard!")};
-            if (result.total != -1) {
-                message += "\n\n";
-                message += wxString::Format(
-                    wxGetTranslation(Arduino::Result::USAGE_MESSAGE),
-                    result.percent(),
-                    result.used,
-                    result.total
-                );
-            } 
 
             auto *evt{new misc::MessageBoxEvent(
                 misc::EVT_MSGBOX,
@@ -486,8 +475,18 @@ pcui::DescriptorPtr MainMenu::ui() {
           .children_={
             pcui::Choice{
               .win_={.base_={.proportion_=1}},
-              .data_=config_.choice_,
+              .data_=configSel_.choice_,
               .unselected_=_("Select Config..."),
+              .labeler_=[this](uint32 sel) -> pcui::Choice::Label {
+                  data::Selector::ROContext configSel{configSel_};
+                  if (not configSel.bound()) return {};
+
+                  data::Vector::ROContext vec{*configSel.bound()};
+                  if (sel >= vec.children().size()) return {};
+
+                  auto& info{static_cast<config::Info&>(*vec.children()[sel])};
+                  return info.name();
+              }
             }(),
             pcui::Spacer{.size_=5}(),
             pcui::Button{
@@ -497,7 +496,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             pcui::Spacer{.size_=5}(),
             pcui::Button{
               .win_={
-                .enable_=not (config_.choice_ | data::logic::HasSelection{{-1}}),
+                .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}}),
               },
               .label_=_("Remove"),
               .exactFit_=true,
@@ -508,7 +507,7 @@ pcui::DescriptorPtr MainMenu::ui() {
         pcui::Button{
           .win_={
             .base_={.expand_=true},
-            .enable_=not (config_.choice_ | data::logic::HasSelection{{-1}})
+            .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}})
           },
           .label_=_("Edit Selected Configuration"),
         }(),
@@ -539,7 +538,7 @@ pcui::DescriptorPtr MainMenu::ui() {
           .win_={
             .base_={.expand_=true},
             .enable_={
-              not (config_.choice_ | data::logic::HasSelection{{-1}}) and
+              not (configSel_.choice_ | data::logic::HasSelection{{-1}}) and
               not (board_ | data::logic::HasSelection{{-1}})
             },
             .tooltip_=_("Compile and upload the selected configuration to the selected Proffieboard."),

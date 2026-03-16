@@ -67,7 +67,7 @@ struct MainMenu : pcui::Frame {
     void removeEditor(EditorWindow *);
 
     data::Choice board_;
-    data::Selector config_;
+    data::Selector configSel_;
 
     static MainMenu* instance;
 
