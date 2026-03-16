@@ -32,7 +32,7 @@ struct UI_EXPORT ForEach {
 
     std::vector<DescriptorPtr> operator()() {
         std::vector<DescriptorPtr> ret;
-        ret.reserve(of_.size());
+        ret.reserve(std::ranges::distance(of_.begin(), of_.end()));
         for (const auto& item : of_) {
             ret.push_back(do_(item));
         }
