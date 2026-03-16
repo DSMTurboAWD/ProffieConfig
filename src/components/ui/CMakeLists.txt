@@ -31,6 +31,7 @@ add_library(ui SHARED
     controls/checkbox.cpp
     controls/choice.cpp
     controls/radios.cpp
+    controls/segmented.cpp
     controls/stepper.cpp
     controls/text.cpp
     controls/filepicker.cpp
