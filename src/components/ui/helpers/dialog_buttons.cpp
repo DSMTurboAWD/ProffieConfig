@@ -37,17 +37,19 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     detail::Scaffold childScaffold{scaffold};
     auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
 
+    constexpr auto BUTTON_SPACING{12};
+
 #   ifdef _WIN32
     // Ok then Cancel then Apply on right
     sizer->AddStretchSpacer();
     if (ok_) {
         sizer->Add(ok_->build(childScaffold));
-        sizer->AddSpacer(5);
+        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     if (cancel_) {
         sizer->Add(cancel_->build(childScaffold));
-        sizer->AddSpacer(5);
+        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     if (apply_) sizer->Add(apply_->build(childScaffold));
@@ -55,14 +57,14 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     // Apply Far left, Cancel then Ok on right
     if (apply_) {
         sizer->Add(apply_->build(childScaffold));
-        sizer->AddSpacer(5);
+        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     sizer->AddStretchSpacer();
 
     if (cancel_) {
         sizer->Add(cancel_->build(childScaffold));
-        sizer->AddSpacer(5);
+        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     if (ok_) sizer->Add(ok_->build(childScaffold));
