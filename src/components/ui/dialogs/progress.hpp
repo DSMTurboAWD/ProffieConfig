@@ -32,7 +32,9 @@ struct UI_EXPORT ProgressDialog : private pcui::Dialog {
     ProgressDialog(
         wxWindow *parent,
         const wxString& title, 
-        bool mayCancel = false
+        bool mayCancel = false,
+        wxSize size = wxDefaultSize,
+        long style = wxDEFAULT_DIALOG_STYLE
     );
 
     ~ProgressDialog() override;
@@ -46,8 +48,11 @@ struct UI_EXPORT ProgressDialog : private pcui::Dialog {
 
     bool cancelled();
 
+    void show(bool = true);
+    void hide() { show(false); }
+
 private:
-    DescriptorPtr ui(bool);
+    DescriptorPtr ui(bool, wxSize);
 
     data::Bool mCancelled;
     data::String mMessage;

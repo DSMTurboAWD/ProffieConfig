@@ -37,11 +37,16 @@
 using namespace pcui;
 
 ProgressDialog::ProgressDialog(
-    wxWindow *parent, const wxString& title, bool mayCancel
-) : Dialog(parent, wxID_ANY, title) {
-    pcui::build(this, ui(mayCancel));
+    wxWindow *parent,
+    const wxString& title,
+    bool mayCancel,
+    wxSize size,
+    long style
+) : Dialog(parent, wxID_ANY, title, style) {
+    pcui::build(this, ui(mayCancel, size));
 
-    ShowWindowModal();
+    if (parent) ShowWindowModal();
+    else Show();
 }
 
 ProgressDialog::~ProgressDialog() {
@@ -73,6 +78,8 @@ void ProgressDialog::pulse(const wxString& message) {
 
 void ProgressDialog::finish(bool modalWait, const wxString& message) {
     data::String::Context{mMessage}.change(message.ToStdString());
+    Progress::Data::Context ctxt{mData};
+    ctxt.set(ctxt.range());
 
     assert(not wxIsMainThread());
 
@@ -92,9 +99,16 @@ bool ProgressDialog::cancelled() {
     return data::Bool::Context{mCancelled}.val();
 }
 
-DescriptorPtr ProgressDialog::ui(bool mayCancel) {
+void ProgressDialog::show(bool show) {
+    CallAfter([this, show] { Show(show); });
+}
+
+DescriptorPtr ProgressDialog::ui(bool mayCancel, wxSize size) {
     return pcui::Stack{
-      .base_={.border_={.size_=10, .dirs_=wxALL}},
+      .base_={
+        .minSize_=size,
+        .border_={.size_=10, .dirs_=wxALL}
+      },
       .children_={
         pcui::Label{
           .label_=mMessage,
@@ -106,6 +120,7 @@ DescriptorPtr ProgressDialog::ui(bool mayCancel) {
         }(),
         pcui::Spacer{.size_=8}(),
         pcui::DialogButtons{
+          .base_={.expand_=true},
           .ok_=pcui::Button{
             .win_={
               .show_=mData | Progress::Logic::Is_Done,
