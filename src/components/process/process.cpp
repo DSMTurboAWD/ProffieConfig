@@ -23,6 +23,7 @@
 #include <cstring>
 #include <future>
 #include <list>
+#include <utility>
 
 #if defined(__APPLE__) or defined(__linux__)
 #include <unistd.h>
@@ -33,7 +34,6 @@
 #include <fileapi.h>
 #include <handleapi.h>
 #include <namedpipeapi.h>
-#include <processthreadsapi.h>
 #include <windows.h>
 #include <winnt.h>
 #endif
@@ -176,7 +176,7 @@ void Process::create(std::string exec, std::span<std::string> args) {
     startupInfo.hStdInput = data.childFromParent_[0];
     startupInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    string execBuffer{exec};
+    std::string execBuffer{std::move(exec)};
     for (const auto& arg : args) {
         execBuffer += ' ';
         execBuffer += arg;
@@ -267,7 +267,7 @@ std::optional<std::string> Process::read() {
         nullptr
     )};
     if (not peekResult) {
-        return nullopt;
+        return std::nullopt;
     }
 
     std::string ret;
@@ -280,7 +280,7 @@ std::optional<std::string> Process::read() {
         nullptr
     )};
     if (not readResult) {
-        return nullopt;
+        return std::nullopt;
     }
 
     return ret;
@@ -349,7 +349,7 @@ Process::Result Process::elevatedProcess(
         } else if (exitCode >= ERROR_SEVERITY_ERROR) {
             ret = {.err_=Result::eCrashed, .systemResult_=exitCode};
         } else {
-            ret = {.err_=Result_::eExited_With_Failure, .systemResult_=exitCode};
+            ret = {.err_=Result::eExited_With_Failure, .systemResult_=exitCode};
         }
 
         CloseHandle(execInfo.hProcess);

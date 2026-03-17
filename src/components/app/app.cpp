@@ -130,7 +130,7 @@ struct SymbolInfo {
 private:
 #   if defined(_WIN32)
     SYMBOL_INFO mInfo;
-    array<char, 255> mName;
+    std::array<char, 255> mName;
 #   elif defined(__APPLE__) or defined(__linux__)
     Dl_info mInfo;
 #   endif
@@ -369,7 +369,7 @@ WINAPI LONG exceptionFilter(LPEXCEPTION_POINTERS exception) {
     }
     auto errStr{signame};
 
-    array<void *, NUM_STACK_FRAMES> frames;
+    std::array<void *, NUM_STACK_FRAMES> frames;
     const auto numFrames{CaptureStackBackTrace(
         0,
         frames.size(),

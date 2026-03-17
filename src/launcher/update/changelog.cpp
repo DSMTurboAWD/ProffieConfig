@@ -175,7 +175,7 @@ utils::Version Update::determineCurrentVersion(
                 itemPath /= fileItem.path;
             }
 #           else
-            itemPath /= filepath{fileItem.path};
+            itemPath /= fs::path{fileItem.path};
 #           endif
             status = "Testing file " + id.name + ", " + fileVer.string();
             logger.debug(status + " at path: " + itemPath.string());

@@ -244,11 +244,15 @@ void Update::installFiles(
             fs::copy_file(stagingFolder() / typeFolder(file.id.type) / item.path, path, fs::copy_options::overwrite_existing);
         }
 #       else
-        path /= filepath{item.path};
+        path /= fs::path{item.path};
         fs::remove(path);
         fs::create_directories(path.parent_path());
         std::error_code err;
-        paths::copyOverwrite(stagingFolder() / typeFolder(file.id.type) / filepath{item.path}, path, err);
+        files::copyOverwrite(
+            stagingFolder() / typeFolder(file.id.type) / fs::path{item.path},
+            path,
+            err
+        );
 #       endif
     }
 

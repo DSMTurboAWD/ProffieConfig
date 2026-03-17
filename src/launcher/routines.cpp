@@ -35,6 +35,7 @@
 #include "app/app.hpp"
 #include "ui/dialogs/message.hpp"
 #include "utils/paths.hpp"
+#include "utils/files.hpp"
 #include "log/logger.hpp"
 
 namespace {
@@ -65,29 +66,29 @@ void routine::launch(logging::Branch& lBranch) {
 void routine::platformInstall(logging::Branch& lBranch) {
     auto& logger{lBranch.createLogger("Routine::platformInstall()")};
 
-    std::error_code err;
+    std::error_code ec;
     auto currentExec{paths::executable()};
     auto installedExec{paths::executable(paths::Executable::Launcher)};
-    if (fs::exists(installedExec, err)) {
+    if (fs::exists(installedExec, ec)) {
         logger.info("Launcher seems to already be installed, removing...");
 #       ifdef __APPLE__
-        fs::remove_all(installedExec.parent_path().parent_path().parent_path());
+        fs::remove_all(installedExec.parent_path().parent_path().parent_path(), ec);
 #       else
-        fs::remove(installedExec);
+        fs::remove(installedExec, ec);
 #       endif
     }
 
 #   ifndef __APPLE__
     logger.debug("Creating " + installedExec.string());
-    fs::create_directories(installedExec.parent_path());
+    fs::create_directories(installedExec.parent_path(), ec);
 #   endif
 
 #   ifdef _WIN32
     logger.info("Moving launcher into install location...");
     if (not MoveFileW(currentExec.c_str(), installedExec.c_str())) {
-        err.assign(static_cast<int32>(GetLastError()), std::system_category());
-        if (err) {
-            auto errMessage{"Failed to install launcher: " + err.message() + " (" + std::to_string(err.value()) + ')'};
+        ec.assign(static_cast<int32>(GetLastError()), std::system_category());
+        if (ec) {
+            auto errMessage{"Failed to install launcher: " + ec.message() + " (" + std::to_string(ec.value()) + ')'};
             logger.info(errMessage);
             pcui::showMessage(_("Failed to install launcher"), app::getName());
             return;
@@ -109,7 +110,7 @@ void routine::platformInstall(logging::Branch& lBranch) {
         if (SUCCEEDED(hres)) {
             LPWSTR rawStr{nullptr};
             SHGetKnownFolderPath(FOLDERID_Programs, KF_FLAG_CREATE, nullptr, &rawStr);
-            persistFile->Save((wstring{rawStr} + L"/ProffieConfig.lnk").c_str(), true);
+            persistFile->Save((std::wstring{rawStr} + L"/ProffieConfig.lnk").c_str(), true);
             CoTaskMemFree(rawStr);
             persistFile->Release();
         } 
@@ -136,7 +137,7 @@ void routine::platformInstall(logging::Branch& lBranch) {
 
     auto self{paths::executable().string()};
     constexpr cstring SELFDELETE_BATCH{"C:\\TEMP\\PCFLDel.bat"};
-    auto batch{paths::openOutputFile(SELFDELETE_BATCH)};
+    auto batch{files::openOutput(SELFDELETE_BATCH)};
     batch << "@echo off\n:Repeat\ndel \"" << self << "\"\nif exist \"" << self << "\" goto Repeat\ndel \"%~f0\"\n";
     batch.close();
     ShellExecuteA(nullptr, "open", SELFDELETE_BATCH, nullptr, nullptr, SW_HIDE);
@@ -175,7 +176,7 @@ void routine::platformUninstall() {
     LPWSTR rawStr{nullptr};
     SHGetKnownFolderPath(FOLDERID_Programs, KF_FLAG_CREATE, nullptr, &rawStr);
     std::error_code err;
-    fs::remove(wstring{rawStr} + L"/ProffieConfig.lnk", err);
+    fs::remove(std::wstring{rawStr} + L"/ProffieConfig.lnk", err);
 
     // Remove uninstall registry key
     RegDeleteKeyW(HKEY_CURRENT_USER, SUB_KEY);

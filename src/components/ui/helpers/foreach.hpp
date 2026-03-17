@@ -21,12 +21,10 @@
 
 #include "ui/types.hpp"
 
-#include "ui_export.h"
-
 namespace pcui {
 
 template<typename Container, typename Functor>
-struct UI_EXPORT ForEach {
+struct ForEach {
     const Container& of_;
     const Functor do_;
 

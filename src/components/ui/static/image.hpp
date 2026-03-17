@@ -33,6 +33,7 @@ namespace pcui {
 
 struct UI_EXPORT Image {
     struct Desc;
+    struct LoadDetails;
 
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
@@ -40,26 +41,6 @@ struct UI_EXPORT Image {
     std::optional<RefWrap<data::Generic>> data_;
 
     wxStaticBitmapBase::ScaleMode scale_{wxStaticBitmapBase::Scale_AspectFill};
-
-    struct LoadDetails {
-        cstring name_{nullptr};
-
-#       ifdef __APPLE__
-        /**
-         * If the image is an icon in the macOS bundle resources.
-         */
-        bool resourceIcon_{false};
-#       endif
-
-        struct {
-            int32 dim_{-1};
-            wxOrientation orient_{wxHORIZONTAL};
-        } size_;
-
-        color::Dynamic color_;
-
-        wxBitmap operator()() const;
-    };
 
     wxBitmap src_;
 
@@ -70,6 +51,26 @@ struct UI_EXPORT Image::Desc : Image, detail::Descriptor {
     Desc(Image&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
+};
+
+struct UI_EXPORT Image::LoadDetails {
+    cstring name_{nullptr};
+
+#   ifdef __APPLE__
+    /**
+     * If the image is an icon in the macOS bundle resources.
+     */
+    bool resourceIcon_{false};
+#   endif
+
+    struct {
+        int32 dim_{-1};
+        wxOrientation orient_{wxHORIZONTAL};
+    } size_;
+
+    color::Dynamic color_;
+
+    wxBitmap operator()() const;
 };
 
 } // namespace pcui

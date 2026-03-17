@@ -263,7 +263,7 @@ pcui::DescriptorPtr MainMenu::ui() {
     }();
 
 #   if defined _WIN32 or defined __linux__
-    boardEntries.emplace_back(_("BOOTLOADER RECOVERY").ToStdString());
+    // boardEntries.emplace_back(_("BOOTLOADER RECOVERY").ToStdString());
 #   endif
 }
 
@@ -589,6 +589,5 @@ void MainMenu::importConfig() {
             break;
         }
     }}.detach();
-
 }
 

@@ -19,6 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/bitmap.h>
+#include <wx/string.h>
+
 #include "data/helpers/exclusive.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"

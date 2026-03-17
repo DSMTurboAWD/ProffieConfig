@@ -84,11 +84,11 @@ fs::path paths::executable(Executable exec) {
             {
                 LPWSTR rawStr{};
                 auto rawPathRes{SHGetKnownFolderPath(FOLDERID_UserProgramFiles, KF_FLAG_CREATE, nullptr, &rawStr)};
-                assert(rawPathRes == S_OK);
+                if (rawPathRes != S_OK) return {};
 
                 std::array<wchar_t, MAX_PATH> shortPath;
                 auto shortPathRes{GetShortPathNameW(rawStr, shortPath.data(), shortPath.size())};
-                assert(shortPathRes != 0);
+                if (shortPathRes == 0) return {};
 
                 CoTaskMemFree(rawStr);
                 return fs::path{shortPath.data()} / "ProffieConfig.exe";
@@ -149,7 +149,7 @@ fs::path paths::dataDir() {
 #   ifdef _WIN32
     PWSTR rawStr{};
     SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, nullptr, &rawStr);
-    array<wchar_t, MAX_PATH> shortPath;
+    std::array<wchar_t, MAX_PATH> shortPath;
     GetShortPathNameW(rawStr, shortPath.data(), shortPath.size());
     CoTaskMemFree(rawStr);
     return fs::path{shortPath.data()} / "ProffieConfig";
