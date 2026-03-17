@@ -14,6 +14,8 @@ ProffieConfig's build system(s) have only been tested on (all x86) OpenSUSE (Tum
 
 Building for Windows requires MinGW. MinGW is recommended to be installed via homebrew (macOS) or with mxe (Linux). MinGW for Apple Silicon does not have paths configured in the ProffieConfig toolchain. It will require (possibly significant) manual work.
 
+With MinGW, I've recently encountered an issue with a typeinfo operator== being duplicated (added to stdc++ static lib and compiled into application code), despite being marked inline. There's some chatter around this online, but I simply added `__attribute__((always_inline))` to its signature in typeinfo header, as suggested. This means modifying system headers.
+
 ## Get the Code
 
 First things first, you'll need the code installed onto your computer. It's best to use `git` for this:

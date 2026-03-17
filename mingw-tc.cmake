@@ -6,9 +6,19 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux)
     # set(CMAKE_FIND_ROOT_PATH /opt/mxe/usr/x86_64-w64-mingw32.shared)
     # set(CMAKE_C_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.shared-gcc)
     # set(CMAKE_CXX_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.shared-g++)
-    set(CMAKE_FIND_ROOT_PATH /opt/mxe/usr/x86_64-w64-mingw32.static)
-    set(CMAKE_C_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.static-gcc)
-    set(CMAKE_CXX_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.static-g++)
+
+    # The MXE packages have seem to become outdated
+    # set(CMAKE_FIND_ROOT_PATH /opt/mxe/usr/x86_64-w64-mingw32.static)
+    # set(CMAKE_C_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.static-gcc)
+    # set(CMAKE_CXX_COMPILER /opt/mxe/usr/bin/x86_64-w64-mingw32.static-g++)
+
+    set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+    set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc)
+    set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++)
+
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libstdc++ -static-libgcc")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
 elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)
     # Ninja generator required on macOS
 

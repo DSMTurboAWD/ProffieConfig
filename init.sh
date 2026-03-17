@@ -138,7 +138,7 @@ else
     unset CROSS_COMPILE
     if [ "$TARGET_PLATFORM" == "win32" ]; then
         if [ "$BUILD_PLATFORM" == "linux" ]; then
-            export CROSS_COMPILE=x86_64-w64-mingw32.static-
+            export CROSS_COMPILE=x86_64-w64-mingw32-
         elif [ "$BUILD_PLATFORM" == "macOS" ]; then
             export CROSS_COMPILE=x86_64-w64-mingw32-
             BUILD_FLAGS="CC=\"x86_64-w64-mingw32-gcc -maes\""
@@ -146,6 +146,10 @@ else
     fi
 
     make clean &> /dev/null
+
+    if [ "$TARGET_PLATFORM" == "win32" ]; then
+        export LDFLAGS="-static-libstdc++ -static-libgcc"
+    fi
 
     OLD_LDFLAGS=$LDFLAGS
     export LDFLAGS="${OLD_LDFLAGS} -s"
@@ -264,7 +268,8 @@ elif [ "$TARGET_PLATFORM" == "macOS" ]; then
     WX_PLATFORM_FLAGS='--with-osx'
 elif [ "$TARGET_PLATFORM" == "win32" ]; then
     if [ "$BUILD_PLATFORM" == "linux" ]; then
-        WX_HOST='x86_64-w64-mingw32.static'
+        export LDFLAGS="-static-libstdc++ -static-libgcc"
+        WX_HOST='x86_64-w64-mingw32'
     elif [ "$BUILD_PLATFORM" == "macOS" ]; then
         # winpthread dll.a cannot exist because macOS MinGW is stupid.
         # This is probably a skill issue on my part but I refuse to fix it.
@@ -346,6 +351,10 @@ else
     rm -rf build-$TARGET_PLATFORM
     mkdir -p build-$TARGET_PLATFORM
     cd build-$TARGET_PLATFORM
+
+    if [ "$TARGET_PLATFORM" == "win32" ]; then
+        export LDFLAGS="-static-libstdc++ -static-libgcc"
+    fi
 
     do_with_log \
         "Configuring" \
