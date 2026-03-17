@@ -431,6 +431,10 @@ std::unique_ptr<pcui::detail::Descriptor> Prop::layout() {
     return nullptr;
 }
 
+const Errors& Prop::errors() const {
+    return mErrors;
+}
+
 void Prop::migrateFrom(const Prop& from) {
     for (const auto& [id, data] : from.mSettingMap) {
         auto iter{mSettingMap.find(id)};
