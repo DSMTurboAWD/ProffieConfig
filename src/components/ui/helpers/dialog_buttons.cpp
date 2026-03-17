@@ -27,6 +27,9 @@
 using namespace pcui;
 
 std::unique_ptr<detail::Descriptor> DialogButtons::operator()() {
+    // Always expand
+    base_.expand_ = true;
+
     return std::make_unique<DialogButtons::Desc>(std::move(*this));
 }
 
@@ -39,35 +42,63 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
 
     constexpr auto BUTTON_SPACING{12};
 
+    // The fact that the spacers don't go away more smart is a little
+    // unfortunate, but not a practical concern right now.
+
 #   ifdef _WIN32
     // Ok then Cancel then Apply on right
     sizer->AddStretchSpacer();
+
     if (ok_) {
         sizer->Add(ok_->build(childScaffold));
-        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     if (cancel_) {
-        sizer->Add(cancel_->build(childScaffold));
-        sizer->AddSpacer(BUTTON_SPACING);
+        auto *item{cancel_->build(childScaffold)};
+
+        item->SetBorder(BUTTON_SPACING);
+        const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
+        item->SetFlag(nonDirMask | wxLEFT);
+
+        sizer->Add(item);
     }
 
-    if (apply_) sizer->Add(apply_->build(childScaffold));
+    if (apply_) {
+        auto *item{apply_->build(childScaffold)};
+
+        item->SetBorder(BUTTON_SPACING);
+        const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
+        item->SetFlag(nonDirMask | wxLEFT);
+
+        sizer->Add(item);
+    }
 #   else // macOS, GTK
     // Apply Far left, Cancel then Ok on right
     if (apply_) {
         sizer->Add(apply_->build(childScaffold));
-        sizer->AddSpacer(BUTTON_SPACING);
     }
 
     sizer->AddStretchSpacer();
 
     if (cancel_) {
-        sizer->Add(cancel_->build(childScaffold));
-        sizer->AddSpacer(BUTTON_SPACING);
+        auto *item{cancel_->build(childScaffold)};
+
+        item->SetBorder(BUTTON_SPACING);
+        const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
+        item->SetFlag(nonDirMask | wxLEFT);
+
+        sizer->Add(item);
     }
 
-    if (ok_) sizer->Add(ok_->build(childScaffold));
+    if (ok_) {
+        auto *item{ok_->build(childScaffold)};
+
+        item->SetBorder(BUTTON_SPACING);
+        const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
+        item->SetFlag(nonDirMask | wxLEFT);
+
+        sizer->Add(item);
+    }
 #   endif
 
     auto *item{new wxSizerItem(sizer)};
