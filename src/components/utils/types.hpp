@@ -43,11 +43,9 @@ using ssize = std::make_signed_t<size>;
 // afaics on modern desktop this should always be the case...
 using float32 = float;
 using float64 = double;
-using float128 = long double;
 
 static_assert(sizeof(float32) == 4);
 static_assert(sizeof(float64) == 8);
-static_assert(sizeof(float128) == 16);
 
 using cstring = const char *;
 // NOLINTEND(readability-identifier-naming)

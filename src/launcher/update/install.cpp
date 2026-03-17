@@ -260,7 +260,7 @@ namespace {
 std::string convertSize(uint64 size) {
     constexpr std::array<cstring, 4> SIZES{ "B", "KB", "MB", "GB" };
     auto scale{0};
-    auto result{static_cast<float128>(size)};
+    auto result{static_cast<float64>(size)};
 
     while (result >= 1000.0 and scale < (SIZES.size() - 1)) {
         result /= 1000.0;
