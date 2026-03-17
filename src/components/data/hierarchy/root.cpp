@@ -75,7 +75,7 @@ void data::Root::unsuppressActions() {
 
     mActions.clear();
     const auto lastIdx{mActionIdx};
-    mActionIdx = ACT_IDX_FIRST;
+    mActionIdx = eAct_Idx_First;
     if (mReceiver) {
         mReceiver->onActionClear(lastIdx);
         mReceiver->onActionIdx(mActionIdx);
@@ -247,7 +247,7 @@ void data::Root::Context::redo() {
 }
 
 bool data::Root::Context::canUndo() const {
-    return mRoot.mActionIdx != ACT_IDX_FIRST;
+    return mRoot.mActionIdx != eAct_Idx_First;
 }
 
 bool data::Root::Context::canRedo() const {

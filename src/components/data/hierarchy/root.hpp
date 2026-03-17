@@ -41,7 +41,15 @@ struct DATA_EXPORT Root : Node {
     void attachReciever(Receiver&);
     void detachReceiver(Receiver&);
 
-    static constexpr auto ACT_IDX_FIRST{~0ULL};
+    /**
+     * This is an enum because the export when compiling for windows makes
+     * things stupid. (Tries to externally link static constexpr var)
+     *
+     * Of course, why not.
+     */
+    enum : uint64 {
+        eAct_Idx_First = ~0ULL,
+    };
 
 protected:
     Root();
@@ -128,7 +136,7 @@ private:
      * beginning of all known operations. I.e. there is no operation prior,
      * only (maybe) operations afterwards.
      */
-    size mActionIdx{ACT_IDX_FIRST};
+    size mActionIdx{eAct_Idx_First};
     std::vector<std::vector<std::unique_ptr<Action>>> mActions;
 
     Receiver *mReceiver{nullptr};

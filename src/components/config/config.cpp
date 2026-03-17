@@ -65,7 +65,7 @@ struct config::Config::SavedReceiver : Root::Receiver {
 
     void onActionClear(size lastIdx) override {
         if (lastIdx == cfg_.mSavedAction) {
-            cfg_.mSavedAction = Root::ACT_IDX_FIRST;
+            cfg_.mSavedAction = Root::eAct_Idx_First;
         }
     }
 

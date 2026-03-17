@@ -34,7 +34,7 @@ config::Settings::Settings(Config& parent) :
     bladeAwareness_(*this) {
     using namespace priv;
 
-    const auto onSaveOptSet{[](const data::Bool::ROContext& ctxt) static {
+    const auto onSaveOptSet{[](const data::Bool::ROContext& ctxt) {
         auto& settings{*ctxt.model().parent<Settings>()};
         using BCtxt = data::Bool::Context;
         BCtxt saveState{settings.saveState_};
