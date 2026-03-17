@@ -68,6 +68,8 @@ void verifyBundles(
 bool Update::pullData(pcui::ProgressDialog *prog, logging::Branch& lBranch) {
     auto& logger{lBranch.createLogger("Update::pullData()")};
 
+    std::string errorMessage;
+
     bool requestComplete{false};
     auto handleRequestEvent{[&](wxWebRequestEvent& evt) {
         if (evt.GetState() == wxWebRequest::State_Completed) {
@@ -75,9 +77,11 @@ bool Update::pullData(pcui::ProgressDialog *prog, logging::Branch& lBranch) {
         }
 
         switch (evt.GetState()) {
-            case wxWebRequestBase::State_Unauthorized:
-            case wxWebRequestBase::State_Completed:
             case wxWebRequestBase::State_Failed:
+            case wxWebRequestBase::State_Unauthorized:
+                errorMessage = evt.GetErrorDescription().ToStdString();
+                [[fallthrough]];
+            case wxWebRequestBase::State_Completed:
             case wxWebRequestBase::State_Cancelled:
                 requestComplete = true;
             default: break;
@@ -122,9 +126,14 @@ bool Update::pullData(pcui::ProgressDialog *prog, logging::Branch& lBranch) {
 
     if (request.GetState() != wxWebRequestSync::State_Completed) {
         const auto statusCode{request.GetResponse().GetStatus()};
-        logger.warn("Data pull failed: " + std::to_string(statusCode));
+        logger.warn("Data pull failed (" + std::to_string(statusCode) + "): " + errorMessage);
         if (statusCode == 404) {
-            pcui::showMessage("Check if a custom update channel is being used.\n\nIf not, this is a bug, please contact me.", "Manifest File Invalid");
+            prog->finish(
+                true,
+                "Manifest File Invalid" "\n\n"
+                "Check if a custom update channel is being used.\n"
+                "If not, this is a bug, please contact me."
+            );
         }
         return false;
     } 
