@@ -120,14 +120,6 @@ public:
         // be in conjunction with the overall progress.
         prog.range(101);
 
-        defer {
-            prog.pulse();
-
-            wxYield();
-
-            prog.finish(false);
-        };
-
         Update::init();
 
         if (action == Action::LAUNCH or action == Action::FIRST_INSTALL) {
@@ -135,7 +127,7 @@ public:
             if (not pullSuccess) {
                 logger.info("Aborting update after failed version data collection...");
                 if (action == Action::FIRST_INSTALL) {
-                    pcui::showMessage(_("Failed pulling update data, please try again!"), app::getName());
+                    prog.finish(true, _("Failed pulling update data, please try again!"));
                     return false;
                 }
 
@@ -145,14 +137,14 @@ public:
 
             auto data{Update::parseData(&prog, *logger.binfo("Parsing version data..."))};
             if (not data) {
-                pcui::showMessage(_("Failed to parse data!\nPlease report this error."), app::getName());
+                prog.finish(true, _("Failed to parse data!\nPlease report this error."));
                 wxLaunchDefaultApplication(paths::logDir().native());
                 return false;
             }
 
             if (data->bundles.empty()) {
                 logger.error("No valid bundles found!");
-                pcui::showMessage(_("No valid version bundles found!\nPlease report this error."), app::getName());
+                prog.finish(true, _("No valid version bundles found!\nPlease report this error."));
                 wxLaunchDefaultApplication(paths::logDir().native());
                 if (action == Action::LAUNCH) routine::launch(*logger.binfo("Launching in lieu of valid update data."));
                 return false;
@@ -198,7 +190,9 @@ public:
             wxYield();
             prog.finish(false);
 
-            if (action == Action::FIRST_INSTALL) pcui::showMessage(_("Installed"), app::getName());
+            if (action == Action::FIRST_INSTALL) {
+                pcui::showMessage(_("Installed"), app::getName());
+            }
         } else if (action == Action::UNINSTALL) {
             logging::Context::destroyGlobal();
 

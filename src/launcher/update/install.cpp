@@ -143,7 +143,7 @@ bool Update::pullNewFiles(
             auto statusText{response.GetStatusText()};
             logger.error("Download failed! " + (statusText.empty() ? "UError" : statusText.ToStdString()) + " (" + std::to_string(response.GetStatus()) + ')');
 
-            pcui::showMessage(_("Failed to download file."), app::getName());
+            prog->finish(true, _("Failed to download file."));
 
             fs::remove_all(stagingFolder());
             return false;

@@ -39,7 +39,6 @@
 #include "ui/types.hpp"
 #include "utils/hash.hpp"
 #include "utils/paths.hpp"
-#include "wx/sizer.h"
 
 namespace {
 
