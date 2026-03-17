@@ -32,6 +32,7 @@
 #include "utils/parent.hpp"
 #include "versions/versions.hpp"
 
+#include "../../tools/arduino.hpp"
 #include "../onboard.hpp"
 
 onboard::Setup::Setup() {
@@ -122,11 +123,11 @@ void onboard::Setup::startSetup() {
 
 #       if defined(_WIN32) or defined(__linux__)
         if (not mDriverInstalled) {
-            data::String::Context{statusMessage_}.change(
+            data::String::Context{mStatusMessage}.change(
                 _("Installing Driver...").ToStdString()
             );
 
-            if (Arduino::runDriverInstallation()) {
+            if (arduino::runDriverInstallation()) {
                 mDriverInstalled = true;
             } else {
                 data::String::Context{errorMessage_}.change(
