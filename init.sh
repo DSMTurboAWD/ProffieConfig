@@ -156,13 +156,13 @@ else
     if [ "$TARGET_PLATFORM" == "macOS" ]; then
         do_with_log \
             "Building shared (x86)" \
-            "make -f makefile.shared -j`nproc --all` CC=\"clang -maes -arch x86_64\"" \
+            "make -f makefile.shared -j`nproc --all` CC=\"clang -maes -target x86_64-apple-darwin\"" \
             build_x86
         make clean &> /dev/null
         mv libtomcrypt.dylib libtomcrypt-x86_64.dylib
         do_with_log \
             "Building shared (arm64)" \
-            "make -f makefile.shared -j`nproc --all` CC=\"clang -arch arm64\"" \
+            "make -f makefile.shared -j`nproc --all` CC=\"clang -target arm64-apple-darwin\"" \
             build_arm64
         make clean &> /dev/null
         mv libtomcrypt.dylib libtomcrypt-arm64.dylib
