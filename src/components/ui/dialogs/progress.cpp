@@ -81,13 +81,15 @@ void ProgressDialog::finish(bool modalWait, const wxString& message) {
     Progress::Data::Context ctxt{mData};
     ctxt.set(ctxt.range());
 
-    assert(not wxIsMainThread());
+    if (wxIsMainThread()) {
+        if (modalWait) ShowModal();
+        return;
+    }
 
     std::promise<void> promise;
     
     CallAfter([this, modalWait, &promise] {
         if (modalWait) ShowModal();
-        Destroy();
 
         promise.set_value();
     });
