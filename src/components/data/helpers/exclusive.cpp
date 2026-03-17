@@ -50,6 +50,7 @@ data::Exclusive::Exclusive(
                 bl.set(false);
             }
 
+            excl_.mSelected = selIdx;
             excl_.sendToReceivers(&Exclusive::Receiver::onSelection, selIdx);
         }
 
