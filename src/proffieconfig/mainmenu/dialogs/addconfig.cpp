@@ -117,7 +117,8 @@ void AddConfigDialog::bindEvents() {
 
         fs::path path{ctxt.val()};
         if (path.has_stem()) {
-            data::String::Context{self.mConfigName}.change(path.stem());
+            data::String::Context configName{self.mConfigName};
+            configName.change(path.stem().string());
         }
     };
     mImportPath.responder().onChange_(mImportPath);
