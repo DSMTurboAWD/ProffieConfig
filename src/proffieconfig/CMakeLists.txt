@@ -17,6 +17,8 @@ add_executable(proffieconfig WIN32
     onboard/pages/welcome.cpp
     onboard/pages/setup.cpp
     onboard/pages/info.cpp
+
+    tools/arduino.cpp
 )
 
 set_target_properties(proffieconfig PROPERTIES
