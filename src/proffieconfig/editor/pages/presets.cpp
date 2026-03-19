@@ -29,6 +29,7 @@
 #include "ui/layout/stack.hpp"
 #include "ui/static/image.hpp"
 #include "ui/types.hpp"
+#include "ui/values.hpp"
 
 PresetsPage::PresetsPage(config::Config& config) : mConfig{config} {
 
@@ -179,14 +180,6 @@ pcui::DescriptorPtr PresetsPage::ui() {
 }
 
 pcui::DescriptorPtr PresetsPage::selection() {
-#   if defined(__WXOSX__)
-    wxSize arrangeButtonSize{20, 25};
-#   elif defined(__WXGTK__)
-    wxSize arrangeButtonSize{20, 25};
-#   elif defined(__WXMSW__)
-    wxSize arrangeButtonSize{15, 25};
-#   endif
-
     return pcui::Stack{
       .orient_=wxVERTICAL,
       .children_={
@@ -205,12 +198,15 @@ pcui::DescriptorPtr PresetsPage::selection() {
                 }(),
                 pcui::Button{
                   .win_={.base_={
-                    .border_={.size_=8, .dirs_=wxLEFT},
+                    .border_={
+                      .size_=pcui::interControlSpacing(),
+                      .dirs_=wxLEFT
+                    },
                   }},
                   .label_="ISS",
                   .exactFit_=true,
                 }(),
-                pcui::Spacer{.size_=8}(),
+                pcui::Spacer{.size_=pcui::interControlSpacing()}(),
                 pcui::Button{
                   .win_={.base_={.expand_=true}},
                   .bitmap_=pcui::Image::LoadDetails{
@@ -222,7 +218,7 @@ pcui::DescriptorPtr PresetsPage::selection() {
                 }(),
               }
             }(),
-            pcui::Spacer{.size_=8}(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
             pcui::Stack{
               .base_={.expand_=true},
               .orient_=wxHORIZONTAL,
@@ -231,7 +227,7 @@ pcui::DescriptorPtr PresetsPage::selection() {
                   .win_={.base_={.proportion_=1}},
                   .label_=_("Add"),
                 }(),
-                pcui::Spacer{.size_=8}(),
+                pcui::Spacer{.size_=pcui::interControlSpacing()}(),
                 pcui::Button{
                   .win_={.base_={.proportion_=1}},
                   .label_=_("Remove"),
@@ -266,13 +262,13 @@ pcui::DescriptorPtr PresetsPage::selection() {
                   .orient_=wxHORIZONTAL,
                   .children_={
                     pcui::Button{
-                      .win_={.base_={.minSize_=arrangeButtonSize}},
+                      .win_={.base_={.minSize_=pcui::iconButtonSize()}},
                       .label_="+",
                       .style_=pcui::Button::Style::Companion,
                       .exactFit_=true,
                     }(),
                     pcui::Button{
-                      .win_={.base_={.minSize_=arrangeButtonSize}},
+                      .win_={.base_={.minSize_=pcui::iconButtonSize()}},
                       .label_="-",
                       .style_=pcui::Button::Style::Companion,
                       .exactFit_=true,
@@ -285,19 +281,19 @@ pcui::DescriptorPtr PresetsPage::selection() {
               .orient_=wxVERTICAL,
               .children_={
                 pcui::Button{
-                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
                   .label_=L"\u2191", // Up Arrow
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
                 }(),
                 pcui::Button{
-                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
                   .label_=L"\u2193", // Down Arrow
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
                 }(),
                 pcui::Button{
-                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
                   .label_=L"\u29C9", // ⧉ Double Squares
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
