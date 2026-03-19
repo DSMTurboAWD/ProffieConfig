@@ -116,8 +116,9 @@ struct ControlBase : priv::WinBase<Ctrl, data::Choice::Receiver> {
 private:
     friend Derived;
 
-    ControlBase(const detail::Scaffold& scaffold, const Choice& desc) :
-        mLabeler{desc.labeler_} {
+    void create(const detail::Scaffold& scaffold, const Choice& desc) {
+        mLabeler = desc.labeler_;
+
         Ctrl::Create(
             scaffold.childParent_,
             wxID_ANY,
@@ -130,8 +131,9 @@ private:
         );
 
         { data::Choice::Context ctxt{desc.data_};
-            Ctrl::Set(this->generateChoices(ctxt.numChoices()));
-            Ctrl::SetSelection(this->dataToControl(
+            const auto self{static_cast<Derived *>(this)};
+            Ctrl::Set(self->generateChoices(ctxt.numChoices()));
+            Ctrl::SetSelection(self->dataToControl(
                 ctxt.choice()
             ));
 
@@ -139,6 +141,12 @@ private:
         }
 
         Ctrl::Bind(Derived::evt(), &ControlBase::onChoice, this);
+    }
+
+    ControlBase() = default;
+
+    ControlBase(const detail::Scaffold& scaffold, const Choice& desc) {
+        create(scaffold, desc);
     }
 
     std::vector<std::unique_ptr<data::String::Receiver>> mRcvrs;
@@ -178,8 +186,8 @@ struct PopUpControl : ControlBase<PopUpControl, wxChoice> {
         const detail::Scaffold& scaffold,
         const Choice& desc,
         const Choice::PopUp& style
-    ) : ControlBase(scaffold, desc) {
-        unselected_ = style.unselected_;
+    ) : unselected_{style.unselected_} {
+        create(scaffold, desc);
     }
 
     static const auto& evt() { return wxEVT_CHOICE; }
