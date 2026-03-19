@@ -20,6 +20,8 @@
  */
 
 #include <wx/choice.h>
+#include <wx/event.h>
+#include <wx/listbox.h>
 
 #include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
@@ -29,83 +31,72 @@ using namespace pcui;
 
 namespace {
 
-struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
-    Control(const detail::Scaffold& scaffold, const Choice& desc) :
-        unselected_{desc.unselected_},
-        labeler_{desc.labeler_} {
-        Create(
-            scaffold.childParent_,
-            wxID_ANY,
-            wxDefaultPosition,
-            wxDefaultSize
-        );
-
-        postCreation(scaffold, desc.win_);
-
-        { data::Choice::Context ctxt{desc.data_};
-            Set(generateChoices(ctxt.numChoices()));
-            SetSelection(dataToControl(ctxt.choice()));
-            attach(desc.data_);
-        }
-
-        Bind(wxEVT_CHOICE, &Control::onChoice, this);
-    }
-
-    ~Control() override {
-        Unbind(wxEVT_CHOICE, &Control::onChoice, this);
-        detach();
+template<typename Derived, typename Ctrl>
+struct ControlBase : priv::WinBase<Ctrl, data::Choice::Receiver> {
+    ~ControlBase() override {
+        Ctrl::Unbind(Derived::evt(), &ControlBase::onChoice, this);
+        data::Choice::Receiver::detach();
     }
 
     void onChoice(wxCommandEvent& evt) {
-        auto& ch{const_cast<data::Choice&>(model<data::Choice>())};
-        auto res{ch.processUIAction(std::make_unique<data::Choice::ChoiceAction>(
-            controlToData(evt.GetInt())
-        ))};
-        if (not res) [this, ch=context<data::Choice>()]() {
-            SetSelection(dataToControl(ch.choice()));
-        }();
+        auto& ch{const_cast<data::Choice&>(
+            data::Choice::Receiver::model<data::Choice>()
+        )};
+
+        const auto self{static_cast<Derived *>(this)};
+        auto res{ch.processUIAction(
+            std::make_unique<data::Choice::ChoiceAction>(
+                self->controlToData(evt.GetInt())
+            )
+        )};
+
+        if (not res) {
+            [this, ch=ControlBase::template context<data::Choice>()]() {
+                const auto self{static_cast<Derived *>(this)};
+                Ctrl::SetSelection(self->dataToControl(ch.choice()));
+            }();
+        }
     }
     
     void onChoice() override {
-        const auto choice{context<data::Choice>().choice()};
-        CallAfter([this, choice] {
-            SetSelection(dataToControl(choice));
+        const auto self{static_cast<Derived *>(this)};
+        const auto model{data::Choice::Receiver::context<data::Choice>()};
+        Ctrl::CallAfter([this, self, choice=model.choice()] {
+            Ctrl::SetSelection(self->dataToControl(choice));
         });
     }
 
     void onUpdate() override {
-        const auto choices{generateChoices(
-            context<data::Choice>().numChoices()
+        const auto self{static_cast<Derived *>(this)};
+        const auto choices{self->generateChoices(
+            data::Choice::Receiver::context<data::Choice>().numChoices()
         )};
-        CallAfter([this, choices] {
-            Set(choices);
+
+        Ctrl::CallAfter([this, choices] {
+            Ctrl::Set(choices);
         });
     }
 
-    int32 controlToData(int32 choice) const {
-        return unselected_.empty() ? choice : choice - 1;
+    [[nodiscard]] int32 controlToData(int32 choice) const {
+        return choice;
     }
 
-    int32 dataToControl(int32 choice) const {
-        return unselected_.empty() ? choice : choice + 1;
+    [[nodiscard]] int32 dataToControl(int32 choice) const {
+        return choice;
     }
 
     std::vector<wxString> generateChoices(uint32 num) {
         std::vector<wxString> choices;
 
-        if (not unselected_.empty()) {
-            choices.push_back(unselected_);
-        }
-
-        rcvrs_.clear();
+        mRcvrs.clear();
 
         for (uint32 idx{0}; idx < num; ++idx) {
-            if (not labeler_) {
+            if (not mLabeler) {
                 choices.emplace_back("LABEL???");
                 continue;
             }
 
-            auto res{labeler_(idx)};
+            auto res{mLabeler(idx)};
             if (auto *ptr{std::get_if<wxString>(&res)}) {
                 choices.emplace_back(std::move(*ptr));
                 continue;
@@ -114,7 +105,7 @@ struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
             const auto& model{std::get<1>(res).get()};
             data::String::ROContext ctxt{model};
             choices.emplace_back(ctxt.val());
-            rcvrs_.push_back(std::make_unique<LabelReceiver>(
+            mRcvrs.push_back(std::make_unique<LabelReceiver>(
                 this, idx, model
             ));
         }
@@ -122,12 +113,43 @@ struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
         return choices;
     }
 
-    wxString unselected_;
-    pcui::Choice::Labeler labeler_;
+private:
+    friend Derived;
+
+    ControlBase(const detail::Scaffold& scaffold, const Choice& desc) :
+        mLabeler{desc.labeler_} {
+        Ctrl::Create(
+            scaffold.childParent_,
+            wxID_ANY,
+            wxDefaultPosition,
+            wxDefaultSize
+        );
+
+        priv::WinBase<Ctrl, data::Choice::Receiver>::postCreation(
+            scaffold, desc.win_
+        );
+
+        { data::Choice::Context ctxt{desc.data_};
+            Ctrl::Set(this->generateChoices(ctxt.numChoices()));
+            Ctrl::SetSelection(this->dataToControl(
+                ctxt.choice()
+            ));
+
+            data::Choice::Receiver::attach(desc.data_);
+        }
+
+        Ctrl::Bind(Derived::evt(), &ControlBase::onChoice, this);
+    }
+
+    std::vector<std::unique_ptr<data::String::Receiver>> mRcvrs;
+    pcui::Choice::Labeler mLabeler;
 
     struct LabelReceiver final : data::String::Receiver {
-        LabelReceiver(Control *ctrl, uint32 idx, const data::String& model) :
-            mCtrl{ctrl}, mIdx{idx} {
+        LabelReceiver(
+            Ctrl *ctrl,
+            uint32 idx,
+            const data::String& model
+        ) : mCtrl{ctrl}, mIdx{idx} {
             attach(model);
         }
 
@@ -146,11 +168,59 @@ struct Control : priv::WinBase<wxChoice, data::Choice::Receiver> {
         }
 
     private:
-        Control *mCtrl;
+        Ctrl *mCtrl;
         uint32 mIdx;
     };
+};
 
-    std::vector<std::unique_ptr<data::String::Receiver>> rcvrs_;
+struct PopUpControl : ControlBase<PopUpControl, wxChoice> {
+    PopUpControl(
+        const detail::Scaffold& scaffold,
+        const Choice& desc,
+        const Choice::PopUp& style
+    ) : ControlBase(scaffold, desc) {
+        unselected_ = style.unselected_;
+    }
+
+    static const auto& evt() { return wxEVT_CHOICE; }
+
+    [[nodiscard]] int32 controlToData(int32 choice) const {
+        return unselected_.empty() ? choice : choice - 1;
+    }
+
+    [[nodiscard]] int32 dataToControl(int32 choice) const {
+        return unselected_.empty() ? choice : choice + 1;
+    }
+
+    std::vector<wxString> generateChoices(uint32 num) {
+        std::vector<wxString> choices;
+
+        if (not unselected_.empty()) {
+            choices.push_back(unselected_);
+        }
+
+        auto tmp{ControlBase::generateChoices(num)};
+        choices.reserve(choices.size() + tmp.size());
+
+        for (auto& label : tmp) {
+            choices.push_back(std::move(label));
+        }
+
+        return choices;
+    }
+
+    wxString unselected_;
+};
+
+struct ListControl : ControlBase<ListControl, wxListBox> {
+    ListControl(
+        const detail::Scaffold& scaffold,
+        const Choice& desc,
+        const Choice::List&
+    ) : ControlBase(scaffold, desc) {
+    }
+
+    static const auto& evt() { return wxEVT_LISTBOX; }
 };
 
 } // namespace
@@ -163,8 +233,14 @@ Choice::Desc::Desc(Choice&& data) :
     Choice{std::move(data)} {}
 
 wxSizerItem *Choice::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Control(scaffold, *this)};
-    auto *item{new wxSizerItem(chk)};
+    wxWindow *ctrl{};
+    if (const auto *ptr{std::get_if<PopUp>(&style_)}) {
+        ctrl = new PopUpControl(scaffold, *this, *ptr);
+    } else if (const auto *ptr{std::get_if<List>(&style_)}) {
+        ctrl = new ListControl(scaffold, *this, *ptr);
+    }
+
+    auto *item{new wxSizerItem(ctrl)};
     priv::apply(win_.base_, item);
     return item;
 }

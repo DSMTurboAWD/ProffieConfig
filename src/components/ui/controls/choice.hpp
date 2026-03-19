@@ -38,10 +38,25 @@ struct UI_EXPORT Choice {
     data::Choice& data_;
 
     /**
-     * Entry label for whenever there is no choice selected.
-     * Instead of no selection resulting in a blank control.
+     * A "ChoiceBox" or PopupButton
      */
-    wxString unselected_;
+    struct UI_EXPORT PopUp {
+        /**
+         * Entry label for whenever there is no choice selected.
+         * Instead of no selection resulting in a blank control.
+         *
+         * This is only useful for `Pop_Up` style.
+         */
+        wxString unselected_;
+    };
+
+    /**
+     * Simple, always-visible list.
+     */
+    struct UI_EXPORT List {
+    };
+
+    std::variant<PopUp, List> style_;
 
     using Label = std::variant<wxString, RefWrap<const data::String>>;
     using Labeler = std::function<Label(uint32)>;
