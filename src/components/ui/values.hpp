@@ -19,6 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <wx/gdicmn.h>
+
 #include "utils/types.hpp"
 
 #include "ui_export.h"
@@ -35,6 +37,12 @@ UI_EXPORT int32 interControlSpacing();
  * A spacing amount appropriate between the edges of windows and controls.
  */
 UI_EXPORT int32 winEdgeSpacing();
+
+/**
+ * Button size for one with only a single icon as a label.
+ * Should be used w/ exact-fitting button.
+ */
+UI_EXPORT wxSize iconButtonSize();
 
 } // namespace pcui
 
