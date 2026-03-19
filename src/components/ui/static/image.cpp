@@ -144,6 +144,32 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
         }
     }
 
+    if (details.size_.padding_) {
+        auto retSize{bitmap.GetLogicalSize()};
+        retSize.IncBy(details.size_.padding_ * 2);
+        wxBitmap padded(retSize);
+        padded.UseAlpha();
+
+        wxMemoryDC dc(padded);
+        dc.SetBackground(*wxTRANSPARENT_BRUSH);
+        dc.Clear();
+
+        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
+
+#       ifdef __WXGTK__
+        // On GTK, images seem fairly biased towards drawing in the upper left,
+        // particularly the left, so this is a hacky way to try and level that
+        // out.
+        drawPos.x += 1;
+#       endif
+
+        dc.DrawBitmap(bitmap, drawPos);
+
+        dc.SelectObject(wxNullBitmap);
+
+        bitmap = std::move(padded);
+    }
+
     float64 scaler{};
     if (details.size_.orient_ == wxHORIZONTAL) {
         scaler = bitmap.GetLogicalWidth() / details.size_.dim_;
@@ -189,28 +215,6 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
             iter = rowStart;
             iter.OffsetY(data, 1);
         }
-    }
-
-    if (details.size_.padding_) {
-        auto retSize{bitmap.GetLogicalSize()};
-        retSize.IncBy(details.size_.padding_ * 2);
-        wxBitmap ret(retSize, 32);
-
-        wxMemoryDC dc(ret);
-        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
-
-#       ifdef __WXGTK__
-        // On GTK, images seem fairly biased towards drawing in the upper left,
-        // particularly the left, so this is a hacky way to try and level that
-        // out.
-        drawPos.x += 1;
-#       endif
-
-        dc.DrawBitmap(bitmap, drawPos);
-
-        dc.SelectObject(wxNullBitmap);
-
-        return ret;
     }
 
     return bitmap;
