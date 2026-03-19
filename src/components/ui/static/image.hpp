@@ -65,7 +65,7 @@ struct UI_EXPORT Image::LoadDetails {
 
     struct {
         int32 dim_{-1};
-        int32 padding_{0};
+        uint32 padding_{0};
         wxOrientation orient_{wxHORIZONTAL};
     } size_;
 
