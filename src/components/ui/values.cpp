@@ -36,6 +36,6 @@ int32 pcui::winEdgeSpacing() {
 }
 
 wxSize pcui::iconButtonSize() {
-    return {20, 25};
+    return {25, 25};
 }
 
