@@ -8,6 +8,7 @@ add_library(ui SHARED
     build.cpp
     info.cpp
     text.cpp
+    values.cpp
 
     priv/helpers.cpp
     priv/winbase.cpp
