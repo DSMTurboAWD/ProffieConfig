@@ -35,6 +35,7 @@
 #include "ui/dialogs/message.hpp"
 #include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
+#include "ui/values.hpp"
 #include "utils/paths.hpp"
 
 #include "../core/state.hpp"
@@ -89,10 +90,9 @@ void MainMenu::removeEditor(EditorWindow *editor) {
 pcui::DescriptorPtr MainMenu::ui() {
     return pcui::Stack{
       .base_={
-        .border_={.size_=10, .dirs_=wxALL},
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
       },
       .children_={
-        pcui::Spacer{.size_=10}(),
         pcui::Stack{
           .orient_=wxHORIZONTAL,
           .children_={
@@ -140,7 +140,7 @@ pcui::DescriptorPtr MainMenu::ui() {
                   return info.name();
               }
             }(),
-            pcui::Spacer{.size_=5}(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
             pcui::Button{
               // On GTK, the exactfit shrinks button height smaller than the
               // PopUp Choice
@@ -149,7 +149,7 @@ pcui::DescriptorPtr MainMenu::ui() {
               .exactFit_=true,
               .func_=[this] { importConfig(); },
             }(),
-            pcui::Spacer{.size_=5}(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
             pcui::Button{
               .win_={
                 .base_={.expand_=true},
@@ -160,7 +160,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             }(),
           },
         }(),
-        pcui::Spacer{.size_=10}(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Button{
           .win_={
             .base_={.expand_=true},
@@ -201,7 +201,7 @@ pcui::DescriptorPtr MainMenu::ui() {
               },
               .label_=_("Refresh Boards"),
             }(),
-            pcui::Spacer{.size_=5}(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
             pcui::Choice{
               .win_={
                 .base_={.proportion_=1},
@@ -214,7 +214,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             }(),
           }
         }(),
-        pcui::Spacer{.size_=10}(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Button{
           .win_={
             .base_={.expand_=true},
@@ -226,7 +226,7 @@ pcui::DescriptorPtr MainMenu::ui() {
           },
           .label_=_("Apply Selected Configuration to Board"),
         }(),
-        pcui::Spacer{.size_=10}(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Button{
           .win_={
             .base_={.expand_=true},
