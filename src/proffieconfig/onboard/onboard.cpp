@@ -96,14 +96,16 @@ onboard::Frame::Frame() :
         frame.mSetupDone |= phase == ePhase_Setup_Done;
 
         if (phase == ePhase_Setup_Fail) {
-            pcui::showMessage(
-                _("Dependency installation failed, please try again.") +
-                "\n\n" +
-                data::String::Context{frame.mSetupPage.errorMessage_}.val(),
-                _("Installation Failure"),
-                wxOK | wxCENTER,
-                &frame
-            );
+            frame.CallAfter([&frame] {
+                pcui::showMessage(
+                    _("Dependency installation failed, please try again.") +
+                    "\n\n" +
+                    data::String::Context{frame.mSetupPage.errorMessage_}.val(),
+                    _("Installation Failure"),
+                    wxOK | wxCENTER,
+                    &frame
+                );
+            });
         }
     };
     { data::Choice::Context phase{mPhase};
