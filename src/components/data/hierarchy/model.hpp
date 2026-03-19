@@ -24,7 +24,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
-#include <string>
+#include <string_view>
 
 #include "data/hierarchy/action.hpp"
 #include "utils/types.hpp"
@@ -59,7 +59,7 @@ struct DATA_EXPORT Model {
     /**
      * Generate a 64-bit ID from a string.
      */
-    static uint64 strID(const std::string&);
+    static uint64 strID(std::string_view);
 
     /**
      * Attach a receiver to this model.

@@ -40,8 +40,8 @@ std::unique_ptr<data::Model> data::Model::clone(Node *) const {
     __builtin_unreachable();
 }
 
-uint64 data::Model::strID(const std::string& str) {
-    return std::hash<std::string>{}(str);
+uint64 data::Model::strID(std::string_view str) {
+    return std::hash<std::string_view>{}(str);
 }
 
 data::Model::Model(const Model& other, Node *parent, Root *root) :
