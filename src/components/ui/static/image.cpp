@@ -144,37 +144,14 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
         }
     }
 
-    if (details.size_.padding_) {
-        auto retSize{bitmap.GetLogicalSize()};
-        retSize.IncBy(details.size_.padding_ * 2);
-        wxBitmap padded(retSize);
-        padded.UseAlpha();
-
-        wxMemoryDC dc(padded);
-        dc.SetBackground(*wxTRANSPARENT_BRUSH);
-        dc.Clear();
-
-        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
-
-#       ifdef __WXGTK__
-        // On GTK, images seem fairly biased towards drawing in the upper left,
-        // particularly the left, so this is a hacky way to try and level that
-        // out.
-        drawPos.x += 1;
-#       endif
-
-        dc.DrawBitmap(bitmap, drawPos);
-
-        dc.SelectObject(wxNullBitmap);
-
-        bitmap = std::move(padded);
-    }
+    assert(details.size_.padding_ * 2 < details.size_.dim_);
+    const auto adjustedDim{details.size_.dim_ - (details.size_.padding_ * 2)};
 
     float64 scaler{};
     if (details.size_.orient_ == wxHORIZONTAL) {
-        scaler = bitmap.GetLogicalWidth() / details.size_.dim_;
+        scaler = bitmap.GetLogicalWidth() / adjustedDim;
     } else {
-        scaler = bitmap.GetLogicalHeight() / details.size_.dim_;
+        scaler = bitmap.GetLogicalHeight() / adjustedDim;
     }
 
 #   ifdef _WIN32
@@ -215,6 +192,32 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
             iter = rowStart;
             iter.OffsetY(data, 1);
         }
+    }
+
+    if (details.size_.padding_) {
+        auto retSize{bitmap.GetLogicalSize()};
+        retSize.IncBy(details.size_.padding_ * 2);
+        wxBitmap padded(retSize, 32);
+        padded.UseAlpha();
+
+        wxMemoryDC dc(padded);
+        dc.SetBackground(*wxTRANSPARENT_BRUSH);
+        dc.Clear();
+
+        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
+
+#       ifdef __WXGTK__
+        // On GTK, images seem fairly biased towards drawing in the upper left,
+        // particularly the left, so this is a hacky way to try and level that
+        // out.
+        drawPos.x += 1;
+#       endif
+
+        dc.DrawBitmap(bitmap, drawPos);
+
+        dc.SelectObject(wxNullBitmap);
+
+        return padded;
     }
 
     return bitmap;
