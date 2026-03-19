@@ -254,11 +254,6 @@ pcui::DescriptorPtr MainMenu::ui() {
           },
           .label_=_("Open Serial Monitor"),
         }(),
-#       ifdef __WXMSW__
-        // There's a sizing issue I need to figure out... for now we give it a
-        // chin
-        pcui::Spacer{.size_=FromDIP(20)}(),
-#       endif
       }
     }();
 
