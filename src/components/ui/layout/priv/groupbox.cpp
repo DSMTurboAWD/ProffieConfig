@@ -60,18 +60,34 @@ void GroupBox::create(
     mPanel->SetSizer(mSizer);
 
     Bind(wxEVT_SIZE, [this](wxSizeEvent& evt) {
+        // The values returned by this function vary by OS, obviously, but also
+        // vary in meaning.
+        //
+        // On macOS, the otherBorder is the only one that's meaningful. I'm not
+        // quite sure what topBorder actually returns (could look in the
+        // future), but it's 22px where the group borders on macOS are 11px,
+        // and that's what otherBorder has. These are values on Sequoia, and it
+        // surely varies across version, but I put the values there for
+        // reference. The actual "padding" is 12px (it and 24px are values I've
+        // seen referenced in other Cocoa discussions), if the 1px border drawn
+        // is included. With a high-DPI display (virtually all of them), these
+        // values are doubled.
         int32 topBorder{};
         int32 otherBorder{};
         GetBordersForSizer(&topBorder, &otherBorder);
 
-        auto size{GetSize()};
+        auto size{GetClientSize()};
         wxPoint pos{0, 0};
 
         size.x -= PADDING * 2;
-        size.x -= otherBorder * 2;
-
         size.y -= PADDING * 2;
+
+        size.x -= otherBorder * 2;
+#       if defined(__WXOSX__)
+        size.y -= otherBorder * 2;
+#       else
         size.y -= otherBorder + topBorder;
+#       endif
 
 #       if defined(__WXMSW__)
         pos.x += otherBorder + PADDING;
@@ -107,11 +123,25 @@ wxSize GroupBox::DoGetBestClientSize() const {
     int32 topBorder{};
     int32 otherBorder{};
     GetBordersForSizer(&topBorder, &otherBorder);
+
     auto ret{mSizer->CalcMin()};
+
     ret.x += 2 * otherBorder;
+#   if defined(__WXOSX__)
+    ret.y += otherBorder * 2;
+#   else
     ret.y += otherBorder + topBorder;
+#   endif
+
     ret.x += PADDING * 2;
     ret.y += PADDING * 2;
-    return ret;
+
+    // At least on macOS, this function, DoGetBestClientSize(), has a horribly
+    // misleading name, apparently.
+    //
+    // If we return the client size, then in the wxEVT_SIZE, we'll find that
+    // size was used for the entire window (including the label!), so we return
+    // the window size here, and that makes things work out.
+    return ClientToWindowSize(ret);
 }
 
