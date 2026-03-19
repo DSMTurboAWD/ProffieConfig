@@ -142,6 +142,9 @@ pcui::DescriptorPtr MainMenu::ui() {
             }(),
             pcui::Spacer{.size_=5}(),
             pcui::Button{
+              // On GTK, the exactfit shrinks button height smaller than the
+              // PopUp Choice
+              .win_={.base_={.expand_=true}},
               .label_=_("Add"),
               .exactFit_=true,
               .func_=[this] { importConfig(); },
@@ -149,6 +152,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             pcui::Spacer{.size_=5}(),
             pcui::Button{
               .win_={
+                .base_={.expand_=true},
                 .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}}),
               },
               .label_=_("Remove"),
