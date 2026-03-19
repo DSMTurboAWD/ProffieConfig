@@ -44,7 +44,9 @@ inline std::ifstream openInput(const fs::path& path) {
     // it can't handle its own stupid CRLF endings and tellg/seekg plainly do
     // not work.
     // See: https://github.com/microsoft/STL/issues/1784
-    return {path, std::ios::binary | std::ios::in};
+
+    // These constructors are explicit on (at least) macOS
+    return std::ifstream{path, std::ios::binary | std::ios::in};
 }
 
 inline std::ofstream openOutput(const fs::path& path) {
