@@ -23,6 +23,7 @@
 #include <wx/statbox.h>
 
 #include "ui/priv/helpers.hpp"
+#include "ui/values.hpp"
 
 using namespace pcui;
 
@@ -40,8 +41,6 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     detail::Scaffold childScaffold{scaffold};
     auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
 
-    constexpr auto BUTTON_SPACING{12};
-
     // The fact that the spacers don't go away more smart is a little
     // unfortunate, but not a practical concern right now.
 
@@ -56,7 +55,7 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     if (cancel_) {
         auto *item{cancel_->build(childScaffold)};
 
-        item->SetBorder(BUTTON_SPACING);
+        item->SetBorder(pcui::interControlSpacing());
         const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
         item->SetFlag(nonDirMask | wxLEFT);
 
@@ -66,7 +65,7 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     if (apply_) {
         auto *item{apply_->build(childScaffold)};
 
-        item->SetBorder(BUTTON_SPACING);
+        item->SetBorder(pcui::interControlSpacing());
         const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
         item->SetFlag(nonDirMask | wxLEFT);
 
@@ -83,7 +82,7 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     if (cancel_) {
         auto *item{cancel_->build(childScaffold)};
 
-        item->SetBorder(BUTTON_SPACING);
+        item->SetBorder(pcui::interControlSpacing());
         const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
         item->SetFlag(nonDirMask | wxLEFT);
 
@@ -93,7 +92,7 @@ wxSizerItem *DialogButtons::Desc::build(const detail::Scaffold& scaffold) const 
     if (ok_) {
         auto *item{ok_->build(childScaffold)};
 
-        item->SetBorder(BUTTON_SPACING);
+        item->SetBorder(pcui::interControlSpacing());
         const auto nonDirMask{item->GetFlag() & ~wxDIRECTION_MASK};
         item->SetFlag(nonDirMask | wxLEFT);
 
