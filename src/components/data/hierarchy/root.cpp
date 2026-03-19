@@ -130,6 +130,12 @@ bool data::Root::capturePerformance(bool fromUI) {
     return true;
 }
 
+bool data::Root::isActuallyCapturing() {
+    std::lock_guard scopeLock{pLock};
+
+    return mState == State::Performance;
+}
+
 void data::Root::abortCapture() {
     std::scoped_lock scopeLock{pLock};
 

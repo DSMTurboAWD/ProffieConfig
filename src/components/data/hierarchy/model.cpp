@@ -106,7 +106,7 @@ bool data::Model::processAction(
 
     action->perform(*this);
 
-    if (mRoot) {
+    if (mRoot and mRoot->isActuallyCapturing()) {
         action->mTrace.clear();
         mParent->sendUpAction(*this, std::move(action));
     }

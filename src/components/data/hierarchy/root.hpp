@@ -91,10 +91,18 @@ private:
      *
      * @param if the action originated from UI, or from code.
      *
-     * @return if a performance is allowed to be captured right now.
+     * @return if a performance is allowed right now.
      *         It may not be if, e.g., a replay is in progress.
      */
     [[nodiscard]] bool capturePerformance(bool fromUI);
+
+    /**
+     * capturePerformance() will return true indicating that performance is
+     * allowed, but it may not have actually setup a capture.
+     *
+     * @return if capturing/action send is actually expected.
+     */
+    [[nodiscard]] bool isActuallyCapturing();
 
     /**
      * If it is determined the action is unnecessary, the capture state may be
