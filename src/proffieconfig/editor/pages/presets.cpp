@@ -215,7 +215,7 @@ pcui::DescriptorPtr PresetsPage::selection() {
                   .win_={.base_={.expand_=true}},
                   .bitmap_=pcui::Image::LoadDetails{
                     .name_="edit",
-                    .size_={.dim_=16},
+                    .size_={.dim_=16, .padding_=4},
                     .color_=wxSYS_COLOUR_WINDOWTEXT,
                   }(),
                   .exactFit_=true,
