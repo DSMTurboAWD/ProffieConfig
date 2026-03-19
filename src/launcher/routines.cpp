@@ -26,6 +26,8 @@
 #include <shlobj.h>
 #include <windows.h>
 #include <errhandlingapi.h>
+
+#include "utils/files.hpp"
 #endif
 
 #ifdef __APPLE__
@@ -35,7 +37,6 @@
 #include "app/app.hpp"
 #include "ui/dialogs/message.hpp"
 #include "utils/paths.hpp"
-#include "utils/files.hpp"
 #include "log/logger.hpp"
 
 namespace {
@@ -150,7 +151,7 @@ void routine::platformInstall(logging::Branch& lBranch) {
     const auto applicationPath{installedExec.parent_path().parent_path().parent_path()};
     fs::copy(currentBundle, applicationPath, fs::copy_options::recursive);
     // Cannot remove from DMG
-    fs::remove_all(currentBundle, err);
+    fs::remove_all(currentBundle, ec);
 #   endif
 
     pcui::showMessage(_("Launcher has been installed."), app::getName());
