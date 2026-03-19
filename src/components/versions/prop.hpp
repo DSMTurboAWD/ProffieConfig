@@ -290,10 +290,9 @@ struct VERSIONS_EXPORT Context {
     Context();
     ~Context();
 
-    const std::vector<Available>& available() [[clang::lifetimebound]];
+    const std::vector<Available>& available() LIFETIMEBOUND;
 
-    const std::vector<std::unique_ptr<Versioned>>&
-        list() [[clang::lifetimebound]];
+    const std::vector<std::unique_ptr<Versioned>>& list() LIFETIMEBOUND;
 
     /**
      * Build a set of props for version and node.

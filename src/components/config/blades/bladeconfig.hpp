@@ -84,8 +84,8 @@ struct CONFIG_EXPORT Blade : data::Node {
     bool enumerate(const EnumFunc&) override;
     Model *find(uint64) override;
 
-    [[nodiscard]] WS281X& ws281x() [[clang::lifetimebound]];
-    [[nodiscard]] Simple& simple() [[clang::lifetimebound]];
+    [[nodiscard]] WS281X& ws281x() LIFETIMEBOUND;
+    [[nodiscard]] Simple& simple() LIFETIMEBOUND;
 
     enum Type {
         // NOLINTNEXTLINE(readability-identifier-naming)

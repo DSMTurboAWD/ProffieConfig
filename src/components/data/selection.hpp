@@ -75,10 +75,8 @@ struct DATA_EXPORT Selection::ROContext : virtual Model::ROContext {
     ROContext(const Selection&);
     ~ROContext();
 
-    [[nodiscard]] const std::vector<bool>&
-        selected() const [[clang::lifetimebound]];
-    [[nodiscard]] const std::vector<std::string>&
-        items() const [[clang::lifetimebound]];
+    [[nodiscard]] const std::vector<bool>& selected() const LIFETIMEBOUND;
+    [[nodiscard]] const std::vector<std::string>& items() const LIFETIMEBOUND;
 };
 
 struct DATA_EXPORT Selection::Context : Model::Context, ROContext {

@@ -60,7 +60,7 @@ struct DATA_EXPORT Vector::ROContext : virtual Model::ROContext {
     ~ROContext();
 
     [[nodiscard]] const std::vector<std::unique_ptr<Model>>&
-        children() const [[clang::lifetimebound]];
+        children() const LIFETIMEBOUND;
 };
 
 struct DATA_EXPORT Vector::Context : Model::Context, ROContext {

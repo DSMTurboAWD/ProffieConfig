@@ -97,6 +97,13 @@ else()
     set(INSTALL_RESOURCE_DIR ${INSTALL_ITEM_DIR}/resources)
 endif()
 
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_definitions(LIFETIMEBOUND="[[clang::lifetimebound]]")
+else()
+    add_compile_definitions(LIFETIMEBOUND=)
+endif()
+
 add_subdirectory(3rdparty)
 add_subdirectory(resources)
 add_subdirectory(src)

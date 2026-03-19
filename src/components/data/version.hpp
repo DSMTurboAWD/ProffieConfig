@@ -52,7 +52,7 @@ struct DATA_EXPORT Version::ROContext : virtual Model::ROContext {
     ROContext(const Version&);
     ~ROContext();
 
-    [[nodiscard]] const utils::Version& val() const [[clang::lifetimebound]];
+    [[nodiscard]] const utils::Version& val() const LIFETIMEBOUND;
 };
 
 struct DATA_EXPORT Version::Context : Model::Context, ROContext {

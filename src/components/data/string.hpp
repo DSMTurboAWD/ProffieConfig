@@ -63,7 +63,7 @@ struct DATA_EXPORT String::ROContext : virtual Model::ROContext {
     ROContext(const String&);
     ~ROContext();
 
-    [[nodiscard]] const std::string& val() const [[clang::lifetimebound]];
+    [[nodiscard]] const std::string& val() const LIFETIMEBOUND;
     [[nodiscard]] size pos() const;
 };
 
