@@ -30,9 +30,26 @@ namespace files {
 
 UTILS_EXPORT bool copyOverwrite(const fs::path& src, const fs::path& dst, std::error_code& err);
 
-UTILS_EXPORT std::ifstream openInput(const fs::path& path);
+// openInput and openOutput must be inline, otherwise things crash on Windows.
+// Who knows why on earth that is. I tried to debug it a bit and it's just not
+// worth it. Whatever, Microslop.
+//
+// These functions already only exist to uniformly deal with Windows' garbage
+// cstdlib.
+inline std::ifstream openInput(const fs::path& path) {
+    // POSIX Specifies that there is no distinction between binary/text modes.
+    // So this shouldn't make a difference on good operating systems.
+    //
+    // On Windows, however, MSVC's STL implementation just kills itself because
+    // it can't handle its own stupid CRLF endings and tellg/seekg plainly do
+    // not work.
+    // See: https://github.com/microsoft/STL/issues/1784
+    return {path, std::ios::binary | std::ios::in};
+}
 
-UTILS_EXPORT std::ofstream openOutput(const fs::path& path);
+inline std::ofstream openOutput(const fs::path& path) {
+    return std::ofstream{path, std::ios::binary | std::ios::out};
+}
 
 } // namespace files
 

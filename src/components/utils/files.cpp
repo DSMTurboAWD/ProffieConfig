@@ -37,18 +37,3 @@ bool files::copyOverwrite(
 #   endif
 }
 
-std::ifstream files::openInput(const fs::path& path) {
-    // POSIX Specifies that there is no distinction between binary/text modes.
-    // So this shouldn't make a difference on good operating systems.
-    //
-    // On Windows, however, MSVC's STL implementation just kills itself because
-    // it can't handle its own stupid CRLF endings and tellg/seekg plainly do
-    // not work.
-    // See: https://github.com/microsoft/STL/issues/1784
-    return std::ifstream{path, std::ios::binary | std::ios::in};
-}
-
-std::ofstream files::openOutput(const fs::path& path) {
-    return std::ofstream{path, std::ios::binary | std::ios::out};
-}
-
