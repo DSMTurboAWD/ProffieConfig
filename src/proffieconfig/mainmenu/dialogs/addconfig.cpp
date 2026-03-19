@@ -39,6 +39,7 @@
 #include "ui/static/label.hpp"
 #include "ui/static/image.hpp"
 #include "ui/types.hpp"
+#include "ui/values.hpp"
 #include "utils/parent.hpp"
 
 #include "../mainmenu.hpp"
@@ -128,7 +129,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
     return pcui::Stack{
       .base_={
         .minSize_={400, -1},
-        .border_={.size_=10, .dirs_=wxALL},
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
       },
       .children_={
         pcui::Segmented{
