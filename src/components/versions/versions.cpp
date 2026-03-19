@@ -43,6 +43,7 @@
 #include "versions/os.hpp"
 #include "versions/priv/data.hpp"
 #include "versions/prop.hpp"
+#include "wx/log.h"
 
 namespace {
 
@@ -53,11 +54,12 @@ constexpr utils::Version DEFAULT_OS_VERSION{7, 15};
 void versions::loadLocal(logging::Branch *lBranch) {
     auto& logger{logging::Branch::optCreateLogger("Versions::loadLocal()", lBranch)};
 
+    std::error_code ec{};
+
     logger.info("Loading ProffieOS Versions...");
     priv::os.clear();
-    for (const auto& entry : fs::directory_iterator(paths::osDir())) {
-        std::error_code err{};
-        if (not entry.is_directory(err)) {
+    for (const auto& entry : fs::directory_iterator(paths::osDir(), ec)) {
+        if (not entry.is_directory(ec)) {
             logger.warn("Non-directory OS entry found: " + entry.path().filename().string());
             continue;
         }
@@ -162,12 +164,15 @@ void versions::loadLocal(logging::Branch *lBranch) {
         ));
     }
 
+    if (ec) {
+        logger.error("Failed to load ProffieOS versions: " + ec.message());
+    }
+
     logger.info("Loading Props...");
 
     priv::props.clear();
-    for (const auto& entry : fs::directory_iterator(paths::propDir())) {
-        std::error_code err{};
-        if (not entry.is_directory(err)) {
+    for (const auto& entry : fs::directory_iterator(paths::propDir(), ec)) {
+        if (not entry.is_directory(ec)) {
             logger.warn("Non-directory prop entry found: " + entry.path().filename().string());
             continue;
         }
@@ -247,6 +252,11 @@ void versions::loadLocal(logging::Branch *lBranch) {
             std::move(prop)
         ));
     }
+
+    if (ec) {
+        logger.error("Failed to load props: " + ec.message());
+    }
+
 
     logger.info("Done");
 }
@@ -627,6 +637,18 @@ std::optional<std::string> versions::downloadProp(
     const std::string& name, logging::Branch *lBranch
 ) {
     std::lock_guard scopeLock{priv::lock};
+
+    /*
+     * The wxWebRequestSync will call wxRemoveFile on the data tmp file if it
+     * still exists whenever the dtor runs (it calls this after the complete
+     * event for a normal request).
+     *
+     * For some reason however, it thinks the file is still in use, so it
+     * isn't removed. This only seems to be an issue on Windows, and I just
+     * don't care to waste time on issues like these on windows that don't
+     * really matter. The Temp will be cleared eventually :/
+     */
+    wxLogNull noErrors;
 
     auto& logger{logging::Branch::optCreateLogger("versions::downloadProp()", lBranch)};
 
