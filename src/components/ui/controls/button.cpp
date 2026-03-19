@@ -44,6 +44,20 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
 
         const data::Model *modelPtr{nullptr};
 
+        switch (desc.style_) {
+            using enum Button::Style;
+            case Normal:
+                style |= wxBORDER_DEFAULT;
+                break;
+            case Companion:
+#       ifdef __WXOSX__
+                style |= wxBORDER_SIMPLE;
+#       else
+                style |= wxBORDER_SIMPLE;
+#       endif
+                break;
+        }
+
         Create(
             scaffold.childParent_,
             wxID_ANY,
@@ -65,8 +79,9 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
             SetLabel(std::get<0>(desc.label_));
         }
 
-        commonSetup();
+        if (desc.bitmap_.IsOk()) SetBitmap(desc.bitmap_);
 
+        commonSetup();
 
         if (modelPtr) attach(*modelPtr);
         Bind(wxEVT_BUTTON, &Control::onPress, this);

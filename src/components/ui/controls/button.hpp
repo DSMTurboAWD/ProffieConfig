@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <functional>
+#include <wx/bitmap.h>
 
 #include "data/generic.hpp"
 #include "data/string.hpp"
@@ -33,6 +33,7 @@ namespace pcui {
 
 struct UI_EXPORT Button {
     struct Desc;
+    enum class Style;
 
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
@@ -47,6 +48,10 @@ struct UI_EXPORT Button {
         RefWrap<const data::String>
     > label_;
 
+    wxBitmap bitmap_;
+
+    Style style_;
+
     bool exactFit_{false};
 
     /**
@@ -58,13 +63,25 @@ struct UI_EXPORT Button {
 
     std::function<void()> func_;
 
-    std::unique_ptr<detail::Descriptor> operator()();
+    DescriptorPtr operator()();
 };
 
 struct UI_EXPORT Button::Desc : Button, detail::Descriptor {
     Desc(Button&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
+};
+
+enum class Button::Style {
+    Normal,
+
+    /**
+     * A button that performs a view-related action, and is intended to be
+     * displayed immediately beside that view.
+     *
+     * This corresponds to the square style on macOS
+     */
+    Companion,
 };
 
 } // namespace pcui
