@@ -49,7 +49,7 @@ void generateMissingBMP(wxBitmap&, const wxSize& = wxDefaultSize);
 
 // std::unordered_map<string, wxBitmap> bmps;
 wxBitmap loadPNG(cstring);
-wxBitmap loadPNG(cstring, int32, wxOrientation, const wxColour&);
+wxBitmap loadPNG(const Image::LoadDetails&);
 
 #ifdef __WXOSX__
 using Widget = wxStaticBitmap;
@@ -85,12 +85,7 @@ wxBitmap Image::LoadDetails::operator()() const {
         return loadPNG(name_);
     }
 
-    return loadPNG(
-        name_,
-        size_.dim_,
-        size_.orient_,
-        color_.color()
-    );
+    return loadPNG(*this);
 }
 
 DescriptorPtr Image::operator()() {
@@ -133,9 +128,9 @@ wxBitmap loadPNG(cstring name) {
     return bitmap;
 }
 
-wxBitmap loadPNG(cstring name, int32 dim, wxOrientation orient, const wxColour& color) {
+wxBitmap loadPNG(const Image::LoadDetails& details) {
     auto pngPath{paths::resourceDir() / "icons"};
-    pngPath /= name;
+    pngPath /= details.name_;
     pngPath += ".png";
 
     wxBitmap bitmap;
@@ -150,10 +145,10 @@ wxBitmap loadPNG(cstring name, int32 dim, wxOrientation orient, const wxColour& 
     }
 
     float64 scaler{};
-    if (orient == wxHORIZONTAL) {
-        scaler = bitmap.GetLogicalWidth() / dim;
+    if (details.size_.orient_ == wxHORIZONTAL) {
+        scaler = bitmap.GetLogicalWidth() / details.size_.dim_;
     } else {
-        scaler = bitmap.GetLogicalHeight() / dim;
+        scaler = bitmap.GetLogicalHeight() / details.size_.dim_;
     }
 
 #   ifdef _WIN32
@@ -166,6 +161,7 @@ wxBitmap loadPNG(cstring name, int32 dim, wxOrientation orient, const wxColour& 
     bitmap.SetScaleFactor(bitmap.GetScaleFactor() * scaler);
 #   endif
 
+    auto color{details.color_.color()};
     if (color.IsOk()) {
         wxAlphaPixelData data{bitmap};
         if (not data) return bitmap;
@@ -193,6 +189,28 @@ wxBitmap loadPNG(cstring name, int32 dim, wxOrientation orient, const wxColour& 
             iter = rowStart;
             iter.OffsetY(data, 1);
         }
+    }
+
+    if (details.size_.padding_) {
+        auto retSize{bitmap.GetLogicalSize()};
+        retSize.IncBy(details.size_.padding_ * 2);
+        wxBitmap ret(retSize, 32);
+
+        wxMemoryDC dc(ret);
+        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
+
+#       ifdef __WXGTK__
+        // On GTK, images seem fairly biased towards drawing in the upper left,
+        // particularly the left, so this is a hacky way to try and level that
+        // out.
+        drawPos.x += 1;
+#       endif
+
+        dc.DrawBitmap(bitmap, drawPos);
+
+        dc.SelectObject(wxNullBitmap);
+
+        return ret;
     }
 
     return bitmap;
