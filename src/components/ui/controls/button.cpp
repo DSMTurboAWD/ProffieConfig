@@ -96,7 +96,10 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
 #       ifdef __WXGTK__
         // TODO: Does this look right?
         const auto exactFit{GetWindowStyle() & wxBU_EXACTFIT};
-        wxButton::SetLabel(exactFit ? ' ' + str + ' ' : str);
+        wxButton::SetLabel(exactFit and not str.empty()
+            ? ' ' + str + ' '
+            : str
+        );
 #       else
         wxButton::SetLabel(str);
 #       endif
