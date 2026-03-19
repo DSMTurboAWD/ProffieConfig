@@ -29,7 +29,48 @@
 using namespace config::settings;
 
 BladeAwareness::BladeAwareness(Settings& settings) :
-    data::Node(&settings) {
+    data::Node(&settings),
+    // TODO: Is there a more legible way of doing this?
+    bladeDetect_{
+        .enable_=this,
+        .pin_=this
+    },
+    bladeId_{
+        .enable_=this,
+        .pin_=this,
+        .mode_=this,
+        .bridgePin_=this,
+        .pullup_=this,
+        .powerForId_=this,
+        .powerPins_=this,
+        .continuous_={
+            .enable_=this,
+            .interval_=this,
+            .times_=this
+        }
+    } {
+    buildMap();
+}
+
+BladeAwareness::~BladeAwareness() = default;
+
+bool BladeAwareness::enumerate(const EnumFunc& func) {
+    for (auto& [id, data] : mMap) {
+        auto& [str, model]{data};
+        if (func(*model, id, str)) return true;
+    }
+
+    return false;
+}
+
+data::Model *BladeAwareness::find(uint64 id) {
+    auto iter{mMap.find(id)};
+    if (iter == mMap.end()) return nullptr;
+
+    return iter->second.second;
+}
+
+void BladeAwareness::init() {
     using namespace priv;
 
     bladeDetect_.enable_.responder().onSet_ = [](
@@ -49,7 +90,7 @@ BladeAwareness::BladeAwareness(Settings& settings) :
         data::Bool::Context{bladeId.powerForId_}.enable(ctxt.val());
         data::String::Context{bladeId.bridgePin_}.enable(ctxt.val());
         data::Integer::Context{bladeId.pullup_}.enable(ctxt.val());
-        data::Bool::Context{bladeId.continuousScanning_}.enable(ctxt.val());
+        data::Bool::Context{bladeId.continuous_.enable_}.enable(ctxt.val());
         // if (not set) bladeId_.continuousScanning = false;
     };
 
@@ -73,25 +114,25 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     }};
     bladeId_.bridgePin_.setFilter(bridgePinFilter);
 
-    { data::Integer::Context continuousTimes{bladeId_.continuousTimes_};
-        continuousTimes.update({.min_ = 1, .max_ = 100});
-        continuousTimes.set(8);
+    { data::Integer::Context times{bladeId_.continuous_.times_};
+        times.update({.min_ = 1, .max_ = 100});
+        times.set(8);
     }
 
-    { data::Integer::Context continuousInterval{bladeId_.continuousInterval_};
-        continuousInterval.update({.min_ = 1, .max_ = 120000});
-        continuousInterval.set(300);
+    { data::Integer::Context interval{bladeId_.continuous_.interval_};
+        interval.update({.min_ = 1, .max_ = 120000});
+        interval.set(300);
     }
 
-    (bladeId_.continuousScanning_.responder().onSet_ = [](
+    (bladeId_.continuous_.enable_.responder().onSet_ = [](
         const data::Bool::ROContext& ctxt
     ) {
         auto& bladeId{ctxt.model().parent<BladeAwareness>()->bladeId_};
-        data::Integer::Context itvl{bladeId.continuousInterval_};
+        data::Integer::Context itvl{bladeId.continuous_.interval_};
         itvl.enable(ctxt.val());
-        data::Integer::Context times{bladeId.continuousTimes_};
+        data::Integer::Context times{bladeId.continuous_.times_};
         times.enable(ctxt.val());
-    })(bladeId_.continuousScanning_);
+    })(bladeId_.continuous_.enable_);
 
     (bladeId_.powerForId_.responder().onSet_ = [](
         const data::Bool::ROContext& ctxt
@@ -119,14 +160,27 @@ BladeAwareness::BladeAwareness(Settings& settings) :
     }
 }
 
-BladeAwareness::~BladeAwareness() = default;
+void BladeAwareness::buildMap() {
+    const auto process{[this] (cstring str, data::Model& model) {
+        mMap[strID(str)] = {str, &model};
+    }};
 
-bool BladeAwareness::enumerate(const EnumFunc&) {
-    assert(0); // TODO
+    process("BladeDetect.Enable", bladeDetect_.enable_);
+    process("BladeDetect.Pin", bladeDetect_.pin_);
+
+    process("BladeID.Enable", bladeId_.enable_);
+    process("BladeID.Pin", bladeId_.pin_);
+
+    process("BladeID.Mode", bladeId_.mode_);
+    process("BladeID.BridgePin", bladeId_.bridgePin_);
+    process("BladeID.Pullup", bladeId_.pullup_);
+
+    process("BladeID.PowerForID", bladeId_.powerForId_);
+    process("BladeID.PowerPins", bladeId_.powerPins_);
+
+    auto& scan{bladeId_.continuous_};
+    process("BladeID.Continuous.Enable", scan.enable_);
+    process("BladeID.Continuous.Interval", scan.interval_);
+    process("BladeID.Continuous.Times", scan.times_);
 }
-
-data::Model *BladeAwareness::find(uint64) {
-    assert(0); // TODO
-}
-
 

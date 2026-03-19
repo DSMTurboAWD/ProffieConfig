@@ -73,11 +73,16 @@ struct config::Config::SavedReceiver : Root::Receiver {
 };
 
 config::Config::Config() :
-    settings_{*this},
-    mPropSel{this},
-    presetArrays_{this},
-    bladeConfigs_{this},
-    buttons_{this} {
+    osVersion_(this),
+    settings_(*this),
+    presetArrays_(this),
+    bladeConfigs_(this),
+    buttons_(this),
+    injections_(this),
+    mOsVersions(this),
+    mPropSel(this),
+    mBoardSel(this) {
+    suppressActions();
 
     const auto propSelFilt{[](const data::Choice::ROContext& ctxt, int32& idx) {
         if (idx == -1 and ctxt.numChoices()) idx = 0;
@@ -85,6 +90,10 @@ config::Config::Config() :
     mPropSel.choice_.setFilter(propSelFilt);
 
     mRcvr = new SavedReceiver(*this);
+
+    settings_.init();
+
+    unsuppressActions();
 }
 
 config::Config::~Config() {

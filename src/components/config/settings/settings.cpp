@@ -31,7 +31,61 @@
 
 config::Settings::Settings(Config& parent) :
     data::Node(&parent),
-    bladeAwareness_(*this) {
+    massStorage_(this),
+    webUsb_(this),
+    bladeAwareness_(*this),
+    volume_(this),
+    bootVolume_{.enable_=this, .value_=this},
+    filter_{.enable_=this, .cutoff_=this, .order_=this},
+    clashThreshold_(this),
+    pliOffTime_(this),
+    idleOffTime_(this),
+    motionTimeout_(this),
+    disableColorChange_(this),
+    disableBasicParserStyles_(this),
+    disableTalkie_(this),
+    disableDiagnosticCommands_(this),
+    saveState_(this),
+    enableAllEditOptions_(this),
+    saveVolume_(this),
+    savePreset_(this),
+    saveColorChange_(this),
+    enableOled_(this),
+    orientation_(this),
+    orientationRotation_{.x_=this, .y_=this, .z_=this},
+    dynamicBladeDimming_(this),
+    dynamicBladeLength_(this),
+    dynamicClashThreshold_(this),
+    saveBladeDimming_(this),
+    saveClashThreshold_(this),
+    audioClashSuppressionLevel_(this),
+    dontUseGyroForClash_(this),
+    noRepeatRandom_(this),
+    femaleTalkie_(this),
+    killOldPlayers_(this),
+    defines_(this) {
+    buildMap();
+}
+
+config::Settings::~Settings() = default;
+
+bool config::Settings::enumerate(const EnumFunc& func) {
+    for (auto& [id, data] : mMap) {
+        auto& [str, model]{data};
+        if (func(*model, id, str)) return true;
+    }
+
+    return false;
+}
+
+data::Model *config::Settings::find(uint64 id) {
+    auto iter{mMap.find(id)};
+    if (iter == mMap.end()) return nullptr;
+
+    return iter->second.second;
+}
+
+void config::Settings::init() {
     using namespace priv;
 
     const auto onSaveOptSet{[](const data::Bool::ROContext& ctxt) {
@@ -86,13 +140,13 @@ config::Settings::Settings(Config& parent) :
     data::Integer::Context{volume_}.update({
         .min_=0, .max_=4000, .inc_=50
     });
-    data::Integer::Context{bootVolume_}.update({
+    data::Integer::Context{bootVolume_.value_}.update({
         .min_=0, .max_=4000, .inc_=50
     });
 
     volume_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& settings{*ctxt.model().parent<Settings>()};
-        data::Integer::Context bootVolume{settings.bootVolume_};
+        data::Integer::Context bootVolume{settings.bootVolume_.value_};
 
         auto params{bootVolume.params()};
         params.max_ = ctxt.val();
@@ -100,35 +154,33 @@ config::Settings::Settings(Config& parent) :
     };
 
     data::Integer::Context{volume_}.set(1000);
-    data::Integer::Context{bootVolume_}.set(1000);
+    data::Integer::Context{bootVolume_.value_}.set(1000);
 
-    enableBootVolume_.responder().onSet_ = [](
+    (bootVolume_.enable_.responder().onSet_ = [](
         const data::Bool::ROContext& ctxt
     ) {
         auto& settings{*ctxt.model().parent<Settings>()};
-        data::Integer::Context bootVolume{settings.bootVolume_};
+        data::Integer::Context bootVolume{settings.bootVolume_.value_};
         bootVolume.enable(ctxt.val());
-    };
-    enableBootVolume_.responder().onSet_(enableBootVolume_);
+    })(bootVolume_.enable_);
 
-    enableFiltering_.responder().onSet_ = [](
+    (filter_.enable_.responder().onSet_ = [](
         const data::Bool::ROContext& ctxt
     ) {
         auto& settings{*ctxt.model().parent<Settings>()};
-        data::Integer::Context order{settings.filterOrder_};
+        data::Integer::Context order{settings.filter_.order_};
         order.enable(ctxt.val());
 
-        data::Integer::Context cutoff{settings.filterCutoff_};
+        data::Integer::Context cutoff{settings.filter_.cutoff_};
         cutoff.enable(ctxt.val());
-    };
-    enableFiltering_.responder().onSet_(enableFiltering_);
+    })(filter_.enable_);
 
-    { data::Integer::Context cutoff{filterCutoff_};
+    { data::Integer::Context cutoff{filter_.cutoff_};
         cutoff.update({.min_=1, .max_=10000, .inc_=10});
         cutoff.set(100);
     }
 
-    { data::Integer::Context order{filterOrder_};
+    { data::Integer::Context order{filter_.order_};
         order.update({.min_=1, .max_=2560});
         order.set(8);
     }
@@ -208,20 +260,74 @@ config::Settings::Settings(Config& parent) :
         suppress.update({.min_=1, .max_=50});
         suppress.set(10);
     }
-}
 
-config::Settings::~Settings() = default;
-
-bool config::Settings::enumerate(const EnumFunc&) {
-    assert(0); // TODO
-}
-
-data::Model *config::Settings::find(uint64) {
-    assert(0); // TODO
+    bladeAwareness_.init();
 }
 
 void config::Settings::processDefines() {
     processAction(std::make_unique<ProcessDefinesAction>());
+}
+
+void config::Settings::buildMap() {
+    const auto process{[this] (cstring str, data::Model& model) {
+        mMap[strID(str)] = {str, &model};
+    }};
+
+	process("MassStorage", massStorage_);
+	process("WebUSB", webUsb_);
+
+	process("BladeAwareness", bladeAwareness_);
+
+	process("Volume", volume_);
+	process("BootVolume.Enable", bootVolume_.enable_);
+	process("Bootvolume.Value", bootVolume_.value_);
+
+	process("Filter.Enable", filter_.enable_);
+	process("Filter.Cutoff", filter_.cutoff_);
+	process("Filter.Order", filter_.order_);
+
+	process("ClashThreshold", clashThreshold_);
+
+	process("PLIOffTime", pliOffTime_);
+	process("IdleOffTime", idleOffTime_);
+	process("MotionTimeout", motionTimeout_);
+
+	process("DisableColorChange", disableColorChange_);
+	process("DisableBasicParserStyles", disableBasicParserStyles_);
+	process("DisableTalkie", disableTalkie_);
+	process("DisableDiagnosticCommands", disableDiagnosticCommands_);
+
+	process("SaveState", saveState_);
+
+	process("EnableAllEditOptions", enableAllEditOptions_);
+
+	process("SaveVolume", saveVolume_);
+	process("SavePreset", savePreset_);
+	process("SaveColorChange", saveColorChange_);
+
+	process("EnableOLED", enableOled_);
+
+	process("Orientation", orientation_);
+
+	process("OrientationRotation.X", orientationRotation_.x_);
+	process("OrientationRotation.Y", orientationRotation_.y_);
+	process("OrientationRotation.Z", orientationRotation_.z_);
+
+	process("DynamicBladeDimming", dynamicBladeDimming_);
+	process("DynamicBladeLength", dynamicBladeLength_);
+	process("DynamicClashThreshold", dynamicClashThreshold_);
+
+	process("SaveBladeDimming", saveBladeDimming_);
+	process("SaveClashThreshold", saveClashThreshold_);
+
+	process("AudioClashSuppression", audioClashSuppressionLevel_);
+	process("DontUseGyroForClash", dontUseGyroForClash_);
+
+	process("NoRepeatRandom", noRepeatRandom_);
+	process("FemaleTalkie", femaleTalkie_);
+	process("KillOldPlayers", killOldPlayers_);
+
+	process("Other", defines_);
 }
 
 config::Settings::ProcessDefinesAction::ProcessDefinesAction() = default;
@@ -338,22 +444,22 @@ void config::Settings::ProcessDefinesAction::perform(data::Model& model) {
             }
         } else if (define.val() == BLADE_ID_SCAN_MILLIS_STR) {
             auto& bladeId{settings.bladeAwareness_.bladeId_};
-            data::Bool::Context{bladeId.continuousScanning_}.set(true);            
+            data::Bool::Context{bladeId.continuous_.enable_}.set(true);
 
             auto val{utils::doStringMath(value.val())};
             if (val) {
                 data::Integer::Context{
-                    bladeId.continuousInterval_
+                    bladeId.continuous_.interval_
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse blade id scan interval");
         } else if (define.val() == BLADE_ID_TIMES_STR) {
             auto& bladeId{settings.bladeAwareness_.bladeId_};
-            data::Bool::Context{bladeId.continuousScanning_}.set(true);            
+            data::Bool::Context{bladeId.continuous_.enable_}.set(true);            
 
             auto val{utils::doStringMath(value.val())};
             if (val) {
                 data::Integer::Context{
-                    bladeId.continuousTimes_
+                    bladeId.continuous_.times_
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse blade id scan times");
         } else if (define.val() == VOLUME_STR) {
@@ -364,12 +470,12 @@ void config::Settings::ProcessDefinesAction::perform(data::Model& model) {
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse volume");
         } else if (define.val() == BOOT_VOLUME_STR) {
-            data::Bool::Context{settings.enableBootVolume_}.set(true);
+            data::Bool::Context{settings.bootVolume_.enable_}.set(true);
 
             auto val{utils::doStringMath(value.val())};
             if (val) {
                 data::Integer::Context{
-                    settings.bootVolume_
+                    settings.bootVolume_.value_
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse boot volume");
         } else if (define.val() == CLASH_THRESHOLD_STR) {
@@ -484,17 +590,17 @@ void config::Settings::ProcessDefinesAction::perform(data::Model& model) {
         } else if (define.val() == FILTER_CUTOFF_STR) {
             auto val{utils::doStringMath(value.val())};
             if (val) {
-                data::Bool::Context{settings.enableFiltering_}.set(true);
+                data::Bool::Context{settings.filter_.enable_}.set(true);
                 data::Integer::Context{
-                    settings.filterCutoff_
+                    settings.filter_.cutoff_
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse filter cutoff");
         } else if (define.val() == FILTER_ORDER_STR) {
             auto val{utils::doStringMath(value.val())};
             if (val) {
-                data::Bool::Context{settings.enableFiltering_}.set(true);
+                data::Bool::Context{settings.filter_.enable_}.set(true);
                 data::Integer::Context{
-                    settings.filterOrder_
+                    settings.filter_.order_
                 }.set(static_cast<int32>(*val));
             } else logger.warn("Failed to parse filter order");
         } else if (define.val() == AUDIO_CLASH_SUPPRESSION_STR) {

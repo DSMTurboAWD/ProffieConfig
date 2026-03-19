@@ -40,6 +40,8 @@ struct CONFIG_EXPORT Settings : data::Node {
     bool enumerate(const EnumFunc&) override;
     [[nodiscard]] Model *find(uint64) override;
 
+    void init();
+
     data::Bool massStorage_;
     data::Bool webUsb_;
 
@@ -48,14 +50,19 @@ struct CONFIG_EXPORT Settings : data::Node {
     settings::BladeAwareness bladeAwareness_;
 
     data::Integer volume_;
-    data::Bool enableBootVolume_;
-    data::Integer bootVolume_;
+
+    struct {
+        data::Bool enable_;
+        data::Integer value_;
+    } bootVolume_;
 
     // Does not affect I2C or S/PDIF
     // Cutoff in Hz
-    data::Bool enableFiltering_;
-    data::Integer filterCutoff_;
-    data::Integer filterOrder_;
+    struct {
+        data::Bool enable_;
+        data::Integer cutoff_;
+        data::Integer order_;
+    } filter_;
 
     data::Decimal clashThreshold_;
 
@@ -135,6 +142,11 @@ struct CONFIG_EXPORT Settings : data::Node {
     void processDefines();
 
     data::Vector defines_;
+
+private:
+    void buildMap();
+
+    std::unordered_map<uint64, std::pair<cstring, data::Model *>> mMap;
 };
 
 /**

@@ -19,6 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unordered_map>
+
 #include "data/bool.hpp"
 #include "data/choice.hpp"
 #include "data/number.hpp"
@@ -41,6 +43,8 @@ struct CONFIG_EXPORT BladeAwareness : data::Node {
     bool enumerate(const EnumFunc&) override;
     [[nodiscard]] Model *find(uint64) override;
 
+    void init();
+
     struct {
         data::Bool enable_;
         data::String pin_;
@@ -57,10 +61,17 @@ struct CONFIG_EXPORT BladeAwareness : data::Node {
         data::Bool powerForId_;
         data::Selection powerPins_;
 
-        data::Bool continuousScanning_;
-        data::Integer continuousInterval_;
-        data::Integer continuousTimes_;
+        struct {
+            data::Bool enable_;
+            data::Integer interval_;
+            data::Integer times_;
+        } continuous_;
     } bladeId_;
+
+private:
+    void buildMap();
+
+    std::unordered_map<uint64, std::pair<cstring, data::Model *>> mMap;
 };
 
 } // namespace settings

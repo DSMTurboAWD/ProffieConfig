@@ -507,9 +507,9 @@ void outputTopGeneral(std::ostream& outFile, const Config& config) {
             outputDefine(outFile, ENABLE_POWER_FOR_ID_STR, powerString);
         }
 
-        if (data::Bool::ROContext{bladeID.continuousScanning_}.val()) {
-            data::Integer::ROContext itvl{bladeID.continuousInterval_};
-            data::Integer::ROContext times{bladeID.continuousTimes_};
+        if (data::Bool::ROContext{bladeID.continuous_.enable_}.val()) {
+            data::Integer::ROContext itvl{bladeID.continuous_.interval_};
+            data::Integer::ROContext times{bladeID.continuous_.times_};
             outputDefine(outFile, BLADE_ID_SCAN_MILLIS_STR, itvl.val());
             outputDefine(outFile, BLADE_ID_TIMES_STR, times.val());
         }
@@ -517,8 +517,8 @@ void outputTopGeneral(std::ostream& outFile, const Config& config) {
 
     data::Integer::ROContext volume{settings.volume_};
     outputDefine(outFile, VOLUME_STR, volume.val());
-    if (data::Bool::ROContext{settings.enableBootVolume_}.val()) {
-        data::Integer::ROContext bootVolume{settings.bootVolume_};
+    if (data::Bool::ROContext{settings.bootVolume_.enable_}.val()) {
+        data::Integer::ROContext bootVolume{settings.bootVolume_.value_};
         outputDefine(outFile, BOOT_VOLUME_STR, bootVolume.val());
     }
 
@@ -630,9 +630,9 @@ void outputTopGeneral(std::ostream& outFile, const Config& config) {
         outputDefine(outFile, SAVE_CLASH_THRESHOLD_STR);
     }
 
-    if (data::Bool::ROContext{settings.enableFiltering_}.val()) {
-        data::Integer::ROContext cutoff{settings.filterCutoff_};
-        data::Integer::ROContext order{settings.filterOrder_};
+    if (data::Bool::ROContext{settings.filter_.enable_}.val()) {
+        data::Integer::ROContext cutoff{settings.filter_.cutoff_};
+        data::Integer::ROContext order{settings.filter_.order_};
         outputDefine(outFile, FILTER_CUTOFF_STR, cutoff.val());
         outputDefine(outFile, FILTER_ORDER_STR, order.val());
     }
