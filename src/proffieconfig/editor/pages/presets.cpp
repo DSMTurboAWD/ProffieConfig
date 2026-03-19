@@ -36,6 +36,9 @@ PresetsPage::PresetsPage(config::Config& config) : mConfig{config} {
 
 pcui::DescriptorPtr PresetsPage::ui() {
     return pcui::Stack{
+      .base_={
+        .border_={.size_=12, .dirs_=wxALL},
+      },
       .orient_=wxHORIZONTAL,
       .children_={
         selection(),
@@ -199,6 +202,9 @@ pcui::DescriptorPtr PresetsPage::selection() {
                   .data_=mArraySel.choice_,
                 }(),
                 pcui::Button{
+                  .win_={.base_={
+                    .border_={.size_=8, .dirs_=wxLEFT},
+                  }},
                   .label_="ISS",
                 }(),
                 pcui::Spacer{.size_=8}(),
@@ -208,6 +214,7 @@ pcui::DescriptorPtr PresetsPage::selection() {
                     .size_={.dim_=16},
                     .color_=wxSYS_COLOUR_WINDOWTEXT,
                   }(),
+                  .exactFit_=true,
                 }(),
               }
             }(),

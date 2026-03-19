@@ -35,7 +35,6 @@
 #include "ui/dialogs/message.hpp"
 #include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
-#include "utils/defer.hpp"
 #include "utils/paths.hpp"
 
 #include "../core/state.hpp"
