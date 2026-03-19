@@ -208,10 +208,13 @@ pcui::DescriptorPtr PresetsPage::selection() {
                 }(),
                 pcui::Spacer{.size_=pcui::interControlSpacing()}(),
                 pcui::Button{
-                  .win_={.base_={.expand_=true}},
+                  .win_={.base_={
+                    .minSize_=pcui::iconButtonSize(),
+                    .expand_=true
+                  }},
                   .bitmap_=pcui::Image::LoadDetails{
                     .name_="edit",
-                    .size_={.dim_=16, .padding_=4},
+                    .size_={.dim_=16, .padding_=2},
                     .color_=wxSYS_COLOUR_WINDOWTEXT,
                   }(),
                   .exactFit_=true,
