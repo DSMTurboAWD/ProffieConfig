@@ -40,6 +40,7 @@
 
 #include "../core/state.hpp"
 #include "../onboard/onboard.hpp"
+#include "../editor/pages/presets.hpp"
 #include "dialogs/about.hpp"
 #include "dialogs/addconfig.hpp"
 #include "dialogs/licenses.hpp"
@@ -86,53 +87,6 @@ void MainMenu::removeEditor(EditorWindow *editor) {
     }
 }
 
-/*
-void MainMenu::handleNotification(uint32 id) {
-    bool rebound{id == pcui::Notifier::eID_Rebound};
-    if (rebound or id == ID_ConfigSelection) {
-    } 
-    if (rebound or id == ID_BoardSelection) {
-        FindWindow(ID_ApplyChanges)->Enable(
-            configSelection != 0 and boardSelection != 0
-        );
-
-        bool canOpenSerial{boardSelection != 0};
-#       if defined _WIN32 or defined __linux__
-        const auto bootloaderIdx{boardSelection.choices().size() - 1};
-        canOpenSerial &= boardSelection != bootloaderIdx;
-#       endif
-        FindWindow(ID_OpenSerial)->Enable(canOpenSerial);
-    }
-
-    if (id == ID_AsyncStart) {
-        wxSetCursor(wxCURSOR_WAIT);
-    }
-    if (rebound or id == ID_AsyncDone) {
-        if (mConfigNeedShown != nullptr) {
-            EditorWindow *editor{nullptr};
-
-            for (auto *listedEditor : mEditors) {
-                if (&listedEditor->getOpenConfig() == mConfigNeedShown) {
-                    editor = listedEditor;
-                    break;
-                }
-            }
-
-            if (editor == nullptr) {
-                editor = new EditorWindow(this, *mConfigNeedShown);
-                mEditors.push_back(editor);
-            }
-
-            editor->Show();
-            editor->Raise();
-            mConfigNeedShown = nullptr;
-        }
-
-        wxSetCursor(wxNullCursor);
-    }
-}
-*/
-
 pcui::DescriptorPtr MainMenu::ui() {
     return pcui::Stack{
       .base_={
@@ -176,12 +130,11 @@ pcui::DescriptorPtr MainMenu::ui() {
             pcui::Choice{
               .win_={.base_={.proportion_=1}},
               .data_=configSel_.choice_,
-              .unselected_=_("Select Config..."),
+              .style_=pcui::Choice::PopUp{
+                .unselected_=_("Select Config..."),
+              },
               .labeler_=[this](uint32 sel) -> pcui::Choice::Label {
-                  data::Selector::ROContext configSel{configSel_};
-                  if (not configSel.bound()) return {};
-
-                  data::Vector::ROContext vec{*configSel.bound()};
+                  data::Vector::ROContext vec{config::list()};
                   if (sel >= vec.children().size()) return {};
 
                   auto& info{static_cast<config::Info&>(*vec.children()[sel])};
@@ -211,6 +164,28 @@ pcui::DescriptorPtr MainMenu::ui() {
             .enable_=not (configSel_.choice_ | data::logic::HasSelection{{-1}})
           },
           .label_=_("Edit Selected Configuration"),
+          .func_=[this] {
+              data::Choice::ROContext choice{configSel_.choice_};
+              data::Vector::ROContext vec{config::list()};
+              if (choice.choice() >= vec.children().size()) return;
+
+              auto& info{static_cast<config::Info&>(
+                  *vec.children()[choice.choice()]
+              )};
+
+              auto err{info.load()};
+              if (err) {
+                  pcui::showMessage(*err);
+                  return;
+              }
+
+              PresetsPage presetsPage{*info.config()};
+              pcui::Dialog dialog{this, wxID_ANY, _("Test")};
+
+              pcui::build(&dialog, presetsPage.ui());
+
+              dialog.ShowModal();
+          }
         }(),
         pcui::Spacer{.size_=20}(),
         pcui::Stack{
@@ -230,7 +205,9 @@ pcui::DescriptorPtr MainMenu::ui() {
                 .tooltip_=_("Select the Proffieboard to connect to.\nThese IDs are assigned by the OS, and can vary."),
               },
               .data_=board_,
-              .unselected_=_("Select Board..."),
+              .style_=pcui::Choice::PopUp{
+                .unselected_=_("Select Board..."),
+              },
             }(),
           }
         }(),
@@ -485,36 +462,6 @@ void MainMenu::bindEvents() {
     */
 
     /*
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { 
-        if (not SerialMonitor::instance) {
-            SerialMonitor::instance = new SerialMonitor(this, boardSelection);
-        } else {
-            SerialMonitor::instance->Show();
-            SerialMonitor::instance->Raise();
-        }
-    }, eID_Open_Serial);
-    */
-
-    /*
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        mNotifyData.notify(ID_AsyncStart);
-
-        std::thread{[this]() {
-            Defer defer{[&]() { mNotifyData.notify(ID_AsyncDone); }};
-
-            auto res{Config::open(configSelection)};
-            if (auto *ptr = std::get_if<string>(&res)) {
-                pcui::showMessage(*ptr, _("Cannot Edit Config"));
-                return;
-            }
-
-            auto *config{std::get<Config::Config *>(res)};
-            mConfigNeedShown = config;
-        }}.detach();
-    }, eID_Edit_Config);
-    */
-
-    /*
     Bind(wxEVT_BUTTON, [&](wxCommandEvent &) {
         if (pcui::showMessage(
                 _("Are you sure you want to deleted the selected configuration?") +
@@ -547,7 +494,7 @@ void MainMenu::importConfig() {
 
     wxBusyCursor busy;
 
-    std::thread{[this, result=dlg.getResult()] {
+    std::thread{[this, busy, result=dlg.getResult()] {
         using Result = AddConfigDialog::Result;
 
         if (result.mode_ == Result::Mode::Create) {

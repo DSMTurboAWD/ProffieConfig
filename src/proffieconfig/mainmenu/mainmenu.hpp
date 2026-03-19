@@ -72,8 +72,6 @@ struct MainMenu : pcui::Frame {
     static MainMenu* instance;
 
 private:
-    // Config::Config *mConfigNeedShown{nullptr};
-
     std::vector<EditorWindow *> mEditors;
 
     pcui::DescriptorPtr ui();
