@@ -1,9 +1,9 @@
-#include "bladespage.h"
+#include "blades.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/bladespage.cpp
+ * proffieconfig/editor/pages/blades.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

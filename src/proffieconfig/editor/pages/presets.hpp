@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/presetspage.h
+ * proffieconfig/editor/pages/presets.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,22 +19,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ui/static_box.h"
+#include <wx/window.h>
 
-#include "../editorwindow.h"
+#include "config/config.hpp"
+#include "data/selector.hpp"
+#include "ui/types.hpp"
 
-class PresetsPage : public wxPanel, pcui::NotifyReceiver {
-public:
-    PresetsPage(EditorWindow *);
+struct PresetsPage {
+    PresetsPage(config::Config&);
+
+    pcui::DescriptorPtr ui();
 
 private:
-    EditorWindow *mParent{nullptr};
+    pcui::DescriptorPtr selection();
 
-    pcui::StaticBox *mInjectionsSizer;
+    config::Config& mConfig;
 
-    void createUI();
-    void bindEvents();
-    void handleNotification(uint32) override;
-
-    void rebuildInjections();
+    data::Selector mArraySel;
+    data::Selector mPresetSel;
 };
+

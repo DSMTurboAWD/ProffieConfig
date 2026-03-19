@@ -1,9 +1,9 @@
-#include "presetspage.h"
+#include "presets.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/presetspage.cpp
+ * proffieconfig/editor/pages/presets.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,300 +21,30 @@
 
 #include <wx/gdicmn.h>
 #include <wx/msgdlg.h>
-#include <wx/splitter.h>
-#include <wx/statbox.h>
-#include <wx/tooltip.h>
 
-#include "config/preset/array.h"
-#include "ui/controls/button.h"
-#include "ui/message.hpp"
-#include "utils/paths.h"
+#include "ui/controls/button.hpp"
+#include "ui/controls/choice.hpp"
+#include "ui/layout/group.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/static/image.hpp"
+#include "ui/types.hpp"
 
-#include "../editorwindow.h"
+PresetsPage::PresetsPage(config::Config& config) : mConfig{config} {
 
-namespace {
-
-enum {
-    eID_Add_Preset = 2,
-    eID_Remove_Preset,
-    eID_Move_Preset_Up,
-    eID_Move_Preset_Down,
-    eID_Duplicate_Preset,
-
-    eID_Add_Array,
-    eID_Remove_Array,
-
-    eID_Rename_Array,
-    eID_Issue_Button,
-    eID_Wav_Text,
-};
-
-} // namespace
-
-class RenameArrayDlg : public wxDialog, pcui::NotifyReceiver {
-public:
-    RenameArrayDlg(
-        wxWindow *parent,
-        Config::Config& config,
-        Config::PresetArray& array,
-        const wxString& title,
-        bool buttons = false
-    ) : wxDialog(parent, wxID_ANY, title),
-        NotifyReceiver(this, array.notifyData),
-        mConfig{config}, mArray{array} {
-        auto *sizer{new wxBoxSizer(wxVERTICAL)};
-        auto *entry{new pcui::Text(
-            this,
-            array.name,
-            0,
-            false,
-            _("Name")
-        )};
-        auto *emptyText{new wxStaticText(
-            this,
-            eID_Empty_Text,
-            _("Empty Array Name")
-        )};
-        auto *dupText{new wxStaticText(
-            this,
-            eID_Dup_Text,
-            _("Duplicate Array Name")
-        )};
-        sizer->Add(
-            entry,
-            wxSizerFlags().Expand().Border(wxTOP | wxLEFT | wxRIGHT, 10)
-        );
-        sizer->Add(
-            emptyText,
-            wxSizerFlags().Right().Border(wxALL, 5)
-                .DoubleBorder(wxRIGHT)
-        );
-        sizer->Add(
-            dupText,
-            wxSizerFlags().Right().Border(wxALL, 5)
-                .DoubleBorder(wxRIGHT)
-        );
-        if (buttons) {
-            sizer->Add(
-                CreateStdDialogButtonSizer(wxOK | wxCANCEL),
-                wxSizerFlags().Expand().Border(wxTOP | wxBOTTOM, 10)
-            );
-        } else {
-            sizer->AddSpacer(10);
-        }
-
-        entry->SetFocus();
-
-        Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& evt) {
-            if (evt.GetKeyCode() == WXK_ESCAPE) EndModal(wxID_CANCEL);
-
-            auto *okButton{FindWindow(wxID_OK)};
-            if (
-                    (not okButton or okButton->IsEnabled()) and 
-                    evt.GetKeyCode() == WXK_RETURN and
-                    evt.GetKeyCode() == WXK_NUMPAD_ENTER
-               ) {
-                EndModal(wxID_OK);
-            }
-
-            evt.Skip();
-        });
-
-        SetSizer(sizer);
-        initializeNotifier();
-    }
-
-private:
-    Config::Config& mConfig;
-    Config::PresetArray& mArray;
-
-    enum {
-        eID_Empty_Text = 2,
-        eID_Dup_Text,
-    };
-
-    void handleNotification(uint32) final {
-        bool duplicate{false};
-        for (const auto& otherArray : mConfig.presetArrays.arrays()) {
-            if (&*otherArray == &mArray) continue;
-
-            const auto otherArrayName{static_cast<string>(otherArray->name)};
-            const auto arrayName{static_cast<string>(mArray.name)};
-            if (arrayName == otherArrayName) {
-                duplicate = true;
-                break;
-            }
-        }
-        bool empty{static_cast<string>(mArray.name).empty()};
-
-        FindWindow(eID_Empty_Text)->Show(empty);
-        FindWindow(eID_Dup_Text)->Show(duplicate);
-        auto *okButton{FindWindow(wxID_OK)};
-        if (okButton) okButton->Enable(not duplicate and not empty);
-
-        SetMinSize({300, -1});
-        Layout();
-        Fit();
-    }
-};
-
-PresetsPage::PresetsPage(EditorWindow *window) : 
-    wxPanel(window),
-    pcui::NotifyReceiver(
-        this,
-        window->getOpenConfig().presetArrays.notifyData
-    ),
-    mParent(window) {
-    createUI();
-    bindEvents();
-    
-    initializeNotifier();
 }
 
-void PresetsPage::createUI() {
+pcui::DescriptorPtr PresetsPage::ui() {
+    return pcui::Stack{
+      .orient_=wxHORIZONTAL,
+      .children_={
+        selection(),
+      }
+    }();
+
+    /*
     auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
     auto& config{mParent->getOpenConfig()};
-
-    auto *presetSelectionSizer{new wxBoxSizer(wxVERTICAL)};
-
-    auto *arraySectSizer{new pcui::StaticBox(
-        wxVERTICAL,
-        this,
-        _("Presets Array")
-    )};
-    auto *arraySizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *arraySelection{new pcui::Choice(
-        arraySectSizer->childParent(),
-        config.presetArrays.selection
-    )};
-    auto *issueButton{new wxButton(
-        arraySectSizer->childParent(),
-        eID_Issue_Button,
-        wxEmptyString,
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *arrayRename{new pcui::Button(
-        arraySectSizer->childParent(),
-        eID_Rename_Array,
-        wxEmptyString,
-        wxDefaultSize,
-        wxBU_EXACTFIT,
-        "edit",
-        {-1, 16},
-        wxSYS_COLOUR_WINDOWTEXT
-    )};
-    arraySizer->Add(arraySelection, wxSizerFlags(1));
-    arraySizer->Add(issueButton, wxSizerFlags().Border(wxLEFT, 5).Bottom());
-    arraySizer->AddSpacer(5);
-    arraySizer->Add(arrayRename, wxSizerFlags().Bottom());
-
-    auto *arrayButtonsSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *addArray{new wxButton(
-        arraySectSizer->childParent(),
-        eID_Add_Array,
-        _("Add"),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *removeArray{new wxButton(
-        arraySectSizer->childParent(),
-        eID_Remove_Array,
-        _("Remove"),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    arrayButtonsSizer->Add(addArray, wxSizerFlags(2));
-    arrayButtonsSizer->AddSpacer(5);
-    arrayButtonsSizer->Add(removeArray, wxSizerFlags(3));
-
-    auto *presetSectSizer{new pcui::StaticBox(
-        wxVERTICAL,
-        this,
-        _("Presets")
-    )};
-    auto *presetListSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *presetList{new pcui::List(
-        presetSectSizer->childParent(),
-        config.presetArrays.presetProxy
-    )};
-    presetList->SetMinSize(wxSize{-1, 300});
-    presetList->SetToolTip(_("The currently-selected preset array to be edited.\nEach preset array has unique presets."));
-
-    auto *arrangeButtonsSizer{new wxBoxSizer(wxVERTICAL)};
-#   ifdef __WXOSX__
-    wxSize arrangeButtonSize{20, 25};
-#   else
-    wxSize arrangeButtonSize{15, 25};
-#   endif
-    auto *movePresetUp = new wxButton(
-        presetSectSizer->childParent(),
-        eID_Move_Preset_Up,
-        L"\u2191" /*up arrow*/,
-        wxDefaultPosition,
-        arrangeButtonSize,
-        wxBU_EXACTFIT
-    );
-    auto *movePresetDown{new wxButton(
-        presetSectSizer->childParent(),
-        eID_Move_Preset_Down,
-        L"\u2193" /*down arrow*/,
-        wxDefaultPosition,
-        arrangeButtonSize,
-        wxBU_EXACTFIT
-    )};
-    auto *duplicatePreset{new wxButton(
-        presetSectSizer->childParent(),
-        eID_Duplicate_Preset,
-        L"\u29C9" /* ⧉ Double Squares */,
-        wxDefaultPosition,
-        arrangeButtonSize,
-        wxBU_EXACTFIT
-    )};
-    arrangeButtonsSizer->AddSpacer(20);
-    arrangeButtonsSizer->Add(movePresetUp);
-    arrangeButtonsSizer->Add(movePresetDown);
-    arrangeButtonsSizer->Add(duplicatePreset);
-    
-    presetListSizer->Add(presetList, wxSizerFlags(1).Expand());
-    presetListSizer->AddSpacer(5);
-    presetListSizer->Add(arrangeButtonsSizer);
-
-    auto *presetButtonSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *addPreset {new wxButton(
-        presetSectSizer->childParent(),
-        eID_Add_Preset,
-        "+",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *removePreset{new wxButton(
-        presetSectSizer->childParent(),
-        eID_Remove_Preset,
-        "-",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    presetButtonSizer->Add(addPreset, wxSizerFlags(1));
-    presetButtonSizer->AddSpacer(5);
-    presetButtonSizer->Add(removePreset, wxSizerFlags(1));
-    presetButtonSizer->AddSpacer(arrangeButtonSize.x + 5);
-
-    arraySectSizer->Add(arraySizer, wxSizerFlags().Expand());
-    arraySectSizer->AddSpacer(10);
-    arraySectSizer->Add(arrayButtonsSizer, wxSizerFlags().Expand());
-    presetSectSizer->Add(presetListSizer, wxSizerFlags(1).Expand());
-    presetSectSizer->AddSpacer(5);
-    presetSectSizer->Add(presetButtonSizer, wxSizerFlags().Expand());
-
-    presetSelectionSizer->Add(arraySectSizer, wxSizerFlags().Expand());
-    presetSelectionSizer->AddSpacer(10);
-    presetSelectionSizer->Add(presetSectSizer, wxSizerFlags(1).Expand());
 
     auto *presetConfigSizer{new wxBoxSizer(wxVERTICAL)};
     presetConfigSizer->SetMinSize(wxSize(200, -1));
@@ -442,8 +172,130 @@ void PresetsPage::createUI() {
     sizer->Add(styleCommentSplit, wxSizerFlags(1).Expand());
 
     SetSizerAndFit(sizer);
+    */
 }
 
+pcui::DescriptorPtr PresetsPage::selection() {
+#   ifdef __WXOSX__
+    wxSize arrangeButtonSize{20, 25};
+#   else
+    wxSize arrangeButtonSize{15, 25};
+#   endif
+
+    return pcui::Stack{
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Group{
+          .base_={.expand_=true},
+          .label_=_("Presets Array"),
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::Stack{
+              .base_={.expand_=true},
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Choice{
+                  .win_={.base_={.proportion_=1}},
+                  .data_=mArraySel.choice_,
+                }(),
+                pcui::Button{
+                  .label_="ISS",
+                }(),
+                pcui::Spacer{.size_=8}(),
+                pcui::Button{
+                  .bitmap_=pcui::Image::LoadDetails{
+                    .name_="edit",
+                    .size_={.dim_=16},
+                    .color_=wxSYS_COLOUR_WINDOWTEXT,
+                  }(),
+                }(),
+              }
+            }(),
+            pcui::Spacer{.size_=8}(),
+            pcui::Stack{
+              .base_={.expand_=true},
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Button{
+                  .label_=_("Add"),
+                }(),
+                pcui::Spacer{.size_=8}(),
+                pcui::Button{
+                  .label_=_("Add"),
+                }(),
+              }
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=10}(),
+        pcui::Group{
+          .base_={.expand_=true, .proportion_=1},
+          .label_=_("Presets"),
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Stack{
+              .orient_=wxVERTICAL,
+              .children_={
+                pcui::Choice{
+                  .win_={
+                    .base_={
+                      .minSize_={-1, 300},
+                      .proportion_=1,
+                    },
+                    .tooltip_=_("The currently-selected preset array to be edited.\nEach preset array has unique presets."),
+                  },
+                  .data_=mPresetSel.choice_,
+                  .style_=pcui::Choice::List{},
+                }(),
+                pcui::Stack{
+                  .orient_=wxHORIZONTAL,
+                  .children_={
+                    pcui::Button{
+                      .win_={.base_={.minSize_=arrangeButtonSize}},
+                      .label_="+",
+                      .style_=pcui::Button::Style::Companion,
+                      .exactFit_=true,
+                    }(),
+                    pcui::Button{
+                      .win_={.base_={.minSize_=arrangeButtonSize}},
+                      .label_="-",
+                      .style_=pcui::Button::Style::Companion,
+                      .exactFit_=true,
+                    }(),
+                  }
+                }()
+              }
+            }(),
+            pcui::Stack{
+              .orient_=wxVERTICAL,
+              .children_={
+                pcui::Button{
+                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .label_=L"\u2191", // Up Arrow
+                  .style_=pcui::Button::Style::Companion,
+                  .exactFit_=true,
+                }(),
+                pcui::Button{
+                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .label_=L"\u2193", // Down Arrow
+                  .style_=pcui::Button::Style::Companion,
+                  .exactFit_=true,
+                }(),
+                pcui::Button{
+                  .win_={.base_={.minSize_=arrangeButtonSize}},
+                  .label_=L"\u29C9", // ⧉ Double Squares
+                  .style_=pcui::Button::Style::Companion,
+                  .exactFit_=true,
+                }(),
+              }
+            }(),
+          }
+        }(),
+      }
+    }();
+}
+
+/*
 void PresetsPage::bindEvents() {
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         auto& config{mParent->getOpenConfig()};
@@ -548,7 +400,7 @@ void PresetsPage::handleNotification(uint32 id) {
        ) {
         auto *issueButton{FindWindow(eID_Issue_Button)};
         // This is late for sizing reasons
-        issueButton->SetLabel(L"\u26D4" /* ⛔️ */);
+        issueButton->SetLabel(L"\u26D4");
 
         if (presetArrays.selection == -1) {
             issueButton->Hide();
@@ -672,4 +524,5 @@ void PresetsPage::rebuildInjections() {
     mInjectionsSizer->Layout();
     Layout();
 }
+*/
 

@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2023-2025 Ryan Ogurek
+ * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/bladespage.h
+ * proffieconfig/editor/pages/blades.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

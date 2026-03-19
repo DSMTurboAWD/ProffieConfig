@@ -1,9 +1,9 @@
-#include "propspage.h"
+#include "props.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/propspage.cpp
+ * proffieconfig/editor/pages/props.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

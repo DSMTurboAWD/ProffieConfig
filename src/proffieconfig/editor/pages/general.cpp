@@ -1,9 +1,9 @@
-#include "generalpage.h"
+#include "general.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/generalpage.cpp
+ * proffieconfig/editor/pages/general.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

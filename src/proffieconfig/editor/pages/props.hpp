@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
- * Copyright (C) 2023-2025 Ryan Ogurek
+ * Copyright (C) 2023-2026 Ryan Ogurek
  *
- * proffieconfig/editor/pages/propspage.h
+ * proffieconfig/editor/pages/props.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,19 +20,14 @@
  */
 
 #include "../editorwindow.h"
+#include "config/config.hpp"
 #include "ui/notifier.h"
 
 #include <wx/scrolwin.h>
 #include <wx/statbox.h>
 
-class PropsPage : public wxPanel, pcui::NotifyReceiver {
-public:
-    PropsPage(EditorWindow *);
-
-    enum {
-        ID_Buttons,
-        ID_PropInfo,
-    };
+struct PropsPage {
+    PropsPage(wxWindow *, config::Config&);
 
     // Because wxWidgets sizing is somewhat annoying,
     // "best size" vs "min size" means nothing when using sizers.
@@ -42,6 +37,7 @@ public:
     // update our min size to be shrinkable.
     void setToActualMinSize();
     void setToActualBestSize();
+
     [[nodiscard]] bool Layout() override;
 
 private:
