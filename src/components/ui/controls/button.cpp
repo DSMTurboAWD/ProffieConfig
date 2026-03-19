@@ -50,11 +50,8 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
                 style |= wxBORDER_DEFAULT;
                 break;
             case Companion:
-#       ifdef __WXOSX__
+                // This only does something on macOS though.
                 style |= wxBORDER_SIMPLE;
-#       else
-                style |= wxBORDER_SIMPLE;
-#       endif
                 break;
         }
 
