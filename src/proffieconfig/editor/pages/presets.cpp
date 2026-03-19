@@ -179,9 +179,11 @@ pcui::DescriptorPtr PresetsPage::ui() {
 }
 
 pcui::DescriptorPtr PresetsPage::selection() {
-#   ifdef __WXOSX__
+#   if defined(__WXOSX__)
     wxSize arrangeButtonSize{20, 25};
-#   else
+#   elif defined(__WXGTK__)
+    wxSize arrangeButtonSize{20, 25};
+#   elif defined(__WXMSW__)
     wxSize arrangeButtonSize{15, 25};
 #   endif
 
@@ -206,9 +208,11 @@ pcui::DescriptorPtr PresetsPage::selection() {
                     .border_={.size_=8, .dirs_=wxLEFT},
                   }},
                   .label_="ISS",
+                  .exactFit_=true,
                 }(),
                 pcui::Spacer{.size_=8}(),
                 pcui::Button{
+                  .win_={.base_={.expand_=true}},
                   .bitmap_=pcui::Image::LoadDetails{
                     .name_="edit",
                     .size_={.dim_=16},
@@ -224,11 +228,13 @@ pcui::DescriptorPtr PresetsPage::selection() {
               .orient_=wxHORIZONTAL,
               .children_={
                 pcui::Button{
+                  .win_={.base_={.proportion_=1}},
                   .label_=_("Add"),
                 }(),
                 pcui::Spacer{.size_=8}(),
                 pcui::Button{
-                  .label_=_("Add"),
+                  .win_={.base_={.proportion_=1}},
+                  .label_=_("Remove"),
                 }(),
               }
             }(),
@@ -241,12 +247,14 @@ pcui::DescriptorPtr PresetsPage::selection() {
           .orient_=wxHORIZONTAL,
           .children_={
             pcui::Stack{
+              .base_={.expand_=true, .proportion_=1},
               .orient_=wxVERTICAL,
               .children_={
                 pcui::Choice{
                   .win_={
                     .base_={
                       .minSize_={-1, 300},
+                      .expand_=true,
                       .proportion_=1,
                     },
                     .tooltip_=_("The currently-selected preset array to be edited.\nEach preset array has unique presets."),
