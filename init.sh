@@ -53,6 +53,7 @@ platform_switch() {
 }
 
 check_exec chrpath linux
+check_exec patchelf linux
 check_exec otool macOS
 check_exec git
 check_exec libtool
@@ -81,7 +82,7 @@ patch_rpaths() {
         elif [[ -d $LIB_DIR_2 ]]; then
             cd $LIB_DIR_2
         else
-            exit "Missing lib dir!"
+            echo "Missing lib dir!"
             exit 1
         fi
     }
@@ -89,14 +90,18 @@ patch_rpaths() {
     if [ "$TARGET_PLATFORM" == "linux" ]; then
         switch_to_lib_dir
 
-        for lib in `ls -1 | grep '.*.so.*'`; do
-            if ! [ -L ${lib} ]; then
-                SONAME=`readelf -d ${lib} | grep SONAME | sed -n 's/.*\[\([^]]*\)\].*/\1/p'`
-                mv -f ${lib} ${SONAME}
-                ln -sf ${SONAME} `echo ${SONAME} | sed -n 's/\(lib.*\.so\).*/\1/p'`
-                chrpath -r '$ORIGIN/../lib' $SONAME &> /dev/null
+        RENAME_KEY='s/\(lib.*\)-.*/\1.so/p'
+        for lib in `ls -1 | grep '.*-.*.so.*'`; do
+            if ! [ -L $lib ]; then
+                SONAME=`echo $lib | sed -n $RENAME_KEY`
+                mv -f $lib $SONAME
+                chrpath -r \$ORIGIN/../lib $SONAME &> /dev/null
+                patchelf --set-soname $SONAME $SONAME
+                for dep in `ldd $SONAME | grep 'libwx' | awk '{print $1}'`; do
+                    patchelf --replace-needed $dep `echo $dep | sed -n $RENAME_KEY` $SONAME
+                done
             else
-                rm ${lib}
+                rm $lib
             fi
         done
     elif [ "$TARGET_PLATFORM" == "macOS" ]; then
@@ -107,14 +112,15 @@ patch_rpaths() {
         # Basically it's just changing the link names of all the libs (and their dependencies) to @rpath/[name] that way
         # the install location can be dynamically changed when building the actual application(s).
 
+        RENAME_KEY='s/.*\/\(lib[A-Za-z\_]*\).*/\1.dylib/p'
         WX_LIBNAMES=`ls -1 | grep '.*\.dylib$'`
         for lib in ${WX_LIBNAMES}; do
             if ! [ -L $lib ]; then
-                NEWNAME=`otool -D ${lib} | sed -n '2s/.*\/\(lib[A-Za-z\_]*\).*/\1.dylib/p'`
+                NEWNAME=`otool -D ${lib} | sed -n 2$RENAME_KEY`
                 mv -f ${lib} $NEWNAME
                 install_name_tool -id @rpath/${NEWNAME} ${NEWNAME}
-                for dep in `otool -L ${NEWNAME} | grep '/libwx' | sed -n 's/\t\(.*\) (.*/\1/p'`; do
-                    CLEANED_DEP_NAME=`echo "${dep}" | sed -n 's/.*\/\(lib[A-Za-z\_]*\).*/\1.dylib/p'`
+                for dep in `otool -L ${NEWNAME} | grep '/libwx' | sed -n $RENAME_KEY`; do
+                    CLEANED_DEP_NAME=`echo "${dep}" | sed -n `
                     install_name_tool -change ${dep} @rpath/${CLEANED_DEP_NAME} ${NEWNAME}
                 done
             else
@@ -338,8 +344,11 @@ else
         install
 
     cd ..
-    patch_rpaths
 fi
+
+# For wxWidgets
+patch_rpaths
+
 cd $ROOT_DIR
 
 echo "Preparing libbacktrace..."

@@ -7,6 +7,9 @@
 add_library(tomcrypt-static STATIC IMPORTED GLOBAL)
 target_include_directories(tomcrypt-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tomcrypt/src/headers)
 
+add_library(wxWidgets INTERFACE)
+add_library(wxWidgets-static INTERFACE)
+
 add_library(wxWidgetsBase       SHARED IMPORTED GLOBAL)
 add_library(wxWidgetsBaseNet    SHARED IMPORTED GLOBAL)
 add_library(wxWidgetsBaseXML    SHARED IMPORTED GLOBAL)
@@ -14,17 +17,6 @@ add_library(wxWidgetsCore       SHARED IMPORTED GLOBAL)
 add_library(wxWidgetsXRC        SHARED IMPORTED GLOBAL)
 add_library(wxWidgetsHTML       SHARED IMPORTED GLOBAL)
 add_library(wxWidgetsQA         SHARED IMPORTED GLOBAL)
-
-add_library(wxWidgets INTERFACE)
-target_link_libraries(wxWidgets INTERFACE
-    wxWidgetsBase
-    wxWidgetsBaseNet
-    wxWidgetsBaseXML
-    wxWidgetsCore
-    wxWidgetsXRC
-    wxWidgetsHTML
-    wxWidgetsQA
-)
 
 add_library(wxWidgetsBase-static       STATIC IMPORTED GLOBAL)
 add_library(wxWidgetsBaseNet-static    STATIC IMPORTED GLOBAL)
@@ -36,7 +28,16 @@ add_library(wxWidgetsQA-static         STATIC IMPORTED GLOBAL)
 add_library(wxWidgetsPNG-static        STATIC IMPORTED GLOBAL)
 add_library(wxWidgetsZLib-static       STATIC IMPORTED GLOBAL)
 
-add_library(wxWidgets-static INTERFACE)
+target_link_libraries(wxWidgets INTERFACE
+    wxWidgetsBase
+    wxWidgetsBaseNet
+    wxWidgetsBaseXML
+    wxWidgetsCore
+    wxWidgetsXRC
+    wxWidgetsHTML
+    wxWidgetsQA
+)
+
 target_link_libraries(wxWidgets-static INTERFACE
     wxWidgetsBase-static
     wxWidgetsBaseNet-static
@@ -90,19 +91,19 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
         message(FATAL_ERROR "Missing lib dir")
     endif()
     set_target_properties(wxWidgetsBase PROPERTIES
-        IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu-3.3.so.0)
+        IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu.so)
 	set_target_properties(wxWidgetsBaseNet PROPERTIES
-		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu_net-3.3.so.0)
+		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu_net.so)
 	set_target_properties(wxWidgetsBaseXML PROPERTIES
-		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu_xml-3.3.so.0)
+		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_baseu_xml.so)
     set_target_properties(wxWidgetsCore PROPERTIES
-        IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_core-3.3.so.0)
+        IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_core.so)
 	set_target_properties(wxWidgetsXRC PROPERTIES
-		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_xrc-3.3.so.0)
+		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_xrc.so)
 	set_target_properties(wxWidgetsHTML PROPERTIES
-		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_html-3.3.so.0)
+		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_html.so)
 	set_target_properties(wxWidgetsQA PROPERTIES
-		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_qa-3.3.so.0)
+		IMPORTED_LOCATION ${WX_LIB_DIR}/libwx_gtk3u_qa.so)
 
     set(WX_STATIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/wxWidgets/install-linux-static)
     if (IS_DIRECTORY ${WX_STATIC_DIR}/lib64)
@@ -295,89 +296,60 @@ endif()
 set(WX_SHARED_CONFIG "${WX_SHARED_DIR}/bin/wx-config")
 set(WX_STATIC_CONFIG "${WX_STATIC_DIR}/bin/wx-config")
 
-execute_process(
-    COMMAND ${WX_SHARED_CONFIG} --cxxflags
-    OUTPUT_VARIABLE WX_CXXFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+function(process_wx_cxxflags CONFIG TARGET)
+    execute_process(
+        COMMAND ${CONFIG} --cxxflags
+        OUTPUT_VARIABLE WX_CXXFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
-# Extract and correctly place cxxflags
-string(REPLACE " " ";" WX_CXXFLAG_LIST "${WX_CXXFLAGS}")
-foreach(FLAG ${WX_CXXFLAG_LIST})
-    string(FIND "${FLAG}" "-I" pos)
-    if (pos EQUAL -1)
-        target_compile_options(wxWidgets INTERFACE ${FLAG})
-    else()
-        string(SUBSTRING ${FLAG} 2 -1 FLAG)
-        target_include_directories(wxWidgets INTERFACE ${FLAG})
-    endif()
-endforeach()
-
-execute_process(
-    COMMAND ${WX_STATIC_CONFIG} --cxxflags
-    OUTPUT_VARIABLE WX_CXXFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Extract and correctly place cxxflags
-string(REPLACE " " ";" WX_CXXFLAG_LIST "${WX_CXXFLAGS}")
-foreach(FLAG ${WX_CXXFLAG_LIST})
-    string(FIND "${FLAG}" "-I" pos)
-    if (pos EQUAL -1)
-        target_compile_options(wxWidgets-static INTERFACE ${FLAG})
-    else()
-        string(SUBSTRING ${FLAG} 2 -1 FLAG)
-        target_include_directories(wxWidgets-static INTERFACE ${FLAG})
-    endif()
-endforeach()
-
-execute_process(
-    COMMAND ${WX_SHARED_CONFIG} --libs
-    OUTPUT_VARIABLE WX_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Remove all -lwx links... CMake will handle those
-string(REPLACE " " ";" WX_LDFLAG_LIST "${WX_LDFLAGS}")
-foreach(FLAG ${WX_LDFLAG_LIST})
-    string(FIND "${FLAG}" "-framework" pos)
-    if (NOT pos EQUAL -1)
-        set(FOUND_FRAMEWORK true)
-        continue()
-    endif()
-    string(FIND "${FLAG}" "-lwx" pos)
-    if (pos EQUAL -1)
-        if (FOUND_FRAMEWORK)
-            set(FLAG "-framework ${FLAG}")
-            set(FOUND_FRAMEWORK false)
+    # Extract and correctly place cxxflags
+    string(REPLACE " " ";" WX_CXXFLAG_LIST "${WX_CXXFLAGS}")
+    foreach(FLAG ${WX_CXXFLAG_LIST})
+        string(FIND "${FLAG}" "-I" pos)
+        if (pos EQUAL -1)
+            target_compile_options(${TARGET} INTERFACE ${FLAG})
+        else()
+            string(SUBSTRING ${FLAG} 2 -1 FLAG)
+            target_include_directories(${TARGET} INTERFACE ${FLAG})
         endif()
-        target_link_libraries(wxWidgets INTERFACE "${FLAG}")
-    endif()
-endforeach()
+    endforeach()
+endfunction()
 
-execute_process(
-    COMMAND ${WX_STATIC_CONFIG} --libs
-    OUTPUT_VARIABLE WX_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+function(process_wx_ldflags CONFIG TARGET)
+    execute_process(
+        COMMAND ${CONFIG} --libs
+        OUTPUT_VARIABLE WX_LDFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
-# Remove all -lwx links... CMake will handle those
-string(REPLACE " " ";" WX_LDFLAG_LIST "${WX_LDFLAGS}")
-foreach(FLAG ${WX_LDFLAG_LIST})
-    string(FIND "${FLAG}" "-framework" pos)
-    if (NOT pos EQUAL -1)
-        set(FOUND_FRAMEWORK true)
-        continue()
-    endif()
-    string(FIND "${FLAG}" "-lwx" pos)
-    if (pos EQUAL -1)
-        if (FOUND_FRAMEWORK)
-            set(FLAG "-framework ${FLAG}")
-            set(FOUND_FRAMEWORK false)
+    message("${TARGET} LDFLAGS: ${WX_LDFLAGS}")
+
+    # Remove all -lwx links... CMake will handle those
+    string(REPLACE " " ";" WX_LDFLAG_LIST "${WX_LDFLAGS}")
+    foreach(FLAG ${WX_LDFLAG_LIST})
+        string(FIND "${FLAG}" "-framework" pos)
+        if (NOT pos EQUAL -1)
+            set(FOUND_FRAMEWORK true)
+            continue()
         endif()
-        target_link_libraries(wxWidgets-static INTERFACE "${FLAG}")
-    endif()
-endforeach()
+
+        string(FIND "${FLAG}" "-lwx" pos1)
+        if (pos1 EQUAL -1)
+            if (FOUND_FRAMEWORK)
+                set(FLAG "-framework ${FLAG}")
+                set(FOUND_FRAMEWORK false)
+            endif()
+            target_link_libraries(${TARGET} INTERFACE "${FLAG}")
+        endif()
+    endforeach()
+endfunction()
+
+process_wx_cxxflags(${WX_SHARED_CONFIG} wxWidgets)
+process_wx_cxxflags(${WX_STATIC_CONFIG} wxWidgets-static)
+
+process_wx_ldflags(${WX_SHARED_CONFIG} wxWidgets)
+process_wx_ldflags(${WX_STATIC_CONFIG} wxWidgets-static)
 
 set(3RDPARTY_INSTALL_FILES
     # $<TARGET_FILE:tomcrypt>
