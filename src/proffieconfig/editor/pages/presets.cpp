@@ -22,165 +22,45 @@
 #include <wx/gdicmn.h>
 #include <wx/msgdlg.h>
 
+#include "config/presets/preset.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
+#include "ui/controls/text.hpp"
 #include "ui/layout/group.hpp"
+#include "ui/layout/selector.hpp"
 #include "ui/layout/spacer.hpp"
+#include "ui/layout/split.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/static/image.hpp"
+#include "ui/static/label.hpp"
 #include "ui/types.hpp"
 #include "ui/values.hpp"
 
-PresetsPage::PresetsPage(config::Config& config) : mConfig{config} {
-
-}
+PresetsPage::PresetsPage(config::Config& config) : mConfig{config} {}
 
 pcui::DescriptorPtr PresetsPage::ui() {
     return pcui::Stack{
       .base_={
-        .border_={.size_=12, .dirs_=wxALL},
+        .expand_=true,
+        .proportion_=1,
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
       },
       .orient_=wxHORIZONTAL,
       .children_={
         selection(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        fields(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        displayAndBlade(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        style(),
       }
     }();
-
-    /*
-    auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto& config{mParent->getOpenConfig()};
-
-    auto *presetConfigSizer{new wxBoxSizer(wxVERTICAL)};
-    presetConfigSizer->SetMinSize(wxSize(200, -1));
-
-    auto *nameInput{new pcui::Text(
-        this,
-        config.presetArrays.nameProxy,
-        wxTE_PROCESS_ENTER,
-        true,
-        _("Preset Name")
-    )};
-    nameInput->SetToolTip(_(
-        "The name for the preset.\n"
-        "This appears on the OLED screen if no bitmap is supplied, otherwise it's just for reference.\n"
-        "\"\\n\" means \"enter.\" Hitting \"enter\" will insert \"\\n\" which means a new line in the text displayed on the OLED.\n"
-        "For example, \"my\\npreset\" will be displayed on the OLED as two lines, the first being \"my\" and the second being \"preset.\""
-    ));
-
-    auto *dirInput{new pcui::Text(
-        this,
-        config.presetArrays.dirProxy,
-        0,
-        false,
-        _("Font Directory")
-    )};
-    dirInput->SetToolTip(_(
-        "The path of the folder on the SD card where the font is stored.\n"
-        "If the font folder is inside another folder, it must be indicated by something like \"folderName/fontFolderName\".\n"
-        "In order to specify multiple directories (for example, to include a \"common\" directory), use a semicolon (;) to separate the folders (e.g. \"fontFolderName;common\")."
-    ));
-
-    auto *trackSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *trackInput{new pcui::Text(
-        this,
-        config.presetArrays.trackProxy,
-        0,
-        false,
-        _("Track File")
-    )};
-    trackInput->SetToolTip(_(
-        "The path of the track file on the SD card. May be empty.\n"
-        "If the track is directly inside one of the folders specified in \"Font Directory\" then only the name of the track file is required."
-    ));
-
-    auto *wavText{new wxStaticText(
-        this,
-        eID_Wav_Text,
-        ".wav"
-    )};
-    wavText->Hide();
-    trackSizer->Add(trackInput, wxSizerFlags(1));
-    trackSizer->Add(wavText, wxSizerFlags().Bottom());
-
-    mInjectionsSizer = new pcui::StaticBox(wxVERTICAL, this, _("Injections"));
-
-    presetConfigSizer->Add(nameInput, wxSizerFlags().Expand());
-    presetConfigSizer->AddSpacer(5);
-    presetConfigSizer->Add(dirInput, wxSizerFlags().Expand());
-    presetConfigSizer->AddSpacer(5);
-    presetConfigSizer->Add(trackSizer, wxSizerFlags().Expand());
-    presetConfigSizer->AddSpacer(20);
-    presetConfigSizer->Add(mInjectionsSizer, wxSizerFlags(1).Expand());
-
-    auto *stylesSizer{new wxBoxSizer(wxVERTICAL)};
-    auto *styleDisplay{new pcui::Choice(
-        this,
-        config.presetArrays.styleDisplay,
-        _("Display")
-    )};
-    styleDisplay->SetToolTip(_("Show blade listing corresponding to the selected blade array."));
-
-    auto *styleList{new pcui::List(
-        this,
-        config.presetArrays.styleSelectProxy,
-        _("Blades")
-    )};
-    stylesSizer->Add(styleDisplay, wxSizerFlags().Expand());
-    stylesSizer->AddSpacer(5);
-    stylesSizer->Add(styleList, wxSizerFlags(1).Expand());
-
-    auto *styleCommentSplit{new wxSplitterWindow(
-        this,
-        wxID_ANY,
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxSP_3DSASH | wxSP_LIVE_UPDATE
-    )};
-
-    auto *commentInput{new pcui::Text(
-        styleCommentSplit,
-        config.presetArrays.commentProxy,
-        wxTE_MULTILINE | wxNO_BORDER,
-        false,
-        _("Comments")
-    )};
-    commentInput->SetToolTip(_(
-        "Any comments about the blade style goes here.\n"
-        "This doesn't affect the blade style at all, but can be a place for helpful notes!"
-    ));
-
-    auto *styleInput{new pcui::Text(
-        styleCommentSplit,
-        config.presetArrays.styleProxy,
-        wxTE_DONTWRAP | wxTE_MULTILINE | wxNO_BORDER,
-        false,
-        _("Blade Style")
-    )};
-    styleInput->styleMonospace();
-    styleInput->SetToolTip(_(
-        "Your blade style goes here.\n"
-        "This is the code which sets up what animations and effects your blade (or other LED) will do.\n"
-        "For getting/creating blade styles, see the Documentation (in \"Help->Documentation...\")."
-    ));
-
-    styleCommentSplit->SetMinSize(wxSize{500, -1});
-    styleCommentSplit->SetMinimumPaneSize(60);
-    styleCommentSplit->SplitHorizontally(commentInput, styleInput);
-
-    sizer->Add(presetSelectionSizer, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(presetConfigSizer, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(stylesSizer, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(styleCommentSplit, wxSizerFlags(1).Expand());
-
-    SetSizerAndFit(sizer);
-    */
 }
 
 pcui::DescriptorPtr PresetsPage::selection() {
     return pcui::Stack{
+      .base_={.expand_=true},
       .orient_=wxVERTICAL,
       .children_={
         pcui::Group{
@@ -239,7 +119,7 @@ pcui::DescriptorPtr PresetsPage::selection() {
             }(),
           }
         }(),
-        pcui::Spacer{.size_=10}(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
         pcui::Group{
           .base_={.expand_=true, .proportion_=1},
           .label_=_("Presets"),
@@ -306,6 +186,209 @@ pcui::DescriptorPtr PresetsPage::selection() {
           }
         }(),
       }
+    }();
+}
+
+pcui::DescriptorPtr PresetsPage::fields() {
+    return pcui::Stack{
+      .base_={
+        .minSize_={200, -1},
+        .expand_=true,
+      },
+      .orient_=wxVERTICAL,
+      .children_{
+        pcui::Label{
+          .label_=_("Preset Name"),
+        }(),
+        pcui::Selector{
+          .win_={.base_={.expand_=true}},
+          .data_=mPresetSel,
+          .builder_=[](data::Model *model) {
+            pcui::Text text{
+              .win_={
+                .base_={.expand_=true},
+                .tooltip_=_(
+                    "The name for the preset.\n"
+                    "This appears on the OLED screen if no bitmap is supplied, otherwise it's just for reference.\n"
+                    "\"\\n\" means \"enter.\" Hitting \"enter\" will insert \"\\n\" which means a new line in the text displayed on the OLED.\n"
+                    "For example, \"my\\npreset\" will be displayed on the OLED as two lines, the first being \"my\" and the second being \"preset.\""
+                )
+              },
+              .mode_=pcui::Text::SingleLine{
+                  .insertNewline_=true,
+              },
+            };
+
+            if (model == nullptr) return text();
+
+            auto *preset{static_cast<config::presets::Preset *>(model)};
+            text.data_ = preset->name_;
+            return text();
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Label{
+          .label_=_("Font Directory"),
+        }(),
+        pcui::Selector{
+          .win_={.base_={.expand_=true}},
+          .data_=mPresetSel,
+          .builder_=[](data::Model *model) {
+            pcui::Text text{
+              .win_={
+                .base_={.expand_=true},
+                .tooltip_=_(
+                    "The path of the folder on the SD card where the font is stored.\n"
+                    "If the font folder is inside another folder, it must be indicated by something like \"folderName/fontFolderName\".\n"
+                    "In order to specify multiple directories (for example, to include a \"common\" directory), use a semicolon (;) to separate the folders (e.g. \"fontFolderName;common\")."
+                )
+              },
+            };
+
+            if (model == nullptr) return text();
+
+            auto *preset{static_cast<config::presets::Preset *>(model)};
+            text.data_ = preset->fontDir_;
+            return text();
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Label{
+          .label_=_("Track File"),
+        }(),
+        pcui::Selector{
+          .win_={.base_={.expand_=true}},
+          .data_=mPresetSel,
+          .builder_=[](data::Model *model) {
+            pcui::Text text{
+              .win_={
+                .base_={.expand_=true},
+                .tooltip_=_(
+                    "The path of the track file on the SD card. May be empty.\n"
+                    "If the track is directly inside one of the folders specified in \"Font Directory\" then only the name of the track file is required."
+                )
+              },
+            };
+
+            if (model == nullptr) return text();
+
+            auto *preset{static_cast<config::presets::Preset *>(model)};
+            text.data_ = preset->track_;
+            return text();
+          }
+        }(),
+      }
+    }();
+}
+
+pcui::DescriptorPtr PresetsPage::displayAndBlade() {
+    return pcui::Stack{
+      .base_={.expand_=true},
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Label{
+          .label_=_("Display"),
+        }(),
+        pcui::Choice{
+          .win_={
+            .tooltip_=_("Show blade listing corresponding to the selected blade array."),
+          },
+          .data_=mDisplaySel.choice_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Label{
+          .label_=_("Blades"),
+        }(),
+        pcui::Choice{
+          .win_={.base_={.expand_=true, .proportion_=1}},
+          .data_=mBladeSel.choice_,
+          .style_=pcui::Choice::List{},
+        }(),
+      }
+    }();
+}
+
+pcui::DescriptorPtr PresetsPage::style() {
+    return pcui::Split{
+      .win_={.base_={
+        .minSize_={500, -1},
+        .expand_=true,
+        .proportion_=1,
+      }},
+      .orient_=wxVERTICAL,
+      .minPaneSize_=60,
+      .child1_=pcui::Stack{
+        .base_={.expand_=true, .proportion_=1},
+        .children_={
+          pcui::Label{
+            .label_=_("Comments"),
+          }(),
+          pcui::Selector{
+            .win_={.base_={.expand_=true, .proportion_=1}},
+            .data_=mBladeSel,
+            .builder_=[](data::Model *model) {
+              pcui::Text text{
+                .win_={
+                  .base_={.expand_=true, .proportion_=1},
+                  .tooltip_=_(
+                      "Any comments about the blade style goes here.\n"
+                      "This doesn't affect the blade style at all, but can be a place for helpful notes!"
+                  ),
+                }, 
+                .mode_=pcui::Text::MultiLine{},
+              };
+
+              if (model == nullptr) {
+                  text.win_.enable_ = false;
+                  text.data_ = _("Select or create preset and blade to edit style comments...");
+                  return text();
+              }
+
+              auto *style{static_cast<config::presets::Style *>(model)};
+              text.data_ = style->comment_;
+              return text();
+            }
+          }(),
+        }
+      }(),
+      .child2_=pcui::Stack{
+        .base_={.expand_=true, .proportion_=1},
+        .children_={
+          pcui::Spacer{.size_=2}(),
+          pcui::Label{
+            .label_=_("Blade Style"),
+          }(),
+          pcui::Selector{
+            .win_={.base_={.expand_=true, .proportion_=1}},
+            .data_=mBladeSel,
+            .builder_=[](data::Model *model) {
+              pcui::Text text{
+                .win_={
+                  .base_={.expand_=true, .proportion_=1},
+                  .tooltip_=_(
+                      "Your blade style goes here.\n"
+                      "This is the code which sets up what animations and effects your blade (or other LED) will do.\n"
+                      "For getting/creating blade styles, see the Documentation (in \"Help->Documentation...\")."
+                  )
+                }, 
+                .mode_=pcui::Text::MultiLine{
+                  .wrap_=pcui::Text::MultiLine::Wrap::None,
+                },
+              };
+
+              if (model == nullptr) {
+                  text.win_.enable_ = false;
+                  text.data_ = _("Select or create preset and blade to edit style...");
+                  return text();
+              }
+
+              auto *style{static_cast<config::presets::Style *>(model)};
+              text.data_ = style->content_;
+              return text();
+            }
+          }(),
+        }
+      }(),
     }();
 }
 

@@ -32,10 +32,19 @@ struct PresetsPage {
 
 private:
     pcui::DescriptorPtr selection();
+    pcui::DescriptorPtr fields();
+    pcui::DescriptorPtr displayAndBlade();
+    pcui::DescriptorPtr style();
 
     config::Config& mConfig;
 
     data::Selector mArraySel;
     data::Selector mPresetSel;
+    data::Selector mDisplaySel;
+
+    // These two are similar, but blade sel is persistent, and control-linked,
+    // while style sel is essentially just a conditional follower.
+    data::Selector mBladeSel;
+    data::Selector mStyleSel;
 };
 
