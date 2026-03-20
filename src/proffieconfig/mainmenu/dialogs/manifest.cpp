@@ -29,6 +29,7 @@
 #include "ui/helpers/dialog_buttons.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
+#include "ui/values.hpp"
 
 #include "../mainmenu.hpp"
 #include "../../core/state.hpp"
@@ -45,7 +46,7 @@ ManifestDialog::ManifestDialog(MainMenu *mainMenu) :
     }
     const auto ui{pcui::Stack{
       .base_={
-        .border_={.size_=10, .dirs_=wxALL},
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
       },
       .children_={
         pcui::Text{
