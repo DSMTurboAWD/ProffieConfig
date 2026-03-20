@@ -196,7 +196,7 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
 
     if (details.size_.padding_) {
         auto retSize{bitmap.GetLogicalSize()};
-        retSize.IncBy(details.size_.padding_ * 2);
+        retSize.IncBy(static_cast<int32>(details.size_.padding_ * 2));
         wxBitmap padded(retSize, 32);
         padded.UseAlpha();
 
@@ -204,7 +204,10 @@ wxBitmap loadPNG(const Image::LoadDetails& details) {
         dc.SetBackground(*wxTRANSPARENT_BRUSH);
         dc.Clear();
 
-        wxPoint drawPos{details.size_.padding_, details.size_.padding_};
+        wxPoint drawPos{
+            static_cast<int32>(details.size_.padding_),
+            static_cast<int32>(details.size_.padding_)
+        };
 
 #       ifdef __WXGTK__
         // On GTK, images seem fairly biased towards drawing in the upper left,
