@@ -57,6 +57,9 @@ void GroupBox::create(
         wxTAB_TRAVERSAL | wxNO_BORDER,
         "GroupBox Inside"
     );
+#   ifdef __WXOSX__
+    mPanel->MacClipsToBounds(false);
+#   endif
     mPanel->SetSizer(mSizer);
 
     Bind(wxEVT_SIZE, [this](wxSizeEvent& evt) {
