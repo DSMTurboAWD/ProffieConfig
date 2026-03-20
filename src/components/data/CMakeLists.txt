@@ -13,6 +13,7 @@ add_library(data SHARED
     logic/logic.cpp
     logic/adapter.cpp
     logic/operators.cpp
+    logic/constant.cpp
 
     bool.cpp
     choice.cpp

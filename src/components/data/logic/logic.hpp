@@ -69,7 +69,7 @@ private:
 /**
  * Extension to enable ADL
  */
-struct Element : std::unique_ptr<detail::Base> {
+struct DATA_EXPORT Element : std::unique_ptr<detail::Base> {
     using unique_ptr::unique_ptr;
 };
 
@@ -101,6 +101,11 @@ struct DATA_EXPORT Holder : std::shared_ptr<Manager> {
     using shared_ptr::shared_ptr;
 
     Holder(Element&&);
+
+    /**
+     * Allow directly assigning a constant to the holder.
+     */
+    Holder(bool);
 };
 
 struct DATA_EXPORT Receiver {
