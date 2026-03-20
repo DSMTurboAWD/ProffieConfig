@@ -30,6 +30,7 @@
 #include "ui/dialogs/message.hpp"
 #include "ui/static/divider.hpp"
 #include "ui/static/image.hpp"
+#include "ui/values.hpp"
 #include "utils/parent.hpp"
 
 #include "../core/state.hpp"
@@ -127,9 +128,11 @@ onboard::Frame::~Frame() {
 
 pcui::DescriptorPtr onboard::Frame::ui() {
     return pcui::Stack{
-      .base_={.minSize_={900, 430}},
+      .base_={
+        .minSize_={900, 430},
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
+      },
       .children_={
-        pcui::Spacer{20}(),
         pcui::Stack{
           .base_={.expand_=true, .proportion_=1},
           .orient_=wxHORIZONTAL,
@@ -171,21 +174,15 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::Spacer{10}(),
           }
         }(),
-        pcui::Spacer{10}(),
-        pcui::Divider{
-          .base_={
-            .expand_=true,
-            .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT},
-          },
-        }(),
-        pcui::Spacer{10}(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Divider{.base_={.expand_=true}}(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
         pcui::Stack{
           .base_={
             .expand_=true,
           },
           .orient_=wxHORIZONTAL,
           .children_={
-            pcui::Spacer{10}(),
             pcui::Button{
               .label_=pcui::Button::LabelWithState{
                   _("Cancel"), mCancelButton
@@ -194,7 +191,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                   Close();
               }
             }(),
-            pcui::Spacer{10}(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
             pcui::Button{
               .win_={
                 .show_=not (mPhase | data::logic::HasSelection{{
@@ -221,7 +218,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
               }
             }(),
             pcui::StretchSpacer{}(),
-            pcui::Spacer{10}(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
             pcui::Button{
               .label_=pcui::Button::LabelWithState{
                   _("Back"), mBackButton
@@ -247,7 +244,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                   }
               },
             }(),
-            pcui::Spacer{10}(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
             pcui::Button{
               .label_=mNextButton,
               .func_=[this] {
@@ -279,10 +276,8 @@ pcui::DescriptorPtr onboard::Frame::ui() {
                   }
               }
             }(),
-            pcui::Spacer{10}(),
           }
         }(),
-        pcui::Spacer{10}(),
       }
     }();
 }
