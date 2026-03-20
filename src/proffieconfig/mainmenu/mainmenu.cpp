@@ -30,6 +30,7 @@
 #include "data/logic/operators.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
+#include "ui/helpers/busy.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/dialogs/message.hpp"
@@ -495,7 +496,7 @@ void MainMenu::importConfig() {
     AddConfigDialog dlg(this);
     if (dlg.ShowModal() != wxID_OK) return;
 
-    wxBusyCursor busy;
+    pcui::BusyTracker busy(this);
 
     std::thread{[this, busy, result=dlg.getResult()] {
         using Result = AddConfigDialog::Result;
