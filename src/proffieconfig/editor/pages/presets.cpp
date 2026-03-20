@@ -291,6 +291,7 @@ pcui::DescriptorPtr PresetsPage::displayAndBlade() {
         }(),
         pcui::Choice{
           .win_={
+            .base_={.expand_=true},
             .tooltip_=_("Show blade listing corresponding to the selected blade array."),
           },
           .data_=mDisplaySel.choice_,
