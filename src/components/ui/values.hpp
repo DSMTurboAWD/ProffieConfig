@@ -34,6 +34,11 @@ namespace pcui {
 UI_EXPORT int32 interControlSpacing();
 
 /**
+ * Spacing between groups, or stacks.
+ */
+UI_EXPORT int32 interGroupSpacing();
+
+/**
  * A spacing amount appropriate between the edges of windows and controls.
  */
 UI_EXPORT int32 winEdgeSpacing();

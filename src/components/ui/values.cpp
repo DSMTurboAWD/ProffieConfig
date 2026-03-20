@@ -27,6 +27,10 @@ int32 pcui::interControlSpacing() {
 #   endif
 }
 
+int32 pcui::interGroupSpacing() {
+    return 10;
+}
+
 int32 pcui::winEdgeSpacing() {
 #   if defined(__WXOSX__)
     return 20;
