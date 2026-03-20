@@ -32,11 +32,7 @@ int32 pcui::interGroupSpacing() {
 }
 
 int32 pcui::winEdgeSpacing() {
-#   if defined(__WXOSX__)
-    return 20;
-#   else
     return 12;
-#   endif
 }
 
 wxSize pcui::iconButtonSize() {
