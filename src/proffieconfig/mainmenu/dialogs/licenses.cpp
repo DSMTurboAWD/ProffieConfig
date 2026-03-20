@@ -31,6 +31,7 @@
 
 #include "../../core/licenses.hpp"
 #include "../mainmenu.hpp"
+#include "ui/values.hpp"
 
 LicenseDialog::LicenseDialog(MainMenu *mainMenu) : 
     Dialog(
@@ -69,7 +70,6 @@ pcui::DescriptorPtr LicenseDialog::ui() {
         return pcui::Stack{
           .base_={.expand_=true},
           .children_={
-            pcui::Spacer{.size_=10}(),
             pcui::Label{
               .label_=info.name_,
               .style_=pcui::text::Style::Header,
@@ -100,6 +100,7 @@ pcui::DescriptorPtr LicenseDialog::ui() {
                 }
               }(),
             }(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
           }
         }();
     }};
@@ -116,14 +117,17 @@ pcui::DescriptorPtr LicenseDialog::ui() {
       .child_=pcui::Stack{
         .base_={
             .expand_=true,
-            .border_={.size_=10, .dirs_=wxLEFT | wxRIGHT},
+            .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxLEFT | wxRIGHT},
         },
         .children_={
+          pcui::Spacer{.size_=pcui::winEdgeSpacing()}(),
           pcui::ForEach{
             .of_=LICENSES,
             .do_=entryGenerator,
           }(),
-          pcui::Spacer{.size_=10}(),
+          pcui::Spacer{
+            .size_=pcui::winEdgeSpacing() - pcui::interGroupSpacing()
+          }(),
         },
       }(),
     }();
