@@ -164,19 +164,19 @@ pcui::DescriptorPtr PresetsPage::selection() {
               .orient_=wxVERTICAL,
               .children_={
                 pcui::Button{
-                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize(true)}},
                   .label_=L"\u2191", // Up Arrow
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
                 }(),
                 pcui::Button{
-                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize(true)}},
                   .label_=L"\u2193", // Down Arrow
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
                 }(),
                 pcui::Button{
-                  .win_={.base_={.minSize_=pcui::iconButtonSize()}},
+                  .win_={.base_={.minSize_=pcui::iconButtonSize(true)}},
                   .label_=L"\u29C9", // ⧉ Double Squares
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,

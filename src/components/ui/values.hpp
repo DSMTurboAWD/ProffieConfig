@@ -47,7 +47,7 @@ UI_EXPORT int32 winEdgeSpacing();
  * Button size for one with only a single icon as a label.
  * Should be used w/ exact-fitting button.
  */
-UI_EXPORT wxSize iconButtonSize();
+UI_EXPORT wxSize iconButtonSize(bool square = false);
 
 } // namespace pcui
 
