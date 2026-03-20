@@ -44,6 +44,7 @@ add_library(ui SHARED
     layout/scrolled.cpp
     layout/selector.cpp
     layout/spacer.cpp
+    layout/split.cpp
     layout/stack.cpp
     layout/panel.cpp
     layout/priv/groupbox.cpp
