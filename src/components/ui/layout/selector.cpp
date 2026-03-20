@@ -33,10 +33,14 @@ namespace {
 
 struct Layout : priv::WinBase<wxPanel, data::Selector::Receiver>,
                 data::Choice::Receiver {
-    Layout(const detail::Scaffold& scaffold, const Selector& desc) {
+    Layout(const detail::Scaffold& scaffold, const Selector& desc) :
+        builder_{desc.builder_} {
         Create(scaffold.childParent_);
 
         postCreation(scaffold, desc.win_);
+
+        data::Selector::Context ctxt{desc.data_};
+        onRebound(ctxt.bound());
 
         data::Selector::Receiver::attach(desc.data_);
         data::Choice::Receiver::attach(desc.data_.choice_);
@@ -57,7 +61,8 @@ struct Layout : priv::WinBase<wxPanel, data::Selector::Receiver>,
     void onRebound(const data::Vector *vec) override {
         vec_ = vec;
 
-        build(this, builder_(nullptr));
+        if (not vec_) build(this, builder_(nullptr));
+        else onChoice();
     }
 
     const detail::DescBuilder builder_;
@@ -74,8 +79,8 @@ Selector::Desc::Desc(Selector&& data) :
     Selector{std::move(data)} {}
 
 wxSizerItem *Selector::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *chk{new Layout(scaffold, *this)};
-    auto *item{new wxSizerItem(chk)};
+    auto *sel{new Layout(scaffold, *this)};
+    auto *item{new wxSizerItem(sel)};
     priv::apply(win_.base_, item);
     return item;
 }
