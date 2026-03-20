@@ -33,6 +33,7 @@
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/static/label.hpp"
+#include "ui/values.hpp"
 
 using namespace pcui;
 
@@ -109,7 +110,7 @@ DescriptorPtr ProgressDialog::ui(bool mayCancel, wxSize size) {
     return pcui::Stack{
       .base_={
         .minSize_=size,
-        .border_={.size_=10, .dirs_=wxALL}
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL}
       },
       .children_={
         pcui::Label{
