@@ -1,0 +1,50 @@
+#include "busy.hpp"
+/*
+ * ProffieConfig, All-In-One Proffieboard Management Utility
+ * Copyright (C) 2026 Ryan Ogurek
+ *
+ * components/ui/helpers/busy.cpp
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <wx/app.h>
+#include <wx/busycursor.h>
+#include <wx/thread.h>
+
+pcui::BusyTracker::BusyTracker(wxWindow *win) : mWindow{win} {
+    if (wxIsMainThread()) {
+        wxBeginBusyCursor();
+    } else {
+        const auto beginBusy{[] { wxBeginBusyCursor(); }};
+
+        if (mWindow) mWindow->CallAfter(beginBusy);
+        else wxTheApp->CallAfter(beginBusy);
+    }
+}
+
+pcui::BusyTracker::~BusyTracker() {
+    if (wxIsMainThread()) {
+        wxEndBusyCursor();
+    } else {
+        const auto endBusy{[] { wxEndBusyCursor(); }};
+
+        if (mWindow) mWindow->CallAfter(endBusy);
+        else wxTheApp->CallAfter(endBusy);
+    }
+}
+
+pcui::BusyTracker::BusyTracker(const BusyTracker& other) :
+    BusyTracker(other.mWindow) {}
+
