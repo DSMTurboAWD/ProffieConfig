@@ -321,13 +321,13 @@ pcui::DescriptorPtr ui(
               .label_=file.id.name,
               .style_=objFont,
             }(),
+            pcui::Spacer{.size_=5}(),
             pcui::Label{
               .label_=(file.currentVersion
                 ? file.currentVersion.string()
                 : "[NONE]") + " -> " + file.latestVersion.string(),
               .style_=versionFont,
             }(),
-            pcui::Spacer{.size_=5}(),
             pcui::Spacer{.size_=10}(),
             section("Features", &Update::ItemVersionData::features),
             section("Changes", &Update::ItemVersionData::changes),
