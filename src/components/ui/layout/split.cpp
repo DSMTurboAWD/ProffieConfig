@@ -37,7 +37,7 @@ struct Layout : priv::WinBase<wxSplitterWindow, data::Generic::Receiver> {
             wxID_ANY,
             wxDefaultPosition,
             wxDefaultSize,
-            wxSP_3D | wxSP_LIVE_UPDATE
+            wxSP_3DSASH | wxSP_LIVE_UPDATE
         );
 
         postCreation(scaffold, desc.win_);
