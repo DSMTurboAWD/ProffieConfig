@@ -140,17 +140,9 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
           .labels_={
             pcui::Segmented::Label{
               .text_=_("Create New Config"),
-              .image_=pcui::Image::LoadDetails{
-                .name_="new",
-                .size_={.dim_=32},
-              }(),
             },
             pcui::Segmented::Label{
               .text_=_("Import Existing Config"),
-              .image_=pcui::Image::LoadDetails{
-                .name_="import",
-                .size_={.dim_=32},
-              }(),
             },
           },
         }(),
@@ -179,6 +171,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
           .win_={.base_{.expand_=true}},
           .data_=mConfigName,
         }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Label{
           .win_={
             .base_={.align_=wxALIGN_RIGHT},
