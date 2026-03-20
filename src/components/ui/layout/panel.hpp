@@ -47,4 +47,3 @@ struct UI_EXPORT Panel::Desc : Panel, detail::Descriptor {
 
 } // namespace pcui
 
-

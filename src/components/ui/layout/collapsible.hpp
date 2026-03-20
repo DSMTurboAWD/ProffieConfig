@@ -50,4 +50,3 @@ struct UI_EXPORT Collapsible::Desc : Collapsible, detail::Descriptor {
 
 } // namespace pcui
 
-
