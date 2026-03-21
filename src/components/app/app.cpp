@@ -486,16 +486,16 @@ bool app::init() {
 APP_EXPORT [[nodiscard]] bool app::darkMode() { 
     DWORD buffer{};
     DWORD bufferSize{sizeof(buffer)};
-    RegGetValueW(
+    RegGetValueA(
         HKEY_CURRENT_USER,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-        L"AppsUseLightTheme",
+        R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
+        "AppsUseLightTheme",
         RRF_RT_REG_DWORD,
         nullptr,
         &buffer,
         &bufferSize
     );
-    return ~buffer;
+    return not buffer;
 }
 #endif
 
