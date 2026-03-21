@@ -19,14 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _WIN32
-#include <dwmapi.h>
-#include "app/app.hpp"
-#endif
-
 #include <wx/menu.h>
 #include <wx/sizer.h>
 #include <wx/window.h>
+
+#include "ui/priv/helpers.hpp"
 
 using namespace pcui;
 
@@ -36,9 +33,8 @@ Dialog::Dialog(
     const wxString& title,
     long style
 ) {
-#   ifdef __WXMSW__
-    SetDoubleBuffered(true);
-#   endif
+    priv::tlwBindOnCreate(this);
+    priv::tlwPreCreate(this);
 
     Create(
         parent,
@@ -55,33 +51,7 @@ Dialog::Dialog(
         evt.Skip();
     });
 
-#	ifdef _WIN32
-    SetIcon(wxICON(ApplicationIcon));
-
-    Bind(wxEVT_CREATE, [this](wxWindowCreateEvent&) {
-#       ifdef __WXGTK__
-        auto *hwnd{GTKGetWin32Handle()};
-#       else
-        auto *hwnd{GetHWND()};
-#       endif
-
-        DWORD useDarkMode{app::darkMode()};
-        DwmSetWindowAttribute(
-            hwnd,
-            DWMWA_USE_IMMERSIVE_DARK_MODE,
-            &useDarkMode,
-            sizeof useDarkMode
-        );
-
-        auto backdrop{DWMSBT_TRANSIENTWINDOW};
-        DwmSetWindowAttribute(
-            hwnd,
-            DWMWA_SYSTEMBACKDROP_TYPE,
-            &backdrop,
-            sizeof backdrop
-        );
-    });
-#	endif
+    priv::tlwPostCreate(this);
 }
 
 Dialog::~Dialog() = default;

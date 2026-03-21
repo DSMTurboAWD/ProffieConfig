@@ -20,12 +20,17 @@
  */
 
 #include <wx/sizer.h>
+#include <wx/toplevel.h>
 
 #include "ui/detail/general.hpp"
 
 namespace pcui::priv {
 
 void apply(const detail::ChildBase&, wxSizerItem *);
+
+void tlwPreCreate(wxTopLevelWindow *);
+void tlwPostCreate(wxTopLevelWindow *);
+void tlwBindOnCreate(wxTopLevelWindow *);
 
 } // namespace pcui::priv
 

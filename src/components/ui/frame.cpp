@@ -19,16 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef _WIN32
-#include <dwmapi.h>
-#include <windows.h>
-
-#include "app/app.hpp"
-#endif
-
 #include <wx/menu.h>
 #include <wx/sizer.h>
 #include <wx/window.h>
+
+#include "ui/priv/helpers.hpp"
 
 using namespace pcui;
 
@@ -38,9 +33,9 @@ Frame::Frame(
     const wxString& title,
     long style
 ) {
-#   ifdef __WXMSW__
-    SetDoubleBuffered(true);
-#   endif
+    priv::tlwBindOnCreate(this);
+    priv::tlwPreCreate(this);
+
     Create(
         parent,
         winID,
@@ -51,37 +46,7 @@ Frame::Frame(
         "pcui::Frame"
     );
 
-#	ifdef _WIN32
-#   ifdef __WXGTK__
-    auto *hwnd{GTKGetWin32Handle()};
-#   else
-    auto *hwnd{GetHWND()};
-#   endif
-
-    SetIcon(wxICON(ApplicationIcon));
-
-    auto exStyle{GetWindowLongA(hwnd, GWL_EXSTYLE)};
-    SetWindowLongA(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
-    SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
-
-    Bind(wxEVT_CREATE, [this, hwnd](wxWindowCreateEvent&) {
-        DWORD useDarkMode{app::darkMode()};
-        DwmSetWindowAttribute(
-            hwnd,
-            DWMWA_USE_IMMERSIVE_DARK_MODE,
-            &useDarkMode,
-            sizeof useDarkMode
-        );
-
-        auto backdrop{DWMSBT_MAINWINDOW};
-        DwmSetWindowAttribute(
-            hwnd,
-            DWMWA_SYSTEMBACKDROP_TYPE,
-            &backdrop,
-            sizeof backdrop
-        );
-    });
-#	endif
+    priv::tlwPostCreate(this);
 }
 
 Frame::~Frame() {
