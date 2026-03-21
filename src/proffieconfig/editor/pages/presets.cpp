@@ -23,6 +23,7 @@
 #include <wx/msgdlg.h>
 
 #include "config/presets/preset.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
 #include "ui/controls/text.hpp"
@@ -31,7 +32,6 @@
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/split.hpp"
 #include "ui/layout/stack.hpp"
-#include "ui/static/image.hpp"
 #include "ui/static/label.hpp"
 #include "ui/types.hpp"
 #include "ui/values.hpp"
@@ -92,11 +92,9 @@ pcui::DescriptorPtr PresetsPage::selection() {
                     .minSize_=pcui::iconButtonSize(),
                     .expand_=true
                   }},
-                  .bitmap_=pcui::Image::LoadDetails{
-                    .name_="edit",
-                    .size_={.dim_=16, .padding_=2},
-                    .color_=wxSYS_COLOUR_WINDOWTEXT,
-                  }(),
+                  .bitmap_={
+                    .src_=pcui::Bitmap("edit").color(wxSYS_COLOUR_WINDOWTEXT),
+                  },
                   .exactFit_=true,
                 }(),
               }

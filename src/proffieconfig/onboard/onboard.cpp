@@ -23,6 +23,7 @@
 
 #include "data/logic/adapter.hpp"
 #include "data/logic/operators.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/layout/panel.hpp"
 #include "ui/layout/spacer.hpp"
@@ -140,9 +141,7 @@ pcui::DescriptorPtr onboard::Frame::ui() {
             pcui::Spacer{10}(),
             pcui::Image{
               .win_={.maxSize_={256, 256}},
-              .src_=pcui::Image::LoadDetails{
-                .name_="icon",
-              }(),
+              .src_=pcui::Bitmap("icon"),
             }(),
             pcui::Spacer{10}(),
             pcui::Panel{

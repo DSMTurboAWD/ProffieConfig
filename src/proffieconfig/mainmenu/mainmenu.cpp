@@ -28,6 +28,7 @@
 #include "config/config.hpp"
 #include "data/logic/adapter.hpp"
 #include "data/logic/operators.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
 #include "ui/helpers/busy.hpp"
@@ -116,9 +117,7 @@ pcui::DescriptorPtr MainMenu::ui() {
             pcui::StretchSpacer{}(),
             pcui::Image{
               .win_={.maxSize_={64, 64}},
-              .src_=pcui::Image::LoadDetails{
-                .name_="icon",
-              }()
+              .src_=pcui::Bitmap("icon"),
             }()
           },
         }(),

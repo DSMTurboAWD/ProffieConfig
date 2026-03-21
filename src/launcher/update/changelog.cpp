@@ -24,6 +24,7 @@
 
 #include "log/logger.hpp"
 #include "ui/build.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/helpers/dialog_buttons.hpp"
 #include "ui/helpers/foreach.hpp"
@@ -355,10 +356,7 @@ pcui::DescriptorPtr ui(
               },
               .src_={
 #               if defined(__APPLE__)
-                pcui::Image::LoadDetails{
-                  .name_="icon",
-                  .resourceIcon_=true,
-                }(),
+                pcui::Bitmap("icon", pcui::Bitmap::Type::Resource)
 #               elif defined(_WIN32)
                 wxICON(ApplicationIcon)
 #               endif
