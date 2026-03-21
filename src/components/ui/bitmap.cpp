@@ -72,7 +72,9 @@ pcui::Bitmap::Bitmap(const wxBitmap& other) : wxBitmap(other) {}
 
 pcui::Bitmap::Bitmap(wxBitmap&& other) : wxBitmap(std::move(other)) {}
 
+#ifdef _WIN32
 pcui::Bitmap::Bitmap(const wxIcon& icon) : wxBitmap(icon) {}
+#endif
 
 pcui::Bitmap& pcui::Bitmap::scale(float64 scale) {
 #   ifdef _WIN32
@@ -139,7 +141,7 @@ pcui::Bitmap& pcui::Bitmap::pad(
     // On GTK, images seem fairly biased towards drawing in the upper left,
     // particularly the left, so this is a hacky way to try and level that
     // out.
-    drawPos.x += 1;
+    offset.x += 1;
 #   endif
 
     dc.DrawBitmap(*this, offset);

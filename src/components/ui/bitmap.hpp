@@ -41,7 +41,10 @@ struct UI_EXPORT Bitmap : wxBitmap {
 
     Bitmap(const wxBitmap&);
     Bitmap(wxBitmap&&);
+
+#   ifdef _WIN32
     Bitmap(const wxIcon&);
+#   endif
 
     /**
      * The usual bitmap scaling function, and bitmaps in particular, behaves
