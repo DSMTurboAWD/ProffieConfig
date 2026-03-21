@@ -741,6 +741,7 @@ std::optional<std::string> versions::downloadProp(
     )};
 
     pconf::write(fstream, data, logger.binfo("Writing prop info file..."));
+    fstream.close();
 
     if (fstream.fail()) {
         logger.error("Info file write failed: " + std::to_string(fstream.rdstate()));
