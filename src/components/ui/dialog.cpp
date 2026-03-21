@@ -50,6 +50,11 @@ Dialog::Dialog(
         "pcui::Dialog"
     );
 
+    Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& evt) {
+        if (evt.GetKeyCode() == WXK_ESCAPE) EndModal(wxID_CANCEL);
+        evt.Skip();
+    });
+
 #	ifdef _WIN32
     SetIcon(wxICON(ApplicationIcon));
 

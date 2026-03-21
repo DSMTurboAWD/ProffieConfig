@@ -74,8 +74,6 @@ public:
         entry->SetFocus();
 
         Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& evt) {
-            if (evt.GetKeyCode() == WXK_ESCAPE) EndModal(wxID_CANCEL);
-
             auto *okButton{FindWindow(wxID_OK)};
             if (
                     (not okButton or okButton->IsEnabled()) and 
