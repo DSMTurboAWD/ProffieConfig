@@ -855,6 +855,11 @@ wxString parseError(const std::string& err, const config::Config& config) {
         );
     }
 
+    if (err.contains("Cannot open DFU device")) {
+        return _("Looks like there's some problems accessing the Proffieboard.") + '\n' +
+            _("Try re-installing the Proffie driver, and make sure you don't have other software which might interfere.");
+    }
+
     if (
         err.contains("\n1") and
         err.contains("\n2") and
