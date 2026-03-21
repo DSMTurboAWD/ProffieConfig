@@ -21,6 +21,8 @@
 
 #ifdef _WIN32
 #include <dwmapi.h>
+#include <windows.h>
+
 #include "app/app.hpp"
 #endif
 
@@ -57,6 +59,10 @@ Frame::Frame(
 #   endif
 
     SetIcon(wxICON(ApplicationIcon));
+
+    auto exStyle{GetWindowLongA(hwnd, GWL_EXSTYLE)};
+    SetWindowLongA(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+    SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
     Bind(wxEVT_CREATE, [this, hwnd](wxWindowCreateEvent&) {
         DWORD useDarkMode{app::darkMode()};

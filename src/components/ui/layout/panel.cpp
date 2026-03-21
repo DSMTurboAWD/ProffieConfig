@@ -19,6 +19,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <wx/panel.h>
 
 #include "ui/priv/helpers.hpp"
@@ -31,6 +35,17 @@ namespace {
 struct Layout : priv::WinBase<wxPanel, data::Generic::Receiver> {
     Layout(const detail::Scaffold& scaffold, const Panel& desc) {
         Create(scaffold.childParent_);
+
+#       ifdef _WIN32
+#       ifdef __WXGTK__
+        auto *hwnd{GTKGetWin32Handle()};
+#       else
+        auto *hwnd{GetHWND()};
+#       endif
+
+        auto exStyle{GetWindowLongA(hwnd, GWL_EXSTYLE)};
+        SetWindowLongA(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+#       endif
 
         postCreation(scaffold, desc.win_);
 
