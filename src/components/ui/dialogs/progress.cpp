@@ -51,9 +51,6 @@ ProgressDialog::ProgressDialog(
 }
 
 ProgressDialog::~ProgressDialog() {
-    // The dialog should've been 
-    assert(not IsModal());
-
     pcui::teardown(this);
 }
 
@@ -79,19 +76,36 @@ void ProgressDialog::pulse(const wxString& message) {
 
 void ProgressDialog::finish(bool modalWait, const wxString& message) {
     data::String::Context{mMessage}.change(message.ToStdString());
-    Progress::Data::Context ctxt{mData};
-    ctxt.set(ctxt.range());
+
+    { Progress::Data::Context ctxt{mData};
+        ctxt.set(ctxt.range());
+    }
+
+    const auto doFinish{[this, modalWait] {
+        // Make sure that layout updates have completed before locking things
+        // up in the modal context.
+        wxYield();
+
+        // The data has been set as finished and the cancel button therefore is
+        // hidden. Now check if the cancel button wasn't handled by the data
+        // processor.
+        if (data::Bool::Context{mCancelled}.val()) {
+            // If it's been pressed, we don't wait in any case.
+            return;
+        }
+
+        if (modalWait) ShowModal();
+    }};
 
     if (wxIsMainThread()) {
-        if (modalWait) ShowModal();
+        doFinish();
         return;
     }
 
     std::promise<void> promise;
     
-    CallAfter([this, modalWait, &promise] {
-        if (modalWait) ShowModal();
-
+    CallAfter([doFinish, &promise] {
+        doFinish();
         promise.set_value();
     });
 
@@ -130,11 +144,12 @@ DescriptorPtr ProgressDialog::ui(bool mayCancel, wxSize size) {
             },
             .label_=_("Ok"),
             .func_=[this] {
-                Destroy();
+                EndModal(wxID_OK);
             },
           }(),
           .cancel_=mayCancel ? pcui::Button{
             .win_={
+              .show_=not (mData | Progress::Logic::Is_Done),
               .enable_=not (mCancelled | data::logic::IsSet{}),
             },
             .label_=_("Cancel"),
