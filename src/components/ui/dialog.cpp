@@ -52,19 +52,28 @@ Dialog::Dialog(
 
 #	ifdef _WIN32
     SetIcon(wxICON(ApplicationIcon));
-    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
 
     Bind(wxEVT_CREATE, [this](wxWindowCreateEvent&) {
+#       ifdef __WXGTK__
+        auto *hwnd{GTKGetWin32Handle()};
+#       else
+        auto *hwnd{GetHWND()};
+#       endif
+
         DWORD useDarkMode{app::darkMode()};
         DwmSetWindowAttribute(
-#           ifdef __WXGTK__
-            GTKGetWin32Handle(),
-#           else
-            GetHWND(),
-#           endif
-            DWMWINDOWATTRIBUTE::DWMWA_USE_IMMERSIVE_DARK_MODE,
+            hwnd,
+            DWMWA_USE_IMMERSIVE_DARK_MODE,
             &useDarkMode,
-            sizeof(DWORD)
+            sizeof useDarkMode
+        );
+
+        auto backdrop{DWMSBT_TRANSIENTWINDOW};
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_SYSTEMBACKDROP_TYPE,
+            &backdrop,
+            sizeof backdrop
         );
     });
 #	endif
