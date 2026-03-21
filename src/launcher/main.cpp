@@ -74,19 +74,19 @@ public:
         logger.info("Launcher installed, continuing...");
 
         enum class Action {
-            LAUNCH,
-            FIRST_INSTALL,
-            UNINSTALL
-        } action{Action::LAUNCH};
+            Launch,
+            First_Install,
+            Uninstall
+        } action{Action::Launch};
         
         if (argc == 2 and argv[1] == "uninstall") {
-            action = Action::UNINSTALL;
+            action = Action::Uninstall;
             if (wxNO == pcui::showMessage(_("Are you sure you want to uninstall ProffieConfig?"), app::getName(), wxYES_NO | wxNO_DEFAULT)) {
                 return false;
             }
         } else {
             if (not fs::exists(paths::executable(paths::Executable::Main))) {
-                action = Action::FIRST_INSTALL;
+                action = Action::First_Install;
                 logger.info("Main ProffieConfig binary missing, update/install routine required.");
                 if (wxNO == pcui::showMessage(_("ProffieConfig installation needs to run, continue?"), app::getName(), wxYES_NO | wxYES_DEFAULT)) {
                     return false;
@@ -96,13 +96,13 @@ public:
 
         wxString statusStr{};
         switch (action) {
-            case Action::LAUNCH:
+            case Action::Launch:
                 statusStr = "Update Check";
                 break;
-            case Action::FIRST_INSTALL:
+            case Action::First_Install:
                 statusStr = "First Install";
                 break;
-            case Action::UNINSTALL:
+            case Action::Uninstall:
                 statusStr = "Uninstall";
                 break;
         }
@@ -110,7 +110,7 @@ public:
             nullptr,
             "ProffieConfig Launcher | " + statusStr,
             true,
-            {300, -1}
+            {400, -1}
         );
 
         // Push full out of range.
@@ -122,11 +122,11 @@ public:
 
         Update::init();
 
-        if (action == Action::LAUNCH or action == Action::FIRST_INSTALL) {
+        if (action == Action::Launch or action == Action::First_Install) {
             auto pullSuccess{Update::pullData(&prog, *logger.binfo("Collecting version data..."))};
             if (not pullSuccess) {
                 logger.info("Aborting update after failed version data collection...");
-                if (action == Action::FIRST_INSTALL) {
+                if (action == Action::First_Install) {
                     prog.finish(true, _("Failed pulling update data, please try again!"));
                     return false;
                 }
@@ -146,7 +146,7 @@ public:
                 logger.error("No valid bundles found!");
                 prog.finish(true, _("No valid version bundles found!\nPlease report this error."));
                 wxLaunchDefaultApplication(paths::logDir().native());
-                if (action == Action::LAUNCH) routine::launch(*logger.binfo("Launching in lieu of valid update data."));
+                if (action == Action::Launch) routine::launch(*logger.binfo("Launching in lieu of valid update data."));
                 return false;
             }
 
@@ -167,7 +167,7 @@ public:
             }
 
             if (
-                    action == Action::LAUNCH and
+                    action == Action::Launch and
                     not Update::promptWithChangelog(data.value(), changelog, *logger.binfo("Prompting user for update..."))
                ) {
                 routine::launch(*logger.binfo("User declined update."));
@@ -180,7 +180,7 @@ public:
 
                 logger.info("Aborting update after failed download.");
 
-                if (action == Action::LAUNCH) routine::launch(*logger.binfo("Launching..."));
+                if (action == Action::Launch) routine::launch(*logger.binfo("Launching..."));
                 return false;
             }
 
@@ -188,12 +188,9 @@ public:
 
             prog.pulse();
             wxYield();
-            prog.finish(false);
 
-            if (action == Action::FIRST_INSTALL) {
-                pcui::showMessage(_("Installed"), app::getName());
-            }
-        } else if (action == Action::UNINSTALL) {
+            prog.finish(action == Action::First_Install, _("Installed"));
+        } else if (action == Action::Uninstall) {
             logging::Context::destroyGlobal();
 
             std::error_code err;
