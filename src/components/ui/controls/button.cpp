@@ -76,7 +76,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
             SetLabel(std::get<0>(desc.label_));
         }
 
-        if (desc.bitmap_.IsOk()) SetBitmap(desc.bitmap_);
+        if (desc.bitmap_.src_.IsOk()) SetBitmap(desc.bitmap_.src_);
 
         commonSetup();
 
@@ -124,6 +124,17 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
 } // namespace
 
 std::unique_ptr<detail::Descriptor> Button::operator()() {
+    // The proper in-button size for a bitmap depends on the platform
+    if (bitmap_.mode_ == BitmapMode::Clamped and bitmap_.src_.IsOk()) {
+#       if defined(__WXOSX__)
+        bitmap_.src_.pad(1, 16, wxVERTICAL);
+#       elif defined(__WXGTK__)
+        bitmap_.src_.pad(2, 16, wxVERTICAL);
+#       elif defined(__WXMSW__)
+        bitmap_.src_.scaleTo(12, wxVERTICAL);
+#       endif
+    }
+
     return std::make_unique<Button::Desc>(std::move(*this));
 }
 

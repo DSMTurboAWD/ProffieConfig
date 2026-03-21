@@ -23,6 +23,7 @@
 
 #include "data/generic.hpp"
 #include "data/string.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 
@@ -33,7 +34,34 @@ namespace pcui {
 
 struct UI_EXPORT Button {
     struct Desc;
-    enum class Style;
+
+    enum class Style {
+        /**
+         * Normal, pushbutton style.
+         */
+        Normal,
+
+        /**
+         * A button that performs a view-related action, and is intended to be
+         * displayed immediately beside that view.
+         *
+         * This corresponds to the square style on macOS
+         */
+        Companion,
+    };
+
+    enum class BitmapMode {
+        /**
+         * Bitmap is clamped to a size appropriate for a standard button.
+         */
+        Clamped,
+
+        /**
+         * Bitmap size is preserved as-is.
+         */
+        Maintain,
+    };
+
 
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
@@ -48,9 +76,12 @@ struct UI_EXPORT Button {
         RefWrap<const data::String>
     > label_;
 
-    wxBitmap bitmap_;
+    struct {
+        Bitmap src_;
+        BitmapMode mode_{BitmapMode::Clamped};
+    } bitmap_;
 
-    Style style_;
+    Style style_{Style::Normal};
 
     bool exactFit_{false};
 
@@ -70,18 +101,6 @@ struct UI_EXPORT Button::Desc : Button, detail::Descriptor {
     Desc(Button&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
-};
-
-enum class Button::Style {
-    Normal,
-
-    /**
-     * A button that performs a view-related action, and is intended to be
-     * displayed immediately beside that view.
-     *
-     * This corresponds to the square style on macOS
-     */
-    Companion,
 };
 
 } // namespace pcui
