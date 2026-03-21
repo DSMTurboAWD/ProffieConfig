@@ -323,8 +323,6 @@ function(process_wx_ldflags CONFIG TARGET)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    message("${TARGET} LDFLAGS: ${WX_LDFLAGS}")
-
     # Remove all -lwx links... CMake will handle those
     string(REPLACE " " ";" WX_LDFLAG_LIST "${WX_LDFLAGS}")
     foreach(FLAG ${WX_LDFLAG_LIST})
