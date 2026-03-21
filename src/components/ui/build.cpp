@@ -19,8 +19,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void pcui::build(wxWindow *parent, const DescriptorPtr& desc) {
-    teardown(parent);
+#include <wx/panel.h>
+
+#include "ui/frame.hpp"
+
+void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
+    teardown(win);
+
+    auto *parent{win};
+    if (dynamic_cast<pcui::Frame *>(parent)) {
+        parent = new wxPanel(win);
+    }
 
     if (not desc) return;
 
