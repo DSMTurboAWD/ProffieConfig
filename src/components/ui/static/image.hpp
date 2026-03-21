@@ -25,7 +25,6 @@
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/types.hpp"
-#include "utils/color.hpp"
 
 #include "ui_export.h"
 
@@ -33,7 +32,6 @@ namespace pcui {
 
 struct UI_EXPORT Image {
     struct Desc;
-    struct LoadDetails;
 
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
@@ -51,27 +49,6 @@ struct UI_EXPORT Image::Desc : Image, detail::Descriptor {
     Desc(Image&&);
 
     [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
-};
-
-struct UI_EXPORT Image::LoadDetails {
-    cstring name_{nullptr};
-
-#   ifdef __APPLE__
-    /**
-     * If the image is an icon in the macOS bundle resources.
-     */
-    bool resourceIcon_{false};
-#   endif
-
-    struct {
-        int32 dim_{-1};
-        uint32 padding_{0};
-        wxOrientation orient_{wxHORIZONTAL};
-    } size_;
-
-    color::Dynamic color_;
-
-    wxBitmap operator()() const;
 };
 
 } // namespace pcui

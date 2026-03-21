@@ -35,21 +35,10 @@
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 #include "ui/types.hpp"
-#include "utils/paths.hpp"
-
 
 using namespace pcui;
 
 namespace {
-
-const wxColour DARK_BLUE{39, 74, 114};
-const wxColour LIGHT_BLUE{31, 99, 168};
-
-void generateMissingBMP(wxBitmap&, const wxSize& = wxDefaultSize);
-
-// std::unordered_map<string, wxBitmap> bmps;
-wxBitmap loadPNG(cstring);
-wxBitmap loadPNG(const Image::LoadDetails&);
 
 #ifdef __WXOSX__
 using Widget = wxStaticBitmap;
@@ -74,20 +63,6 @@ struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
 
 } // namespace
 
-wxBitmap Image::LoadDetails::operator()() const {
-#   ifdef __APPLE__
-    if (resourceIcon_) {
-        return {name_, wxBITMAP_TYPE_ICON_RESOURCE};
-    }
-#   endif
-
-    if (size_.dim_ == -1) {
-        return loadPNG(name_);
-    }
-
-    return loadPNG(*this);
-}
-
 DescriptorPtr Image::operator()() {
     return std::make_unique<Image::Desc>(std::move(*this));
 }
@@ -101,158 +76,4 @@ wxSizerItem *Image::Desc::build(const detail::Scaffold& scaffold) const {
     priv::apply(win_.base_, item);
     return item;
 }
-
-namespace {
-
-wxBitmap loadPNG(cstring name) {
-    // auto bmpIt{bmps.find(name)};
-    // if (bmpIt != bmps.end()) return bmpIt->second;
-
-    auto pngPath{paths::resourceDir() / "icons"};
-    pngPath /= name;
-    pngPath += ".png";
-
-    // std::cout << "Loading PNG \"" << name << "\" from \"" << pngPath.native() << '"' << std::endl;
-    wxBitmap bitmap;
-    {
-        wxLogNull noErrors;
-        bitmap.LoadFile(pngPath.native(), wxBITMAP_TYPE_PNG);
-        if (not bitmap.IsOk()) {
-            generateMissingBMP(bitmap);
-            return bitmap;
-        }
-    }
-    bitmap.SetScaleFactor(wxDisplay{0U}.GetScaleFactor());
-
-    // bmps.emplace(name, bitmap);
-    return bitmap;
-}
-
-wxBitmap loadPNG(const Image::LoadDetails& details) {
-    auto pngPath{paths::resourceDir() / "icons"};
-    pngPath /= details.name_;
-    pngPath += ".png";
-
-    wxBitmap bitmap;
-    {
-        wxLogNull noErrors;
-        bitmap.LoadFile(pngPath.native(), wxBITMAP_TYPE_PNG);
-        bitmap.UseAlpha();
-        if (not bitmap.IsOk()) {
-            generateMissingBMP(bitmap);
-            return bitmap;
-        }
-    }
-
-    assert(details.size_.padding_ * 2 < details.size_.dim_);
-    const auto adjustedDim{details.size_.dim_ - (details.size_.padding_ * 2)};
-
-    float64 scaler{};
-    if (details.size_.orient_ == wxHORIZONTAL) {
-        scaler = bitmap.GetLogicalWidth() / adjustedDim;
-    } else {
-        scaler = bitmap.GetLogicalHeight() / adjustedDim;
-    }
-
-#   ifdef _WIN32
-    auto img{bitmap.ConvertToImage()};
-    bitmap = img.Scale(
-        static_cast<int32>(bitmap.GetWidth() / scaler),
-        static_cast<int32>(bitmap.GetHeight() / scaler)
-    );
-#   else
-    bitmap.SetScaleFactor(bitmap.GetScaleFactor() * scaler);
-#   endif
-
-    auto color{details.color_.color()};
-    if (color.IsOk()) {
-        wxAlphaPixelData data{bitmap};
-        if (not data) return bitmap;
-
-        auto iter{data.GetPixels()};
-        for (auto yIdx{0}; yIdx < data.GetHeight(); ++yIdx) {
-            wxAlphaPixelData::Iterator rowStart = iter;
-
-            for (auto xIdx{0}; xIdx < data.GetWidth(); ++xIdx, ++iter) {
-                if (iter.Alpha() > 0) {
-#                   ifdef _WIN32
-                    // Idk man windows is funky with its bitmaps.
-                    auto alphaScale{static_cast<float64>(iter.Alpha()) / 0xFF};
-                    iter.Red() = static_cast<uint8>(color.Red() * alphaScale);
-                    iter.Green() = static_cast<uint8>(color.Green() * alphaScale);
-                    iter.Blue() = static_cast<uint8>(color.Blue() * alphaScale);
-#                   else
-                    iter.Red() = color.Red();
-                    iter.Green() = color.Green();
-                    iter.Blue() = color.Blue();
-#                   endif
-                }
-            }
-
-            iter = rowStart;
-            iter.OffsetY(data, 1);
-        }
-    }
-
-    if (details.size_.padding_) {
-        auto retSize{bitmap.GetLogicalSize()};
-        retSize.IncBy(static_cast<int32>(details.size_.padding_ * 2));
-        wxBitmap padded(retSize, 32);
-        padded.UseAlpha();
-
-        wxMemoryDC dc(padded);
-        dc.SetBackground(*wxTRANSPARENT_BRUSH);
-        dc.Clear();
-
-        wxPoint drawPos{
-            static_cast<int32>(details.size_.padding_),
-            static_cast<int32>(details.size_.padding_)
-        };
-
-#       ifdef __WXGTK__
-        // On GTK, images seem fairly biased towards drawing in the upper left,
-        // particularly the left, so this is a hacky way to try and level that
-        // out.
-        drawPos.x += 1;
-#       endif
-
-        dc.DrawBitmap(bitmap, drawPos);
-
-        dc.SelectObject(wxNullBitmap);
-
-        return padded;
-    }
-
-    return bitmap;
-}
-
-void generateMissingBMP(wxBitmap& bmp, const wxSize& size) {
-    int32 dimension{};
-    if (size.GetX() == -1 and size.GetY() == -1) dimension = 32;
-    else dimension = std::max(size.x, size.y);
-
-    bmp.Create(dimension, dimension, 32);
-    bmp.UseAlpha(true);
-    wxMemoryDC bmpDC{bmp};
-    bmpDC.SetFont(wxFont{
-        dimension,
-        wxFONTFAMILY_MODERN,
-        wxFONTSTYLE_NORMAL,
-        wxFONTWEIGHT_BOLD
-    });
-
-    bmpDC.SetBrush(*wxTRANSPARENT_BRUSH);
-    bmpDC.DrawRectangle(0, 0, dimension, dimension);
-    bmpDC.SetBrush(wxBrush(LIGHT_BLUE));
-    bmpDC.DrawRoundedRectangle(0, 0, dimension, dimension, 4);
-
-    auto extent{bmpDC.GetTextExtent("?")};
-    extent /= 2;
-    dimension /= 2;
-    bmpDC.SetTextForeground(DARK_BLUE);
-    bmpDC.DrawText("?", dimension - extent.x, dimension - extent.y);
-}
-
-} // namespace
-
 

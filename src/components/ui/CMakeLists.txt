@@ -9,6 +9,7 @@ add_library(ui SHARED
     info.cpp
     text.cpp
     values.cpp
+    bitmap.cpp
 
     priv/helpers.cpp
     priv/winbase.cpp
