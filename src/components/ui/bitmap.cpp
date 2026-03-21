@@ -72,9 +72,11 @@ pcui::Bitmap::Bitmap(const wxBitmap& other) : wxBitmap(other) {}
 
 pcui::Bitmap::Bitmap(wxBitmap&& other) : wxBitmap(std::move(other)) {}
 
+pcui::Bitmap::Bitmap(const wxIcon& icon) : wxBitmap(icon) {}
+
 pcui::Bitmap& pcui::Bitmap::scale(float64 scale) {
 #   ifdef _WIN32
-    *this = ConvertToImage().Scale(
+    static_cast<wxBitmap&>(*this) = ConvertToImage().Scale(
         static_cast<int32>(GetWidth() / scale),
         static_cast<int32>(GetHeight() / scale)
     );
