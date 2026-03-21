@@ -30,12 +30,19 @@ namespace {
 // All this stuff happens on the main thread, no locking required.
 bool updateRequested{false};
 std::vector<std::set<wxWindow *>> updateList;
+std::unordered_map<wxWindow *, bool> showList;
 
 void performUpdate();
 
 } // namespace
 
-/**
+void pcui::priv::queueShow(wxWindow *win, bool show) {
+    assert(wxIsMainThread());;
+
+    showList[win] = show;
+}
+
+/*
  * This does not actually do any layout or fitting itself.
  *
  * It finds the top-level window associated with the window that caused the
@@ -50,6 +57,8 @@ void performUpdate();
  * unnecessarily grow, which is undesirable.
  */
 void pcui::priv::layoutAndFitFor(wxWindow *win) {
+    assert(wxIsMainThread());;
+
     auto *top{win};
 
     std::vector<wxWindow *> hierarchy{top};
@@ -109,6 +118,11 @@ namespace {
 void performUpdate() {
     // If an update is requested, this should never be empty.
     assert(not updateList.empty());
+
+    for (auto [win, show] : showList) {
+        win->Show(show);
+    }
+    showList.clear();
 
     for (auto iter{updateList.rbegin()};; ++iter) {
         if (std::next(iter) == updateList.rend()) {

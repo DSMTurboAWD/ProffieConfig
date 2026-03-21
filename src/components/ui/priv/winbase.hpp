@@ -29,7 +29,21 @@ class wxWindow;
 
 namespace pcui::priv {
 
+/**
+ * Queue a window to be shown when updates take place.
+ *
+ * This is done to ensure that a window is always shown in the same event as
+ * it's laid out to ensure the window doesn't appear in an unexpected place to
+ * the user.
+ */
+void queueShow(wxWindow *, bool);
+
+/**
+ * Layout this window and its parents recursively, queued to ensure multiple
+ * updates only require a single set of recalculations.
+ */
 void layoutAndFitFor(wxWindow *);
+
 void windowPostCreation(
     const detail::Scaffold&,
     const detail::ChildWindowBase&,
@@ -104,7 +118,7 @@ private:
 
         void onChange(bool val) override {
             winbase_->safeCall([this, val]() {
-                winbase_->Base::Show(val);
+                queueShow(winbase_, val);
                 layoutAndFitFor(winbase_);
             });
         }
