@@ -19,8 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <utility>
-
 #include <wx/bitmap.h>
 #include <wx/dcmemory.h>
 #include <wx/display.h>
@@ -35,8 +33,9 @@ const wxColour color::LIGHT_BLUE{31, 99, 168};
 color::Dynamic::Dynamic() :
     mType{Type::STANDARD}, mStd{.dark_=wxNullColour, .light_=wxNullColour} {}
 
-color::Dynamic::Dynamic(wxColour dark, wxColour light) :
-    mType{Type::STANDARD}, mStd{.dark_=std::move(dark), .light_=std::move(light)} {}
+// Passing by value and move doesn't work because of the aggregate?
+color::Dynamic::Dynamic(const wxColour& dark, const wxColour& light) :
+    mType{Type::STANDARD}, mStd{.dark_=dark, .light_=light} {}
 
 color::Dynamic::Dynamic(wxSystemColour color) :
     mType{Type::SYSTEM}, mSysColor{color} {}
@@ -52,6 +51,7 @@ wxColour color::Dynamic::color() const {
     if (mType == Type::SYSTEM) {
         return wxSystemSettings::GetColour(mSysColor);
     }
+
     if (mType == Type::STANDARD) {
         auto isDark{wxSystemSettings::GetAppearance().AreAppsDark()};
 
@@ -60,6 +60,7 @@ wxColour color::Dynamic::color() const {
 
         return isDark ? mStd.light_ : mStd.dark_;
     }
+
     return wxNullColour;
 }
 

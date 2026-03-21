@@ -27,7 +27,7 @@
 namespace color {
 
 struct UTILS_EXPORT Dynamic {
-    Dynamic(wxColour dark, wxColour light);
+    Dynamic(const wxColour& dark, const wxColour& light);
     Dynamic(wxSystemColour color);
 
     Dynamic();
