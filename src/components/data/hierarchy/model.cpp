@@ -63,8 +63,9 @@ void data::Model::detachReceiver(Receiver& receiver) const {
     std::scoped_lock scopeLock{pLock, receiver.mLock};
 
     assert(receiver.mModel == this);
-    receiver.onDetach();
+    receiver.preDetach();
     receiver.mModel = nullptr;
+    receiver.onDetach();
 
     auto erased{mReceivers.erase(&receiver)};
     assert(erased);

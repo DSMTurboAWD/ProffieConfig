@@ -172,7 +172,6 @@ struct DATA_EXPORT Model::Receiver {
     void attach(const Model& model);
     void detach();
 
-protected:
     template<typename T = Model>
     [[nodiscard]] const T *maybeModel() const {
         return static_cast<const T *>(mModel);
@@ -190,6 +189,7 @@ protected:
         return typename T::ROContext(model<T>());
     }
 
+protected:
     /**
      * Receiver is attached to a new model.
      */
@@ -198,6 +198,11 @@ protected:
     /**
      * Receiver is being detached from the model.
      * After this the model will be null'd
+     */
+    virtual void preDetach() {}
+
+    /**
+     * Receiver is detached from the model.
      */
     virtual void onDetach() {}
 
