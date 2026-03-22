@@ -185,7 +185,7 @@ utils::Version Update::determineCurrentVersion(
             auto cachedHash{hashCache.find(itemPath)};
             std::optional<utils::hash::SHA256> itemHash;
             if (cachedHash == hashCache.end()) {
-                std::ifstream fileStream{itemPath};
+                std::ifstream fileStream{itemPath, std::ios::binary};
 
                 if (fileStream.fail()) {
                     status = "Could not open " + itemPath.string() + ", does it exist?";
