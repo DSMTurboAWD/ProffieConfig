@@ -34,7 +34,7 @@ struct UI_EXPORT Stack {
     detail::ChildBase base_;
 
     wxOrientation orient_{wxVERTICAL};
-    detail::DynamicList<detail::Descriptor> children_;
+    detail::DynamicList children_;
 
     std::unique_ptr<detail::Descriptor> operator()();
 };

@@ -36,7 +36,7 @@ struct UI_EXPORT Group {
     wxString label_;
     wxOrientation orient_{wxVERTICAL};
 
-    detail::DynamicList<detail::Descriptor> children_;
+    detail::DynamicList children_;
 
     std::unique_ptr<detail::Descriptor> operator()();
 };
