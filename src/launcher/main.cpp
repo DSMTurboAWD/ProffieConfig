@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <thread>
+
 #include <wx/app.h>
 #include <wx/utils.h>
 #include <wx/progdlg.h>
@@ -247,22 +249,25 @@ public:
         fs::remove_all(paths::logDir(), err);
 
         prog.set(95, "Finalizing...");
-#           ifdef __APPLE__
-        const auto currentBundle{currentExec.parent_path().parent_path().parent_path()};
+#       ifdef __APPLE__
+        const auto currentBundle{
+            paths::executable().parent_path().parent_path().parent_path()
+        };
         fs::remove_all(currentBundle);
-#           elif defined (_WIN32)
+#       elif defined (_WIN32)
         MoveFileExW(
             paths::executable().c_str(),
             nullptr,
             MOVEFILE_DELAY_UNTIL_REBOOT
         );
-#           elif defined (__linux__)
-        (void)remove(currentExec.c_str());
-#           endif
+#       elif defined (__linux__)
+        (void)remove(paths::executable().c_str());
+#       endif
 
         prog.set(101, "Uninstalled.");
     }
 };
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 wxIMPLEMENT_APP(Launcher);
 
