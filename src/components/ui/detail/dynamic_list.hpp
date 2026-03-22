@@ -20,29 +20,38 @@
  */
 
 #include <vector>
-#include <memory>
+
+#include "ui/types.hpp"
 
 #include "ui_export.h"
 
 namespace pcui::detail {
 
-template <typename T>
-struct UI_EXPORT DynamicList : std::vector<std::unique_ptr<T>> {
+struct UI_EXPORT DynamicList : std::vector<DescriptorPtr> {
+    DynamicList(const DynamicList&) = default;
+    DynamicList(DynamicList&&) = default;
+    DynamicList& operator=(const DynamicList&) = default;
+    DynamicList& operator=(DynamicList&&) = default;
+
     template <typename ...Args>
     DynamicList(Args&&... args) {
-        this->reserve(sizeof...(args));
+        // This reserve is inaccurate
+        reserve(sizeof...(args));
         (..., add(std::forward<Args>(args)));
     }
 
-private:
-    void add(std::vector<std::unique_ptr<T>>&& v) {
-        // move(v) is silly, but it shuts up the linter and probably doesn't
-        // matter.
-        for (auto& elem : std::move(v)) this->push_back(std::move(elem));
+    void add(DynamicList&& v) {
+        add(static_cast<vector&&>(std::move(v)));
     }
 
-    void add(std::unique_ptr<T>&& v) {
-        this->push_back(std::move(v));
+    void add(vector&& v) {
+        // move(v) is silly, but it shuts up the linter and probably doesn't
+        // matter.
+        for (auto& elem : std::move(v)) push_back(std::move(elem));
+    }
+
+    void add(DescriptorPtr&& d) {
+        push_back(std::move(d));
     }
 };
 
