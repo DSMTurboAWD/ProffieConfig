@@ -92,7 +92,9 @@ void MainMenu::removeEditor(EditorWindow *editor) {
 pcui::DescriptorPtr MainMenu::ui() {
     return pcui::Stack{
       .base_={
-        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
+        // This is such a small and dense window the usual spacing looks
+        // weird here.
+        .border_={.size_=pcui::interGroupSpacing(), .dirs_=wxALL},
       },
       .children_={
         pcui::Stack{
