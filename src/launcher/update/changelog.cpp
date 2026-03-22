@@ -38,8 +38,10 @@
 #include "ui/static/label.hpp"
 #include "ui/text.hpp"
 #include "ui/types.hpp"
+#include "ui/values.hpp"
 #include "utils/hash.hpp"
 #include "utils/paths.hpp"
+#include "wx/event.h"
 
 namespace {
 
@@ -256,7 +258,7 @@ pcui::DescriptorPtr ui(
 
     const auto makeNoteItem{[&](
         Update::Bundles::const_reference bundle
-    ) -> pcui::DescriptorPtr {
+    ) {
         return pcui::If{
           .cond_=not bundle.second.note.empty(),
           .then_=pcui::Label{
@@ -269,16 +271,16 @@ pcui::DescriptorPtr ui(
 
     const auto makeFileItem{[&](
         const Update::Changelog::ChangedFile& file
-    ) -> pcui::DescriptorPtr {
-        if (file.id.ignored) return pcui::NoneElement{}();
+    ) -> pcui::detail::DynamicList {
+        if (file.id.ignored) return {};
 
         auto fileItem{data.items.at(file.id)};
-        if (fileItem.hidden) return pcui::NoneElement{}();
+        if (fileItem.hidden) return {};
 
         auto section{[&](
             const std::string& sectName,
             std::vector<std::string> Update::ItemVersionData::*field
-        ) -> pcui::DescriptorPtr {
+        ) -> pcui::detail::DynamicList {
             const auto versionsStart{
                 file.currentVersion ? 
                     std::next(fileItem.versions.find(file.currentVersion)) : 
@@ -297,48 +299,44 @@ pcui::DescriptorPtr ui(
                 }
             }
 
-            if (itemBullets.empty()) return pcui::NoneElement{}();
+            if (itemBullets.empty()) return {};
 
-            return pcui::Stack{
-              .children_={
-                pcui::Label{
-                  // Tab breaks this, so spaces are used instead!!
-                  .label_="    " + sectName + ':',
-                  .style_=headFont,
-                }(),
-                pcui::ForEach{
-                  .of_=itemBullets,
-                  .do_=[&](const std::string& bullet) {
-                    return pcui::Label{
-                      .label_="        - " + bullet,
-                      .style_=listFont,
-                    }();
-                  }
-                }(),
-                pcui::Spacer{.size_=5}(),
-              }
-            }();
+            return {
+              pcui::Label{
+                // Tab breaks this, so spaces are used instead!!
+                .label_="    " + sectName + ':',
+                .style_=headFont,
+              }(),
+              pcui::ForEach{
+                .of_=itemBullets,
+                .do_=[&](const std::string& bullet) {
+                  return pcui::Label{
+                    .label_="        - " + bullet,
+                    .style_=listFont,
+                  }();
+                }
+              }(),
+              pcui::Spacer{.size_=5}(),
+            };
         }};
 
-        return pcui::Stack{
-          .children_={
-            pcui::Label{
-              .label_=file.id.name,
-              .style_=objFont,
-            }(),
-            pcui::Spacer{.size_=5}(),
-            pcui::Label{
-              .label_=(file.currentVersion
-                ? file.currentVersion.string()
-                : "[NONE]") + " -> " + file.latestVersion.string(),
-              .style_=versionFont,
-            }(),
-            pcui::Spacer{.size_=10}(),
-            section("Features", &Update::ItemVersionData::features),
-            section("Changes", &Update::ItemVersionData::changes),
-            section("Bug Fixes", &Update::ItemVersionData::fixes),
-          }
-        }();
+        return {
+          pcui::Label{
+            .label_=file.id.name,
+            .style_=objFont,
+          }(),
+          pcui::Spacer{.size_=5}(),
+          pcui::Label{
+            .label_=(file.currentVersion
+              ? file.currentVersion.string()
+              : "[NONE]") + " -> " + file.latestVersion.string(),
+            .style_=versionFont,
+          }(),
+          pcui::Spacer{.size_=10}(),
+          section("Features", &Update::ItemVersionData::features),
+          section("Changes", &Update::ItemVersionData::changes),
+          section("Bug Fixes", &Update::ItemVersionData::fixes),
+        };
     }};
 
     return pcui::Stack{
@@ -414,7 +412,11 @@ pcui::DescriptorPtr ui(
                   },
                   .scrollRate_={.x_=4, .y_=4},
                   .child_=pcui::Stack{
-                    .base_={.border_={.size_=10, .dirs_=wxALL}},
+                    .base_={
+                      .expand_=true,
+                      .border_={.size_=10, .dirs_=wxALL},
+                    },
+                    .orient_=wxVERTICAL,
                     .children_={
                       pcui::ForEach{
                         .of_=notesRange,
@@ -422,7 +424,14 @@ pcui::DescriptorPtr ui(
                       }(),
                       pcui::If{
                         .cond_=not notesRange.empty(),
-                        .then_=pcui::Divider{}(),
+                        .then_={
+                          pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+                          pcui::Divider{
+                          .base_={.expand_=true},
+                          .orient_=wxHORIZONTAL,
+                          }(),
+                          pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+                        }
                       }(),
                       pcui::ForEach{
                         .of_=log.changedFiles,
