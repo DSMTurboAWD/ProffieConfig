@@ -42,6 +42,7 @@
 
 #include "../core/state.hpp"
 #include "../onboard/onboard.hpp"
+#include "../editor/pages/general.hpp"
 #include "../editor/pages/presets.hpp"
 #include "dialogs/about.hpp"
 #include "dialogs/addconfig.hpp"
@@ -184,7 +185,7 @@ pcui::DescriptorPtr MainMenu::ui() {
                   return;
               }
 
-              PresetsPage presetsPage{*info.config()};
+              GeneralPage presetsPage{*info.config()};
               pcui::Dialog dialog{this, wxID_ANY, _("Test")};
 
               pcui::build(&dialog, presetsPage.ui());

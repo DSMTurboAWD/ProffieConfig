@@ -19,33 +19,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../editorwindow.h"
-#include "../dialogs/customoptionsdlg.h"
-#include "../dialogs/buttons.h"
+#include "config/config.hpp"
+#include "ui/types.hpp"
 
-class GeneralPage : public wxPanel, pcui::NotifyReceiver {
-public:
-    GeneralPage(EditorWindow*);
-    ~GeneralPage() override;
+struct GeneralPage {
+    GeneralPage(config::Config&);
 
-    enum {
-        ID_CustomOptions = 2,
-        ID_Buttons,
-    };
+    pcui::DescriptorPtr ui();
 
 private:
-    EditorWindow* mParent{nullptr};
-    CustomOptionsDlg *mCustomOptDlg{nullptr};
-    ButtonsDlg *mButtonsDlg{nullptr};
+    pcui::DescriptorPtr setup();
+    pcui::DescriptorPtr misc();
+    pcui::DescriptorPtr installation();
+    pcui::DescriptorPtr tweaks();
+    pcui::DescriptorPtr editing();
+    pcui::DescriptorPtr audio();
 
-    void bindEvents();
-    void handleNotification(uint32) final;
-
-    wxWindow *setupSection();
-
-    wxWindow *miscSection();
-    wxWindow *installationSection();
-    wxWindow *tweaksSection();
-    wxWindow *editingSection();
-    wxWindow *audioSection();
+    config::Config& mConfig;
 };

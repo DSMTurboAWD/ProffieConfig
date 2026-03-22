@@ -19,528 +19,498 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/button.h>
-#include <wx/statline.h>
+#include "ui/controls/button.hpp"
+#include "ui/controls/checkbox.hpp"
+#include "ui/controls/choice.hpp"
+#include "ui/controls/stepper.hpp"
+#include "ui/helpers/labeled.hpp"
+#include "ui/layout/group.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/static/divider.hpp"
+#include "ui/static/label.hpp"
+#include "ui/types.hpp"
+#include "ui/values.hpp"
 
-#include "ui/controls/button.h"
-#include "ui/static_box.h"
+GeneralPage::GeneralPage(config::Config& config) : mConfig{config} {}
 
-GeneralPage::GeneralPage(EditorWindow *parent) : 
-    wxPanel(parent), 
-    NotifyReceiver(this, parent->getOpenConfig().settings.notifyData),
-    mParent(parent) {
-    auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
-
-    auto *sizer0{new wxBoxSizer(wxHORIZONTAL)};
-    sizer0->Add(installationSection(), wxSizerFlags().Expand());
-    sizer0->AddSpacer(10);
-    sizer0->Add(audioSection(), wxSizerFlags().Expand());
-
-    auto *sizer1{new wxBoxSizer(wxVERTICAL)};
-    sizer1->Add(setupSection(), wxSizerFlags().Expand());
-    sizer1->AddSpacer(10);
-    sizer1->Add(sizer0, wxSizerFlags().Expand());
-    sizer1->AddSpacer(10);
-    sizer1->Add(tweaksSection(), wxSizerFlags().Expand());
-
-    auto *sizer2{new wxBoxSizer(wxVERTICAL)};
-    sizer2->Add(editingSection(), wxSizerFlags().Expand());
-    sizer2->AddSpacer(10);
-    sizer2->Add(miscSection(), wxSizerFlags(1).Expand());
-
-    sizer->Add(sizer1, wxSizerFlags().Expand());
-    sizer->AddSpacer(20);
-    sizer->Add(sizer2, wxSizerFlags().Expand());
-
-    mCustomOptDlg = new CustomOptionsDlg(mParent);
-    mButtonsDlg = new ButtonsDlg(mParent);
-
-    bindEvents();
-    initializeNotifier();
-    SetSizerAndFit(sizer);
+pcui::DescriptorPtr GeneralPage::ui() {
+    return pcui::Stack{
+      .base_={.border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL}},
+      .orient_=wxHORIZONTAL,
+      .children_={
+        pcui::Stack{
+          .orient_=wxVERTICAL,
+          .children_={
+            setup(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+            pcui::Stack{
+              .orient_=wxHORIZONTAL,
+              .children_={
+                installation(),
+                pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+                audio(),
+              }
+            }(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+            tweaks(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxVERTICAL,
+          .children_={
+            editing(),
+            pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+            misc(),
+          }
+        }(),
+      }
+    }();
 }
 
-GeneralPage::~GeneralPage() {
-    mCustomOptDlg->Destroy();
-    mButtonsDlg->Destroy();
+pcui::DescriptorPtr GeneralPage::setup() {
+    return pcui::Group{
+      .base_={.expand_=true},
+      .label_=_("Setup"),
+      .orient_=wxHORIZONTAL,
+      .children_={
+        pcui::Stack{
+          .base_={.proportion_=1},
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::Choice{
+              .win_={
+                .base_={.expand_=true},
+                .tooltip_=_("The hardware revision of the physical proffieboard."),
+              },
+              .data_=mConfig.boardSel().choice_,
+              .style_=pcui::Choice::PopUp{
+                .unselected_=_("Select Board"),
+              },
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Choice{
+              .win_={
+                .base_={.expand_=true},
+              },
+              .data_=mConfig.osVersion_.choice_,
+              .style_=pcui::Choice::PopUp{
+                .unselected_=_("Select ProffieOS"),
+              },
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .base_={.align_=wxALIGN_CENTER},
+            .tooltip_=_("Enable to access the contents of your proffieboard's SD card via the USB connection."),
+          },
+          .label_=_("Enable Mass Storage"),
+          .data_=mConfig.settings_.massStorage_,
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .base_={.align_=wxALIGN_CENTER},
+            .tooltip_=_("Enable to access the ProffieOS Workbench via USB.\nSee the POD Page \"The ProffieOS Workbench\" for more info."),
+          },
+          .label_=_("Enable WebUSB"),
+          .data_=mConfig.settings_.webUsb_,
+        }(),
+      }
+    }();
 }
 
-void GeneralPage::bindEvents() {
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&){
-        if (mCustomOptDlg->IsShown()) mCustomOptDlg->Raise();
-        else mCustomOptDlg->Show();
-    }, ID_CustomOptions);
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&){
-        if (mButtonsDlg->IsShown()) mButtonsDlg->Raise();
-        else mButtonsDlg->Show();
-    }, ID_Buttons);
+pcui::DescriptorPtr GeneralPage::misc() {
+    return pcui::Group{
+      .base_={.expand_=true, .proportion_=1},
+      .label_=_("Misc"),
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Labeled{
+          .label_=_("PLI Timeout (seconds)"),
+          .ctrl_=pcui::Stepper{
+            .win_={
+              .tooltip_=_("Time (in minutes) since last activity before PLI goes to sleep."),
+            },
+            .data_=mConfig.settings_.pliOffTime_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .label_=_("Idle Timeout (minutes)"),
+          .ctrl_=pcui::Stepper{
+            .win_={
+              .tooltip_=_("Time (in minutes) since last activity before accent LEDs go to sleep."),
+            },
+            .data_=mConfig.settings_.idleOffTime_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .label_=_("Motion Timeout (minutes)"),
+          .ctrl_=pcui::Stepper{
+            .win_={
+              .tooltip_=_("Time (in minutes) since last activity before gesture controls are disabled."),
+            },
+            .data_=mConfig.settings_.motionTimeout_,
+          }(),
+        }(),
+      }
+    }();
 }
 
-void GeneralPage::handleNotification(uint32 id) {
-    bool rebound{id == pcui::Notifier::eID_Rebound};
+pcui::DescriptorPtr GeneralPage::installation() {
+    return pcui::Group{
+      .base_={.expand_=true},
+      .label_=_("Installation"),
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Clash Threshold (Gs)"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Stepper{
+            .win_={
+              .base_={.proportion_=1},
+              .tooltip_=_("Impact required to trigger a clash effect.\nMeasured in Gs."),
+            },
+            .data_=mConfig.settings_.clashThreshold_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Orientation"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Choice{
+            .win_={
+              .base_={.proportion_=1},
+              .tooltip_=_("The orientation of the Proffieboard in the saber."),
+            },
+            .data_=mConfig.settings_.orientation_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Labeled{
+              .label_=_("X"),
+              .orient_=wxHORIZONTAL,
+              .ctrl_=pcui::Stepper{
+                .win_={.base_={.proportion_=1}},
+                .data_=mConfig.settings_.orientationRotation_.x_,
+              }(),
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Labeled{
+              .label_=_("Y"),
+              .orient_=wxHORIZONTAL,
+              .ctrl_=pcui::Stepper{
+                .win_={.base_={.proportion_=1}},
+                .data_=mConfig.settings_.orientationRotation_.y_,
+              }(),
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Labeled{
+              .label_=_("Z"),
+              .orient_=wxHORIZONTAL,
+              .ctrl_=pcui::Stepper{
+                .win_={.base_={.proportion_=1}},
+                .data_=mConfig.settings_.orientationRotation_.z_,
+              }(),
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .tooltip_=_("Enable if you have an OLED/SSD1306 display connected."),
+          },
+          .label_=_("Enable OLED"),
+          .data_=mConfig.settings_.enableOled_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Button{
+          .win_={
+            .base_={.expand_=true},
+            .tooltip_={
+              _("Configure physical buttons on the saber.") + '\n' +
+              _("Not all prop files support all possible numbers of buttons, and controls may change depending on how many buttons are specified.")
+            },
+          },
+          .label_=_("Buttons..."),
+        }(),
+      }
+    }();
 }
 
-wxWindow *GeneralPage::setupSection() {
-    auto& config{mParent->getOpenConfig()};
-
-    auto *boardSetup{new pcui::StaticBox(
-        wxHORIZONTAL,
-        this,
-        _("Setup"))
-    };
-
-    auto *osVersion{new pcui::Choice(
-        boardSetup->childParent(),
-        config.settings.osVersion
-    )};
-
-    auto *board{new pcui::Choice(
-        boardSetup->childParent(),
-        config.settings.board
-    )};
-    board->SetToolTip(_("The hardware revision of the physical proffieboard.")); 
-
-    auto *massStorage {new pcui::CheckBox(
-        boardSetup->childParent(),
-        config.settings.massStorage,
-        0,
-        _("Enable Mass Storage")
-    )};
-    massStorage->SetToolTip(_("Enable to access the contents of your proffieboard's SD card via the USB connection."));
-
-    auto *webUSB {new pcui::CheckBox(
-        boardSetup->childParent(),
-        config.settings.webUSB,
-        0,
-        _("Enable WebUSB")
-    )};
-    webUSB->SetToolTip(_("Enable to access the ProffieOS Workbench via USB.\nSee the POD Page \"The ProffieOS Workbench\" for more info."));
-
-    auto sizerFlags{wxSizerFlags().Expand()};
-    auto *boardAndVersionSizer{new wxBoxSizer(wxVERTICAL)};
-    boardAndVersionSizer->Add(board, sizerFlags);
-    boardAndVersionSizer->AddSpacer(5);
-    boardAndVersionSizer->Add(osVersion, sizerFlags);
-
-    boardSetup->Add(boardAndVersionSizer, wxSizerFlags().Center());
-    boardSetup->AddSpacer(20);
-    boardSetup->Add(massStorage, wxSizerFlags().Center());
-    boardSetup->AddSpacer(10);
-    boardSetup->Add(webUSB, wxSizerFlags().Center());
-
-    return boardSetup;
+pcui::DescriptorPtr GeneralPage::tweaks() {
+    return pcui::Group{
+      .base_={.expand_=true},
+      .label_=_("Tweaks"),
+      .orient_=wxHORIZONTAL,
+      .children_={
+        pcui::Stack{
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Do not play the same audio file twice consecutively when randomly selecting."),
+              },
+              .label_=_("No Repeat Random"),
+              .data_=mConfig.settings_.noRepeatRandom_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Stop playing old sounds to ensure new sounds always play"),
+              },
+              .label_=_("Kill Old Players"),
+              .data_=mConfig.settings_.killOldPlayers_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Use beeps instead of spoken messages for errors, which saves some memory.\nSee the POD page \"What is it beeping?\"."),
+              },
+              .label_=_("Disable Talkie"),
+              .data_=mConfig.settings_.disableTalkie_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Use Female Talkie Voice"),
+              },
+              .label_=_("Female Talkie"),
+              .data_=mConfig.settings_.femaleTalkie_,
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Stack{
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Disable color change controls"),
+              },
+              .label_=_("Disable Color Change"),
+              .data_=mConfig.settings_.disableColorChange_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Disable basic styles in the ProffieOS Workbench to save memory."),
+              },
+              .label_=_("Disable Basic Parser Styles"),
+              .data_=mConfig.settings_.disableBasicParserStyles_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::CheckBox{
+              .win_={
+                .tooltip_=_("Disable diagnostic commands in the Serial Monitor to save memory."),
+              },
+              .label_=_("Disable Diagnostic Commands"),
+              .data_=mConfig.settings_.disableDiagnosticCommands_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Button{
+              .win_={.base_={.expand_=true}},
+              .label_=_("Custom Options..."),
+            }(),
+          }
+        }(),
+      }
+    }();
 }
 
-wxWindow *GeneralPage::miscSection() {
-    auto& config{mParent->getOpenConfig()};
-    auto *sizer{new pcui::StaticBox(wxVERTICAL, this, _("Misc"))};
-    auto *parent{sizer->childParent()};
-
-    auto *pliTime{new pcui::Decimal(
-        parent,
-        config.settings.pliOffTime,
-        _("PLI Timeout (seconds)"),
-        wxVERTICAL
-    )};
-    pliTime->SetToolTip(_("Time (in minutes) since last activity before PLI goes to sleep."));
-
-    auto *idleTime{new pcui::Decimal(
-        parent,
-        config.settings.idleOffTime,
-        _("Idle Timeout (minutes)"),
-        wxVERTICAL
-    )};
-    idleTime->SetToolTip(_("Time (in minutes) since last activity before accent LEDs go to sleep."));
-
-    auto *motionTime{new pcui::Decimal(
-        parent,
-        config.settings.motionTimeout,
-        _("Motion Timeout (minutes)"),
-        wxVERTICAL
-    )};
-    motionTime->SetToolTip(_("Time (in minutes) since last activity before gesture controls are disabled."));
-    
-    sizer->Add(pliTime, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(idleTime, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(motionTime, wxSizerFlags().Expand());
-
-    return sizer;
+pcui::DescriptorPtr GeneralPage::editing() {
+    return pcui::Group{
+      .base_={.expand_=true},
+      .label_=_("Editing"),
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::CheckBox{
+          .label_=_("Save State"),
+          .data_=mConfig.settings_.saveState_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Enable All Edit Options"),
+          .data_=mConfig.settings_.enableAllEditOptions_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .tooltip_=_("Save the volume level between board restarts."),
+          },
+          .label_=_("Save Volume"),
+          .data_=mConfig.settings_.saveVolume_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .tooltip_=_("Save the currently-selected preset between board restarts."),
+          },
+          .label_=_("Save Preset"),
+          .data_=mConfig.settings_.savePreset_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .win_={
+            .tooltip_=_("Save color edits to presets."),
+          },
+          .label_=_("Save Color"),
+          .data_=mConfig.settings_.saveColorChange_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Save Blade Dimming"),
+          .data_=mConfig.settings_.saveBladeDimming_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Save Clash Threshold"),
+          .data_=mConfig.settings_.saveClashThreshold_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Dynamic Blade Dimming"),
+          .data_=mConfig.settings_.dynamicBladeDimming_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Dynamic Clash Threshold"),
+          .data_=mConfig.settings_.dynamicClashThreshold_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Dynamic Blade Length"),
+          .data_=mConfig.settings_.dynamicBladeLength_,
+        }(),
+      }
+    }();
 }
 
-wxWindow *GeneralPage::installationSection() {
-    auto& config{mParent->getOpenConfig()};
-    auto *sizer{new pcui::StaticBox(wxVERTICAL, this, _("Installation"))};
-    auto *parent{sizer->childParent()};
-
-    auto *clash{new pcui::Decimal(
-        parent,
-        config.settings.clashThreshold,
-        _("Clash Threshold (Gs)"),
-        wxHORIZONTAL
-    )};
-    clash->SetToolTip(_("Impact required to trigger a clash effect.\nMeasured in Gs."));
-
-    auto *line1{new wxStaticLine(parent)};
-
-    auto *orientation{new pcui::Choice(
-        parent, 
-        config.settings.orientation,
-        _("Orientation"),
-        wxHORIZONTAL
-    )};
-    orientation->SetToolTip(_("The orientation of the Proffieboard in the saber."));
-
-    auto *rotationSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *rotationX{new pcui::Numeric(
-        parent,
-        config.settings.orientationRotation.x,
-        _("X"),
-        wxHORIZONTAL
-    )};
-    auto *rotationY{new pcui::Numeric(
-        parent,
-        config.settings.orientationRotation.y,
-        _("Y"),
-        wxHORIZONTAL
-    )};
-    auto *rotationZ{new pcui::Numeric(
-        parent,
-        config.settings.orientationRotation.z,
-        _("Z"),
-        wxHORIZONTAL
-    )};
-    rotationSizer->Add(rotationX, wxSizerFlags(1));
-    rotationSizer->AddSpacer(5);
-    rotationSizer->Add(rotationY, wxSizerFlags(1));
-    rotationSizer->AddSpacer(5);
-    rotationSizer->Add(rotationZ, wxSizerFlags(1));
-
-    auto *line2{new wxStaticLine(parent)};
-
-    auto *buttons{new pcui::Button(
-        parent,
-        ID_Buttons,
-        _("Buttons...")
-    )};
-    buttons->SetToolTip(_(
-        "Configure physical buttons on the saber.\n"
-        "Not all prop files support all possible numbers of buttons, and controls may change depending on how many buttons are specified."
-    ));
-
-    auto *line3{new wxStaticLine(parent)};
-
-    auto *enableOLED{new pcui::CheckBox(
-        parent,
-        config.settings.enableOLED,
-        0,
-        _("Enable OLED")
-    )};
-    enableOLED->SetToolTip(_("Enable if you have an OLED/SSD1306 display connected."));
-
-    sizer->Add(clash, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line1, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(orientation, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(rotationSizer, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line2, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(buttons, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line3, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(enableOLED, wxSizerFlags().Expand());
-
-    return sizer;
-}
-
-wxWindow *GeneralPage::tweaksSection() {
-    auto& config{mParent->getOpenConfig()};
-    auto *sizer{new pcui::StaticBox(wxHORIZONTAL, this, _("Tweaks"))};
-    auto *parent{sizer->childParent()};
-
-    auto *noRepeatRandom{new pcui::CheckBox(
-        parent,
-        config.settings.noRepeatRandom,
-        0,
-        _("No Repeat Random")
-    )};
-    noRepeatRandom->SetToolTip(_("Do not play the same audio file twice consecutively when randomly selecting."));
-
-    auto *killOldPlayers{new pcui::CheckBox(
-        parent,
-        config.settings.killOldPlayers,
-        0,
-        _("Kill Old Players")
-    )};
-    killOldPlayers->SetToolTip(_("Stop playing old sounds to ensure new sounds always play"));
-
-    auto *disableColor{new pcui::CheckBox(
-        parent,
-        config.settings.disableColorChange,
-        0,
-        _("Disable Color Change")
-    )};
-    disableColor->SetToolTip(_("Disable color change controls."));
-
-    auto *noTalkie{new pcui::CheckBox(
-        parent,
-        config.settings.disableTalkie,
-        0,
-        _("Disable Talkie")
-    )};
-    noTalkie->SetToolTip(_("Use beeps instead of spoken messages for errors, which saves some memory.\nSee the POD page \"What is it beeping?\"."));
-
-    auto *femaleTalkie{new pcui::CheckBox(
-        parent,
-        config.settings.femaleTalkie,
-        0,
-        _("Female Talkie")
-    )};
-    femaleTalkie->SetToolTip(_("Use Female Talkie Voice"));
-
-    auto *noBasicParsers{new pcui::CheckBox(
-        parent,
-        config.settings.disableBasicParserStyles,
-        0,
-        _("Disable Basic Parser Styles")
-    )};
-    noBasicParsers->SetToolTip(_("Disable basic styles in the ProffieOS Workbench to save memory."));
-
-    auto *disableDiagnosticCommands{new pcui::CheckBox(
-        parent,
-        config.settings.disableDiagnosticCommands,
-        0,
-        _("Disable Diagnostic Commands")
-    )};
-    disableDiagnosticCommands->SetToolTip(_("Disable diagnostic commands in the Serial Monitor to save memory."));
-
-    auto *customOptButton{new wxButton(
-        parent,
-        ID_CustomOptions,
-        _("Custom Options...")
-    )};
-
-    auto *sizer1{new wxBoxSizer(wxVERTICAL)};
-    sizer1->Add(noRepeatRandom, wxSizerFlags().Expand());
-    sizer1->AddSpacer(5);
-    sizer1->Add(killOldPlayers, wxSizerFlags().Expand());
-    sizer1->AddSpacer(5);
-    sizer1->Add(noTalkie, wxSizerFlags().Expand());
-    sizer1->AddSpacer(5);
-    sizer1->Add(femaleTalkie, wxSizerFlags().Expand());
-
-    auto *sizer2{new wxBoxSizer(wxVERTICAL)};
-    sizer2->Add(disableColor, wxSizerFlags().Expand());
-    sizer2->AddSpacer(5);
-    sizer2->Add(noBasicParsers, wxSizerFlags().Expand());
-    sizer2->AddSpacer(5);
-    sizer2->Add(disableDiagnosticCommands, wxSizerFlags().Expand());
-    sizer2->AddSpacer(5);
-    sizer2->Add(customOptButton, wxSizerFlags().Expand());
-
-    sizer->Add(sizer1, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(sizer2, wxSizerFlags().Expand());
-
-    return sizer;
-}
-
-wxWindow *GeneralPage::editingSection() {
-    auto& config{mParent->getOpenConfig()};
-    auto *sizer{new pcui::StaticBox(wxVERTICAL, this, _("Editing"))};
-    auto *parent{sizer->childParent()};
-
-    auto *saveState{new pcui::CheckBox(
-        parent,
-        config.settings.saveState,
-        0,
-        _("Save State")
-    )};
-
-    auto *allEditOpts{new pcui::CheckBox(
-        parent,
-        config.settings.enableAllEditOptions,
-        0,
-        _("Enable All Edit Options")
-    )};
-
-    auto *line1{new wxStaticLine(parent)};
-
-    auto *saveVolume{new pcui::CheckBox(
-        parent,
-        config.settings.saveVolume,
-        0,
-        _("Save Volume")
-    )};
-    saveVolume->SetToolTip(_("Save the volume level between board restarts."));
-
-    auto *savePreset{new pcui::CheckBox(
-        parent,
-        config.settings.savePreset,
-        0,
-        _("Save Preset")
-    )};
-    savePreset->SetToolTip(_("Save the currently-selected preset between board restarts."));
-
-    auto *saveColor{new pcui::CheckBox(
-        parent,
-        config.settings.saveColorChange,
-        0,
-        _("Save Color")
-    )};
-    saveColor->SetToolTip(_("Save color edits to presets."));
-
-    auto *saveDimming{new pcui::CheckBox(
-        parent,
-        config.settings.saveBladeDimming,
-        0,
-        _("Save Blade Dimming")
-    )};
-    auto *saveClashThreshold{new pcui::CheckBox(
-        parent,
-        config.settings.saveClashThreshold,
-        0,
-        _("Save Clash Threshold")
-    )};
-
-    auto *line2{new wxStaticLine(parent)};
-
-    auto *dynamicDimming{new pcui::CheckBox(
-        parent,
-        config.settings.dynamicBladeDimming,
-        0,
-        _("Dynamic Blade Dimming")
-    )};
-
-    auto *dynamicClashThreshold{new pcui::CheckBox(
-        parent,
-        config.settings.dynamicClashThreshold,
-        0,
-        _("Dynamic Clash Threshold")
-    )};
-
-    auto *dynamicLength{new pcui::CheckBox(
-        parent,
-        config.settings.dynamicBladeLength,
-        0,
-        _("Dynamic Blade Length")
-    )};
-
-    sizer->Add(saveState, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(allEditOpts, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line1, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(saveVolume, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(savePreset, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(saveColor, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(saveDimming, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(saveClashThreshold, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(line2, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(dynamicDimming, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(dynamicClashThreshold, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(dynamicLength, wxSizerFlags().Expand());
-
-    return sizer;
-}
-
-wxWindow *GeneralPage::audioSection() {
-    auto& config{mParent->getOpenConfig()};
-    auto *sizer{new pcui::StaticBox(wxVERTICAL, this, _("Audio"))};
-    auto *parent{sizer->childParent()};
-
-    auto *volume{new pcui::Numeric(
-        parent,
-        config.settings.volume,
-        _("Max Volume"),
-        wxHORIZONTAL
-    )};
-    volume->SetToolTip(_("Maximum volume level.\nDo not increase unless you know what you are doing, as this can damage your speaker."));
-
-    auto *bootVolumeSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *enableBootVolume{new pcui::CheckBox(
-        parent,
-        config.settings.enableBootVolume
-    )};
-    auto *bootVolume{new pcui::Numeric(
-        parent,
-        config.settings.bootVolume,
-        _("Boot Volume"),
-        wxHORIZONTAL
-    )};
-    bootVolume->SetToolTip(_("Saber volume when saber turns on. Volume can be changed afterwards."));
-    bootVolumeSizer->Add(enableBootVolume, wxSizerFlags().Center());
-    bootVolumeSizer->AddSpacer(5);
-    bootVolumeSizer->Add(bootVolume, wxSizerFlags(1));
-
-    auto *line1{new wxStaticLine(parent)};
-
-    auto *enableFilter{new pcui::CheckBox(
-        parent,
-        config.settings.enableFiltering,
-        0,
-        _("Enable Filtering")
-    )};
-    auto *filterCutoff{new pcui::Numeric(
-        parent,
-        config.settings.filterCutoff,
-        _("Cutoff"),
-        wxHORIZONTAL
-    )};
-    auto *filterOrder{new pcui::Numeric(
-        parent,
-        config.settings.filterOrder,
-        _("Order"),
-        wxHORIZONTAL
-    )};
-
-    auto *line2{new wxStaticLine(parent)};
-
-    auto *clashSuppression{new pcui::Numeric(
-        parent,
-        config.settings.audioClashSuppressionLevel,
-        _("Clash Suppression"),
-        wxHORIZONTAL
-    )};
-    auto *dontUseGyroForClash{new pcui::CheckBox(
-        parent,
-        config.settings.dontUseGyroForClash,
-        0,
-        _("Do Not Use Gyro For Clash")
-    )};
-
-    sizer->Add(volume, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(bootVolumeSizer, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line1, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(enableFilter, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(filterCutoff, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(filterOrder, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(line2, wxSizerFlags().Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(clashSuppression, wxSizerFlags().Expand());
-    sizer->AddSpacer(5);
-    sizer->Add(dontUseGyroForClash, wxSizerFlags().Expand());
-
-    return sizer;
+pcui::DescriptorPtr GeneralPage::audio() {
+    return pcui::Group{
+      .label_=_("Audio"),
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Max Volume"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Stepper{
+            .win_={
+              .base_={.proportion_=1},
+              .tooltip_=_("Maximum volume level.\nDo not increase unless you know what you are doing, as this can damage your speaker."),
+            },
+            .data_=mConfig.settings_.volume_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Stack{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::CheckBox{
+              .win_={
+                .base_={.align_=wxALIGN_CENTER},
+                .tooltip_=_("Saber volume when saber turns on. Volume can be changed afterwards."),
+              },
+              .label_=_("Boot Volume"),
+              .data_=mConfig.settings_.bootVolume_.enable_,
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Stepper{
+              .win_={.base_={.proportion_=1}},
+              .data_=mConfig.settings_.bootVolume_.value_,
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Enable Filtering"),
+          .data_=mConfig.settings_.filter_.enable_,
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Cutoff"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Stepper{
+            .win_={.base_={.proportion_=1}},
+            .data_=mConfig.settings_.filter_.cutoff_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Order"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Stepper{
+            .win_={.base_={.proportion_=1}},
+            .data_=mConfig.settings_.filter_.order_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Divider{
+          .base_={.expand_=true},
+          .orient_=wxHORIZONTAL
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::Labeled{
+          .base_={.expand_=true},
+          .label_=_("Clash Suppression"),
+          .orient_=wxHORIZONTAL,
+          .ctrl_=pcui::Stepper{
+            .win_={.base_={.proportion_=1}},
+            .data_=mConfig.settings_.audioClashSuppressionLevel_,
+          }(),
+        }(),
+        pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+        pcui::CheckBox{
+          .label_=_("Don't Use Gyro For Clash"),
+          .data_=mConfig.settings_.dontUseGyroForClash_,
+        }(),
+      }
+    }();
 }
 

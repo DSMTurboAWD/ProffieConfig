@@ -13,6 +13,7 @@ add_executable(proffieconfig WIN32
     mainmenu/dialogs/licenses.cpp
     mainmenu/dialogs/manifest.cpp
 
+    editor/pages/general.cpp
     editor/pages/presets.cpp
 
     onboard/onboard.cpp
