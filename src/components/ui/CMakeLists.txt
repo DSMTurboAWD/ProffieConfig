@@ -29,7 +29,6 @@ add_library(ui SHARED
 
     helpers/busy.cpp
     helpers/dialog_buttons.cpp
-    helpers/if.cpp
 
     controls/button.cpp
     controls/checkbox.cpp

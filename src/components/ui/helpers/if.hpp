@@ -19,34 +19,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ui/types.hpp"
+#include "ui/detail/dynamic_list.hpp"
 
 #include "ui_export.h"
 
 namespace pcui {
 
-struct UI_EXPORT NoneElement {
-    struct Desc;
-    DescriptorPtr operator()();
-};
-
-struct UI_EXPORT NoneElement::Desc : NoneElement, detail::Descriptor {
-    Desc(NoneElement&&);
-
-    [[nodiscard]] wxSizerItem *build(const detail::Scaffold&) const override;
-};
-
 struct UI_EXPORT If {
     struct Desc;
 
     bool cond_;
-    DescriptorPtr then_;
+    detail::DynamicList then_;
 
-    DescriptorPtr operator()() {
-        return cond_ ? std::move(then_) : NoneElement{}();
+    detail::DynamicList operator()() {
+        return cond_
+            ? std::move(then_)
+            : detail::DynamicList{};
     }
 };
 
 } // namespace pcui
-
 
