@@ -21,7 +21,7 @@
 
 #include "config/config.hpp"
 #include "config/priv/io.hpp"
-#include "config/priv/strings.hpp"
+#include "config/strings.hpp"
 #include "config/settings/define.hpp"
 #include "data/number.hpp"
 #include "utils/string.hpp"
@@ -86,8 +86,6 @@ data::Model *config::Settings::find(uint64 id) {
 }
 
 void config::Settings::init() {
-    using namespace priv;
-
     const auto onSaveOptSet{[](const data::Bool::ROContext& ctxt) {
         auto& settings{*ctxt.model().parent<Settings>()};
         using BCtxt = data::Bool::Context;

@@ -23,7 +23,7 @@
 
 #include "config/config.hpp"
 #include "config/blades/bladeconfig.hpp"
-#include "config/priv/strings.hpp"
+#include "config/strings.hpp"
 #include "data/number.hpp"
 #include "data/vector.hpp"
 #include "utils/string.hpp"
@@ -31,8 +31,6 @@
 using namespace config::blades;
 
 WS281X::WS281X(data::Node *parent) : data::Node{parent} {
-    using namespace priv;
-
     length_.responder().onSet_ = [](const data::Integer::ROContext& ctxt) {
         auto& ws281x{*ctxt.model().parent<WS281X>()};
         data::Vector::Context splits{ws281x.splits_};

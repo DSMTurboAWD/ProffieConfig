@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config/priv/strings.hpp"
+#include "config/strings.hpp"
 #include "config/settings/settings.hpp"
 #include "data/hierarchy/node.hpp"
 #include "data/number.hpp"
@@ -71,8 +71,6 @@ data::Model *BladeAwareness::find(uint64 id) {
 }
 
 void BladeAwareness::init() {
-    using namespace priv;
-
     bladeDetect_.enable_.responder().onSet_ = [](
         const data::Bool::ROContext& ctxt
     ) {

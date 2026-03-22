@@ -34,7 +34,7 @@
 #include "config/presets/preset.hpp"
 #include "config/priv/data.hpp"
 #include "config/priv/io.hpp"
-#include "config/priv/strings.hpp"
+#include "config/strings.hpp"
 #include "config/settings/define.hpp"
 #include "data/choice.hpp"
 #include "data/number.hpp"

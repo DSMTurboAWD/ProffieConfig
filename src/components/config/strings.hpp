@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/config/priv/strings.hpp
+ * components/config/strings.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include "utils/types.hpp"
 
-namespace config::priv {
+namespace config {
 
 enum ButtonType {
     eBtn_Type_Pullup,
@@ -233,5 +233,5 @@ constexpr cstring DYNAMIC_CLASH_THRESHOLD_STR{"DYNAMIC_CLASH_THRESHOLD"};
 constexpr cstring SAVE_BLADE_DIM_STR{"SAVE_BLADE_DIMMING"};
 constexpr cstring SAVE_CLASH_THRESHOLD_STR{"SAVE_CLASH_THRESHOLD"};
 
-} // namespace config::priv
+} // namespace config
 

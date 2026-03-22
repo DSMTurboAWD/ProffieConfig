@@ -35,7 +35,7 @@
 #include "config/presets/array.hpp"
 #include "config/presets/preset.hpp"
 #include "config/priv/io.hpp"
-#include "config/priv/strings.hpp"
+#include "config/strings.hpp"
 #include "config/settings/define.hpp"
 #include "config/settings/settings.hpp"
 #include "data/number.hpp"
