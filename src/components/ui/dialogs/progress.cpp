@@ -95,6 +95,7 @@ void ProgressDialog::finish(bool modalWait, const wxString& message) {
         }
 
         if (modalWait) ShowModal();
+        Close(true);
     }};
 
     if (wxIsMainThread()) {
@@ -134,6 +135,7 @@ DescriptorPtr ProgressDialog::ui(bool mayCancel, wxSize size) {
         pcui::Progress{
           .win_={.base_={.expand_=true}},
           .data_=mData,
+          .showOnBar_=true,
         }(),
         pcui::Spacer{.size_=8}(),
         pcui::DialogButtons{
