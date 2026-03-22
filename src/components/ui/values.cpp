@@ -28,11 +28,19 @@ int32 pcui::interControlSpacing() {
 }
 
 int32 pcui::interGroupSpacing() {
+#   ifdef __WXOSX__
+    return 12;
+#   else
     return 10;
+#   endif
 }
 
 int32 pcui::winEdgeSpacing() {
+#   ifdef __WXOSX__
+    return 20;
+#   else
     return 12;
+#   endif
 }
 
 wxSize pcui::iconButtonSize(bool square) {
