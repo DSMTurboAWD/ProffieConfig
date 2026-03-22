@@ -132,7 +132,7 @@ pcui::DescriptorPtr MainMenu::ui() {
               .win_={.base_={.proportion_=1}},
               .data_=configSel_.choice_,
               .style_=pcui::Choice::PopUp{
-                .unselected_=_("Select Config..."),
+                .unselected_=_("Select Config"),
               },
               .labeler_=[this](uint32 sel) -> pcui::Choice::Label {
                   data::Vector::ROContext vec{config::list()};
@@ -211,7 +211,7 @@ pcui::DescriptorPtr MainMenu::ui() {
               },
               .data_=board_,
               .style_=pcui::Choice::PopUp{
-                .unselected_=_("Select Board..."),
+                .unselected_=_("Select Board"),
               },
             }(),
           }
