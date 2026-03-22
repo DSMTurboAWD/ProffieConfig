@@ -120,7 +120,11 @@ bool Update::promptWithChangelog(
 
     pcui::build(&dlg, ui(dlg, data, log));
 
-    return dlg.ShowModal() == wxID_OK;
+    switch (dlg.ShowModal()) {
+        case wxID_OK: return true;
+        case wxID_CANCEL: return false;
+        default: exit(0);
+    }
 }
 
 utils::Version Update::determineCurrentVersion(
