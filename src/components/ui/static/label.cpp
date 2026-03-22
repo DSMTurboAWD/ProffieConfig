@@ -26,6 +26,7 @@
 #include "ui/detail/scaffold.hpp"
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
+#include "ui/types.hpp"
 
 using namespace pcui;
 
@@ -80,7 +81,7 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
 
 } // namespace
 
-std::unique_ptr<detail::Descriptor> Label::operator()() {
+DescriptorPtr Label::operator()() {
     return std::make_unique<Label::Desc>(std::move(*this));
 }
 

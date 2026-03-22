@@ -42,7 +42,7 @@ struct UI_EXPORT Label {
 
     text::detail::StyleData style_;
 
-    std::unique_ptr<detail::Descriptor> operator()();
+    DescriptorPtr operator()();
 };
 
 struct UI_EXPORT Label::Desc : Label, detail::Descriptor {
