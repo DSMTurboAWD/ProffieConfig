@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config/strings.hpp"
 #include "ui/controls/button.hpp"
 #include "ui/controls/checkbox.hpp"
 #include "ui/controls/choice.hpp"
@@ -28,7 +29,6 @@
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/static/divider.hpp"
-#include "ui/static/label.hpp"
 #include "ui/types.hpp"
 #include "ui/values.hpp"
 
@@ -131,9 +131,11 @@ pcui::DescriptorPtr GeneralPage::misc() {
       .orient_=wxVERTICAL,
       .children_={
         pcui::Labeled{
+          .base_={.expand_=true},
           .label_=_("PLI Timeout (seconds)"),
           .ctrl_=pcui::Stepper{
             .win_={
+              .base_={.expand_=true},
               .tooltip_=_("Time (in minutes) since last activity before PLI goes to sleep."),
             },
             .data_=mConfig.settings_.pliOffTime_,
@@ -141,9 +143,11 @@ pcui::DescriptorPtr GeneralPage::misc() {
         }(),
         pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Labeled{
+          .base_={.expand_=true},
           .label_=_("Idle Timeout (minutes)"),
           .ctrl_=pcui::Stepper{
             .win_={
+              .base_={.expand_=true},
               .tooltip_=_("Time (in minutes) since last activity before accent LEDs go to sleep."),
             },
             .data_=mConfig.settings_.idleOffTime_,
@@ -151,9 +155,11 @@ pcui::DescriptorPtr GeneralPage::misc() {
         }(),
         pcui::Spacer{.size_=pcui::interControlSpacing()}(),
         pcui::Labeled{
+          .base_={.expand_=true},
           .label_=_("Motion Timeout (minutes)"),
           .ctrl_=pcui::Stepper{
             .win_={
+              .base_={.expand_=true},
               .tooltip_=_("Time (in minutes) since last activity before gesture controls are disabled."),
             },
             .data_=mConfig.settings_.motionTimeout_,
@@ -197,6 +203,23 @@ pcui::DescriptorPtr GeneralPage::installation() {
               .tooltip_=_("The orientation of the Proffieboard in the saber."),
             },
             .data_=mConfig.settings_.orientation_,
+            .labeler_=[](uint32 idx) -> wxString {
+                switch (static_cast<config::Orientation>(idx)) {
+                    case config::eOrient_Fets_Towards_Blade:
+                        return _("FETs Towards Blade");
+                    case config::eOrient_USB_Towards_Blade:
+                        return _("USB Towards Blade");
+                    case config::eOrient_USB_CCW_From_Blade:
+                        return _("USB CCW From Blade");
+                    case config::eOrient_USB_CW_From_Blade:
+                        return _("USB CW From Blade");
+                    case config::eOrient_Top_Towards_Blade:
+                        return _("Top Towards Blade");
+                    case config::eOrient_Bottom_Towards_Blade:
+                        return _("Bottom Towards Blade");
+                    default: return {};
+                }
+            },
           }(),
         }(),
         pcui::Spacer{.size_=pcui::interControlSpacing()}(),
