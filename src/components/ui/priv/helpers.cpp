@@ -73,6 +73,9 @@ void pcui::priv::tlwPostCreate(wxTopLevelWindow *win) {
 
 void pcui::priv::tlwBindOnCreate(wxTopLevelWindow *win) {
     win->Bind(wxEVT_CREATE, [win](wxWindowCreateEvent& evt) {
+        evt.Skip();
+        if (evt.GetEventObject() != win) return;
+
 #       ifdef _WIN32
 #       ifdef __WXGTK__
         auto *hwnd{win->GTKGetWin32Handle()};
@@ -107,8 +110,6 @@ void pcui::priv::tlwBindOnCreate(wxTopLevelWindow *win) {
         if (res != S_OK) {
             logger.warn("Backdrop setup failed: " + std::to_string(res));
         }
-
-        evt.Skip();
 #       endif
     });
 }
