@@ -70,7 +70,16 @@ struct WinBase : Base, Receiver {
         if (mEnable) mEnableReceiver = std::make_unique<EnableReceiver>(this);
 
         windowPostCreation(scaffold, desc, this);
+
         updateSizes();
+    }
+
+    void onDetach() override {
+        updateEnable();
+    }
+
+    void onAttach() override {
+        updateEnable();
     }
 
     void onEnabled() override {
