@@ -79,3 +79,21 @@ SHA256::operator std::string() const {
     return ret;
 }
 
+std::strong_ordering SHA256::operator<=>(const SHA256& other) const {
+    auto res{memcmp(
+        mValue.data(),
+        other.mValue.data(),
+        mValue.size() * sizeof mValue[0]
+    )};
+
+    if (res < 0) return std::strong_ordering::less;
+    if (res > 0) return std::strong_ordering::greater;
+
+    return std::strong_ordering::equal;
+}
+
+bool SHA256::operator==(const SHA256& other) const {
+    return (*this <=> other) == 0;
+
+}
+

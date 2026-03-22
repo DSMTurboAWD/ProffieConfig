@@ -55,7 +55,8 @@ struct UTILS_EXPORT SHA256 {
     [[nodiscard]] std::array<uint8, 32> value() const;
     explicit operator std::string() const;
 
-    auto operator<=>(const SHA256&) const = default;
+    std::strong_ordering operator<=>(const SHA256&) const;
+    bool operator==(const SHA256&) const;
 
 private:
     std::array<uint8, 32> mValue;
