@@ -55,6 +55,10 @@ void routine::launch(logging::Branch& lBranch) {
     if (0 == wxExecute(exec.native())) {
         logger.warn("ProffieConfig main binary missing/failed to start.");
     }
+
+    // TODO: This is a race, but one that seems unlikely to cause issues most
+    // of the time. It's ugly in any case.
+    exit(0);
 #   elif defined(__APPLE__) or defined(__linux__)
     auto str{exec.native()};
     std::array<char *, 2> argv{ str.data(), nullptr };
