@@ -130,15 +130,14 @@ private:
             scaffold, desc.win_
         );
 
-        { data::Choice::Context ctxt{desc.data_};
-            const auto self{static_cast<Derived *>(this)};
-            Ctrl::Set(self->generateChoices(ctxt.numChoices()));
-            Ctrl::SetSelection(self->dataToControl(
-                ctxt.choice()
-            ));
+        data::Choice::Context ctxt{desc.data_};
+        const auto self{static_cast<Derived *>(this)};
+        Ctrl::Set(self->generateChoices(ctxt.numChoices()));
+        Ctrl::SetSelection(self->dataToControl(
+            ctxt.choice()
+        ));
 
-            data::Choice::Receiver::attach(desc.data_);
-        }
+        data::Choice::Receiver::attach(desc.data_);
 
         Ctrl::Bind(Derived::evt(), &ControlBase::onChoice, this);
     }

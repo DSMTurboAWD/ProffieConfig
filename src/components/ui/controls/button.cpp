@@ -34,11 +34,6 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
     Control(const detail::Scaffold& scaffold, const Button& desc) :
         func_{desc.func_} {
 
-        const auto commonSetup{[&] {
-            postCreation(scaffold, desc.win_);
-            if (desc.default_) SetDefault();
-        }};
-
         long style{0};
         if (desc.exactFit_) style |= wxBU_EXACTFIT;
 
@@ -64,6 +59,8 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
             style 
         );
 
+        postCreation(scaffold, desc.win_);
+
         if (const auto *ptr{std::get_if<1>(&desc.label_)}) {
             const auto& [label, model]{*ptr};
             SetLabel(label);
@@ -78,7 +75,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
 
         if (desc.bitmap_.src_.IsOk()) SetBitmap(desc.bitmap_.src_);
 
-        commonSetup();
+        if (desc.default_) SetDefault();
 
         if (modelPtr) attach(*modelPtr);
         Bind(wxEVT_BUTTON, &Control::onPress, this);

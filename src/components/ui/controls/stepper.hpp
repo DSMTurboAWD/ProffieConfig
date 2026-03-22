@@ -39,8 +39,6 @@ struct UI_EXPORT Stepper {
         RefWrap<data::Decimal>
     > data_;
 
-    wxString label_;
-
     std::unique_ptr<detail::Descriptor> operator()();
 };
 

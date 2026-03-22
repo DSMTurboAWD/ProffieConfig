@@ -55,7 +55,7 @@ struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
         postCreation(scaffold, win);
 
         data::Bool::Context ctxt{data};
-        if (ctxt.val()) SetValue(true);
+        SetValue(ctxt.val());
 
         attach(data);
     }

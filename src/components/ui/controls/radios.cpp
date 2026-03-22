@@ -42,6 +42,9 @@ struct Control : priv::WinBase<wxRadioButton, data::Model::Receiver> {
 
         postCreation(scaffold, win);
 
+        data::Bool::Context ctxt{data};
+        SetValue(ctxt.val());
+
         attach(data);
     }
 
@@ -113,7 +116,7 @@ struct Manager : priv::WinBase<priv::GroupBox, data::Exclusive::Receiver> {
     }
     
     void onSelection(size idx) override {
-        CallAfter([this, idx] {
+        safeCall([this, idx] {
             auto *child{childParent()->GetChildren()[idx]};
             static_cast<wxRadioButton *>(child)->SetValue(true);
         });

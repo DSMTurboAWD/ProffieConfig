@@ -35,15 +35,16 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
         Create(
             scaffold.childParent_,
             wxID_ANY,
-            desc.label_,
+            wxEmptyString,
             wxDefaultPosition,
             wxDefaultSize,
             desc.win_.base_.align_ & wxALIGN_RIGHT
         );
 
-        auto params{context<data::Integer>().params()};
-        SetRange(params.min_, params.max_);
-        SetIncrement(params.inc_);
+        data::Integer::Context ctxt{std::get<0>(desc.data_)};
+        SetRange(ctxt.params().min_, ctxt.params().max_);
+        SetIncrement(ctxt.params().inc_);
+        SetValue(ctxt.val());
 
         postCreation(scaffold, desc.win_);
 
@@ -87,7 +88,7 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
         Create(
             scaffold.childParent_,
             wxID_ANY,
-            desc.label_,
+            wxEmptyString,
             wxDefaultPosition,
             wxDefaultSize,
             desc.win_.base_.align_ & wxALIGN_RIGHT
@@ -95,9 +96,10 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
 
         postCreation(scaffold, desc.win_);
 
-        auto params{context<data::Decimal>().params()};
-        SetRange(params.min_, params.max_);
-        SetIncrement(params.inc_);
+        data::Decimal::Context ctxt{std::get<1>(desc.data_)};
+        SetRange(ctxt.params().min_, ctxt.params().max_);
+        SetIncrement(ctxt.params().inc_);
+        SetValue(ctxt.val());
 
         attach(std::get<1>(desc.data_));
         Bind(wxEVT_SPINCTRLDOUBLE, &DoubleCtrl::onSpin, this);
@@ -154,6 +156,7 @@ wxSizerItem *Stepper::Desc::build(const detail::Scaffold& scaffold) const {
 
     auto *item{new wxSizerItem(spin)};
     priv::apply(win_.base_, item);
+
     return item;
 }
 

@@ -68,15 +68,12 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
 
         if (desc.data_.index() == 0) {
             style |= wxTE_READONLY;
-            initial = std::get<0>(desc.data_);
-        } else if (const auto *ptr{std::get_if<1>(&desc.data_)}) {
-            initial = data::String::Context{*ptr}.val();
         }
 
         Create(
             scaffold.childParent_,
             wxID_ANY,
-            initial,
+            wxEmptyString,
             wxDefaultPosition,
             wxDefaultSize,
             style
@@ -92,7 +89,11 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
 #       endif
 
         if (const auto *ptr{std::get_if<1>(&desc.data_)}) {
+            data::String::Context ctxt{*ptr};
+            SetValue(ctxt.val());
             attach(*ptr);
+        } else {
+            SetValue(std::get<0>(desc.data_));
         }
 
         Bind(wxEVT_TEXT, &Control::onText, this);

@@ -42,6 +42,9 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
 
         postCreation(scaffold, desc.win_);
 
+        data::Bool::Context ctxt{desc.data_};
+        SetValue(ctxt.val());
+
         attach(desc.data_);
         Bind(wxEVT_CHECKBOX, &Control::onCheck, this);
     }
@@ -63,7 +66,7 @@ struct Control : priv::WinBase<wxCheckBox, data::Bool::Receiver> {
     
     void onSet() override {
         const auto val{context<data::Bool>().val()};
-        CallAfter([this, val] {
+        safeCall([this, val] {
             SetValue(val);
         });
     }

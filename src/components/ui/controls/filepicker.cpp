@@ -47,7 +47,7 @@ struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
         Create(
             scaffold.childParent_,
             wxID_ANY,
-            data::String::Context{desc.data_}.val(),
+            wxEmptyString,
             desc.message_,
             desc.wildcard_,
             wxDefaultPosition,
@@ -56,6 +56,9 @@ struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
         );
 
         postCreation(scaffold, desc.win_);
+
+        data::String::Context ctxt{desc.data_};
+        SetPath(ctxt.val());
 
         attach(desc.data_);
         Bind(wxEVT_FILEPICKER_CHANGED, &Control::onPick, this);
@@ -82,7 +85,7 @@ struct Control : priv::WinBase<wxFilePickerCtrl, data::String::Receiver> {
 
     void onChange() override {
         const auto val{context<data::String>().val()};
-        CallAfter([this, val] {
+        safeCall([this, val] {
             SetPath(val);
         });
     }

@@ -33,8 +33,8 @@ struct UI_EXPORT CheckBox {
     // TODO: Make this a base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    data::Bool& data_;
     wxString label_;
+    data::Bool& data_;
 
     std::unique_ptr<detail::Descriptor> operator()();
 };
