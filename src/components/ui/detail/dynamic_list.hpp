@@ -40,14 +40,11 @@ struct UI_EXPORT DynamicList : std::vector<DescriptorPtr> {
         (..., add(std::forward<Args>(args)));
     }
 
-    void add(DynamicList&& v) {
-        add(static_cast<vector&&>(std::move(v)));
-    }
-
-    void add(vector&& v) {
-        // move(v) is silly, but it shuts up the linter and probably doesn't
-        // matter.
-        for (auto& elem : std::move(v)) push_back(std::move(elem));
+    // Rather than having a DynamicList&&, use a template so that implicit
+    // conversion, which may select the templated ctor and spiral into
+    // unbounded recursion, cannot occur.
+    void add(std::same_as<DynamicList> auto&& v) {
+        for (auto& elem : v) push_back(std::move(elem));
     }
 
     void add(DescriptorPtr&& d) {
