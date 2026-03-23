@@ -44,7 +44,7 @@ struct DATA_EXPORT Selection : Model {
     struct AddAction;
     struct RemoveAction;
 
-    using AddFilter = void (*)(const ROContext&, const std::string&);
+    using AddFilter = void (*)(const ROContext&, std::string&);
 
     /**
      * @return true if the unselected value should be pruned.
@@ -209,7 +209,7 @@ struct DATA_EXPORT Selection::AddAction : Action {
     void retract(Model&) override;
 
 private:
-    const std::string mItem;
+    std::string mItem;
 };
 
 struct DATA_EXPORT Selection::RemoveAction : Action {

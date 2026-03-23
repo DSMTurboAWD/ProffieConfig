@@ -240,8 +240,12 @@ void data::Selection::SetItemsAction::retract(Model& model) {
 data::Selection::AddAction::AddAction(std::string&& item) :
     mItem{std::move(item)} {}
 
-bool data::Selection::AddAction::setup(Model&) {
-    return true;
+bool data::Selection::AddAction::setup(Model& model) {
+    auto& sel{static_cast<Selection&>(model)};
+
+    if (sel.mAddFilter) sel.mAddFilter(sel, mItem);
+
+    return not mItem.empty();
 }
 
 void data::Selection::AddAction::perform(Model& model) {
