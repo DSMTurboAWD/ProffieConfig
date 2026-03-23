@@ -15,6 +15,7 @@ add_executable(proffieconfig WIN32
 
     editor/pages/general.cpp
     editor/pages/presets.cpp
+    editor/pages/blades.cpp
 
     onboard/onboard.cpp
     onboard/pages/welcome.cpp
