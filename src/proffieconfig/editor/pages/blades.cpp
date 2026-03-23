@@ -22,6 +22,7 @@
 #include "ui/controls/button.hpp"
 #include "ui/controls/choice.hpp"
 #include "ui/layout/group.hpp"
+#include "ui/layout/selector.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
 #include "ui/types.hpp"
@@ -72,6 +73,7 @@ pcui::DescriptorPtr BladesPage::selection() {
               .children_={
                 pcui::Choice{
                   .win_={
+                    .base_={.proportion_=1},
                     .tooltip_=_("The currently-selected Blade Array to edit."),
                   },
                   .data_=mArraySel.choice_,
@@ -81,7 +83,9 @@ pcui::DescriptorPtr BladesPage::selection() {
                 }(),
                 pcui::Spacer{.size_=pcui::interControlSpacing()}(),
                 pcui::Button{
-                  .bitmap_={.src_=pcui::Bitmap{"edit"}},
+                  .bitmap_={
+                    .src_=pcui::Bitmap{"edit"}.color(wxSYS_COLOUR_WINDOWTEXT),
+                  },
                   .exactFit_=true,
                 }(),
               }
@@ -113,7 +117,7 @@ pcui::DescriptorPtr BladesPage::selection() {
           .orient_=wxVERTICAL,
           .children_={
             pcui::Choice{
-              .win_={.base_={.proportion_=1}},
+              .win_={.base_={.expand_=true, .proportion_=1}},
               .data_=mBladeSel.choice_,
               .style_=pcui::Choice::List{},
             }(),
@@ -121,11 +125,17 @@ pcui::DescriptorPtr BladesPage::selection() {
               .orient_=wxHORIZONTAL,
               .children_={
                 pcui::Button{
+                  .win_={
+                    .base_={.minSize_=pcui::iconButtonSize()},
+                  },
                   .label_="+",
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
                 }(),
                 pcui::Button{
+                  .win_={
+                    .base_={.minSize_=pcui::iconButtonSize()},
+                  },
                   .label_="-",
                   .style_=pcui::Button::Style::Companion,
                   .exactFit_=true,
@@ -139,7 +149,14 @@ pcui::DescriptorPtr BladesPage::selection() {
 }
 
 pcui::DescriptorPtr BladesPage::blades() {
-
+    return pcui::Selector{
+      .data_=mBladeSel,
+      .builder_=[](data::Model *) {
+        return pcui::Stack{
+          
+        }();
+      }
+    }();
 }
 
 pcui::DescriptorPtr BladesPage::simple() {
