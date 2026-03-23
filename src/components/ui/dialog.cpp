@@ -30,7 +30,10 @@ using namespace pcui;
 Dialog::Dialog(
     wxWindow *parent,
     wxWindowID winID,
-    const wxString& title,
+    std::variant<
+        wxString,
+        pcui::RefWrap<const data::String>
+    > title,
     long style
 ) {
     priv::tlwBindOnCreate(this);
@@ -39,12 +42,18 @@ Dialog::Dialog(
     Create(
         parent,
         winID,
-        title,
+        wxEmptyString,
         wxDefaultPosition,
         wxDefaultSize,
         style,
         "pcui::Dialog"
     );
+
+    if (const auto *ptr{std::get_if<1>(&title)}) {
+        data::String::ROContext ctxt{*ptr};
+        SetTitle(ctxt.val());
+        attach(*ptr);
+    } else SetTitle(std::get<0>(title));
 
     Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& evt) {
         if (evt.GetKeyCode() == WXK_ESCAPE) EndModal(wxID_CANCEL);
@@ -61,5 +70,9 @@ void Dialog::Fit() {
     SetMinSize({0, 0});
     wxDialog::Fit();
     SetMinSize(GetSize());
+}
+
+void Dialog::onChange() {
+    SetTitle(context<data::String>().val());
 }
 

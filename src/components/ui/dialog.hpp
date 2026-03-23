@@ -21,21 +21,30 @@
 
 #include <wx/dialog.h>
 
+#include "data/string.hpp"
+#include "ui/types.hpp"
+
 #include "ui_export.h"
 
 namespace pcui {
 
-class UI_EXPORT Dialog : public wxDialog {
+class UI_EXPORT Dialog : public wxDialog, data::String::Receiver {
 public:
     Dialog(
         wxWindow* parent,
         wxWindowID winID,
-        const wxString& title,
+        std::variant<
+            wxString,
+            pcui::RefWrap<const data::String>
+        > title,
         long style = wxDEFAULT_DIALOG_STYLE
     );
     ~Dialog() override;
 
     void Fit() override;
+
+private:
+    void onChange() override;
 };
 
 } // namespace pcui
