@@ -51,21 +51,15 @@ struct CONFIG_EXPORT BladeConfig : data::Node {
         eIssue_No_Preset_Array  = 1UL << 0,
         eIssue_Duplicate_ID     = 1UL << 1,
         eIssue_Duplicate_Name   = 1UL << 2,
+
         eIssue_Mask             = 0b111,
-    };
-    static constexpr auto ISSUE_WARNINGS{eIssue_Duplicate_ID};
-    static constexpr auto ISSUE_ERRORS{
-        eIssue_Duplicate_Name | eIssue_No_Preset_Array
+        eIssue_Errors           =
+            eIssue_Duplicate_Name |
+            eIssue_No_Preset_Array,
+        eIssue_Warnings         = eIssue_Duplicate_ID,
     };
 
-    // TODO: Another observable.
-    data::Integer issues_;
-
-    /**
-     * @param Issue or bitor'd Issue's
-     * @return untranslated string
-     */
-    [[nodiscard]] static std::string issueString(uint32 issues);
+    const data::Integer& issues();
 
     data::String name_;
     data::Selector presetArray_;
@@ -75,6 +69,7 @@ struct CONFIG_EXPORT BladeConfig : data::Node {
 private:
     void recomputeIssues();
 
+    data::Integer mIssues;
 };
 
 struct CONFIG_EXPORT Blade : data::Node {

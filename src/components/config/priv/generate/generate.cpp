@@ -160,9 +160,9 @@ std::optional<std::string> runPreChecks(
     for (const auto& model : bladeConfigs.children()) {
         auto& bladeConfig{static_cast<BladeConfig&>(*model)};
 
-        data::Integer::ROContext issues{bladeConfig.issues_};
+        data::Integer::ROContext issues{bladeConfig.issues()};
         if (issues.val() != BladeConfig::eIssue_None) {
-            return errorMessage(logger, blades::BladeConfig::issueString(issues.val()));
+            return errorMessage(logger, wxTRANSLATE("Blade Array %s has issues, and isn't ready yet."), data::String::ROContext{bladeConfig.name_}.val());
         }
     }
 

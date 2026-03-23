@@ -140,6 +140,10 @@ data::Model *BladeConfig::find(uint64 id) {
     assert(0); // TODO
 }
 
+const data::Integer& BladeConfig::issues() {
+    return mIssues;
+}
+
 void BladeConfig::recomputeIssues() {
     int32 issues{0};
 
@@ -167,27 +171,6 @@ void BladeConfig::recomputeIssues() {
         }
     }
 
-    data::Integer::Context{issues_}.set(issues);
-}
-
-std::string BladeConfig::issueString(uint32 issues) {
-    std::string ret;
-    if (issues & eIssue_No_Preset_Array) {
-        ret += wxTRANSLATE("Blade Array is not linked to a Preset Array");
-        ret += '\n';
-    }
-    if (issues & eIssue_Duplicate_ID) {
-        ret += wxTRANSLATE("Blade Array has duplicate ID");
-        ret += '\n';
-    }
-    if (issues & eIssue_Duplicate_Name) {
-        ret += wxTRANSLATE("Blade Array has duplicate name");
-        ret += '\n';
-    }
-
-    // Pop off last newline
-    if (not ret.empty()) ret.pop_back();
-
-    return ret;
+    data::Integer::Context{mIssues}.set(issues);
 }
 
