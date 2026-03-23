@@ -25,8 +25,9 @@ auto data::logic::operator|(const data::Bool& bl, IsSet) -> Element {
         ~Adapter() override { detach(); }
 
         bool doActivate() override {
+            data::Bool::ROContext ctxt{bl_};
             attach(bl_);
-            return context<Bool>().val();
+            return ctxt.val();
         }
 
         void onSet() override {
@@ -49,17 +50,18 @@ auto data::logic::operator|(
         ~Adapter() override { detach(); }
 
         bool doActivate() override {
+            data::Choice::ROContext ctxt{choice_};
             attach(choice_);
-            return isTrue();
+            return isTrue(ctxt.choice());
         }
 
         void onChoice() override {
             std::lock_guard scopeLock{*pLock};
-            onChange(isTrue());
+            onChange(isTrue(context<Choice>().choice()));
         }
 
-        bool isTrue() {
-            return sels_.contains(context<Choice>().choice());
+        bool isTrue(int32 choice) {
+            return sels_.contains(choice);
         }
 
         const data::Choice& choice_;
@@ -78,22 +80,49 @@ auto data::logic::operator|(
         ~Adapter() override { detach(); }
 
         bool doActivate() override {
+            data::String::ROContext ctxt{str_};
             attach(str_);
-            return isTrue();
+            return ctxt.val().empty();
         }
 
         void onChange() override {
             std::lock_guard scopeLock{*pLock};
-            Base::onChange(isTrue());
-        }
-
-        bool isTrue() {
-            return context<String>().val().empty();
+            Base::onChange(context<String>().val().empty());
         }
 
         const String& str_;
     };
 
     return std::make_unique<Adapter>(choice);
+}
+
+auto data::logic::operator|(
+    const data::Integer& model, BitAnd val
+) -> Element {
+    struct Adapter : detail::Base, data::Integer::Receiver {
+        Adapter(const data::Integer& model, BitAnd val) :
+            model_{model}, val_{val} {}
+        ~Adapter() override { detach(); }
+
+        bool doActivate() override {
+            data::Integer::ROContext ctxt{model_};
+            attach(model_);
+            return isTrue(ctxt.val());
+        }
+
+        void onSet() override {
+            std::lock_guard scopeLock{*pLock};
+            Base::onChange(isTrue(context<Integer>().val()));
+        }
+
+        [[nodiscard]] bool isTrue(int32 val) const {
+            return val & val_.val_;
+        }
+
+        BitAnd val_;
+        const Integer& model_;
+    };
+
+    return std::make_unique<Adapter>(model, val);
 }
 

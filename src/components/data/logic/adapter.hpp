@@ -21,6 +21,7 @@
 
 #include "data/bool.hpp"
 #include "data/choice.hpp"
+#include "data/number.hpp"
 #include "data/string.hpp"
 #include "data/logic/logic.hpp"
 
@@ -39,6 +40,12 @@ DATA_EXPORT Element operator|(const data::Choice&, HasSelection);
 struct DATA_EXPORT IsEmpty {};
 
 DATA_EXPORT Element operator|(const data::String&, IsEmpty);
+
+struct DATA_EXPORT BitAnd {
+    uint32 val_;
+};
+
+DATA_EXPORT Element operator|(const data::Integer&, BitAnd);
 
 } // namespace data::logic
 
