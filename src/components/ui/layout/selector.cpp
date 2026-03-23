@@ -72,6 +72,7 @@ struct Layout : priv::WinBase<wxPanel, data::Selector::Receiver>,
 } // namespace
 
 std::unique_ptr<detail::Descriptor> Selector::operator()() {
+    assert(builder_);
     return std::make_unique<Selector::Desc>(std::move(*this));
 }
 
