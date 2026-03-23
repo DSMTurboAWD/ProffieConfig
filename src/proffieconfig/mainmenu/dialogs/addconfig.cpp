@@ -207,7 +207,7 @@ pcui::DescriptorPtr AddConfigDialog::ui() {
                  not (mNeedImportPath | data::logic::IsSet{}))
               },
             },
-            .label_=_("Ok"),
+            .label_=_("OK"),
             .func_=[this] { EndModal(wxID_OK); }
           }(),
           .cancel_=pcui::Button{

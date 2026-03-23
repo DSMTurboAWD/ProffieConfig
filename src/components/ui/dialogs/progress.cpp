@@ -144,7 +144,7 @@ DescriptorPtr ProgressDialog::ui(bool mayCancel, wxSize size) {
             .win_={
               .show_=mData | Progress::Logic::Is_Done,
             },
-            .label_=_("Ok"),
+            .label_=_("OK"),
             .func_=[this] {
                 EndModal(wxID_OK);
             },

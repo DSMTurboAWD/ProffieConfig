@@ -74,7 +74,7 @@ app::CriticalDialog::CriticalDialog(
     auto *logButton{new wxButton(this, eID_Logs, "Show Log Folder")};
     buttonSizer->Add(logButton, wxSizerFlags(1).Expand().Border(wxALL, 5));
 
-    auto *okButton{new wxButton(this, eID_Ok, "Ok")};
+    auto *okButton{new wxButton(this, eID_Ok, "OK")};
     buttonSizer->Add(
         okButton,
         wxSizerFlags(1).Expand().Border(wxRIGHT | wxTOP | wxBOTTOM, 5)
