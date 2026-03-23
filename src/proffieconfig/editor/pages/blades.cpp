@@ -19,220 +19,139 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/gdicmn.h>
-#include <wx/button.h>
-#include <wx/stattext.h>
-#include <wx/sizer.h>
-#include <wx/statbox.h>
-#include <wx/combobox.h>
-#include <wx/tooltip.h>
+#include "ui/controls/button.hpp"
+#include "ui/controls/choice.hpp"
+#include "ui/layout/group.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/types.hpp"
 
-#include "ui/controls/button.h"
-#include "ui/controls/checklist.h"
-#include "ui/message.hpp"
-#include "ui/notifier.h"
-#include "ui/static_box.h"
-#include "utils/image.h"
-#include "config/bladeconfig/bladeconfig.h"
+#include "../dialogs/bladearray.hpp"
+// #include "../special/splitvisualizer.h"
+#include "ui/values.hpp"
 
-#include "../editorwindow.h"
-#include "../dialogs/awarenessdlg.h"
-#include "../../core/defines.h"
-#include "../special/splitvisualizer.h"
+BladesPage::BladesPage(config::Config& config) : mConfig{config} {}
 
-class ArrayEditDlg : public wxDialog, pcui::NotifyReceiver {
-public:
-    ArrayEditDlg(
-        wxWindow *parent,
-        Config::BladeConfig& bladeConfig,
-        const wxString& title
-    ) : wxDialog(parent, wxID_ANY, title),
-        NotifyReceiver(this, bladeConfig.notifyData),
-        mBladeConfig{bladeConfig} {
-        auto *sizer{new wxBoxSizer(wxVERTICAL)};
+pcui::DescriptorPtr BladesPage::ui() {
+    return pcui::Stack{
+      .base_={
+        .expand_=true,
+        .proportion_=1,
+        .border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL},
+      },
+      .orient_=wxHORIZONTAL,
+      .children_={
+        selection(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        blades(),
+      }
+    }();
+}
 
-        sizer->AddSpacer(10);
+pcui::DescriptorPtr BladesPage::selection() {
+    return pcui::Stack{
+      .base_={
+        .minSize_={200, -1},
+        .expand_=true,
+      },
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Button{
+          .win_={.base_={.expand_=true}},
+          .label_=_("Blade Awareness..."),
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Group{
+          .base_={.expand_=true},
+          .label_=_("Blade Array"),
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::Stack{
+              .base_={.expand_=true},
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Choice{
+                  .win_={
+                    .tooltip_=_("The currently-selected Blade Array to edit."),
+                  },
+                  .data_=mArraySel.choice_,
+                  .style_=pcui::Choice::PopUp{
+                    .unselected_=_("Select Array"),
+                  },
+                }(),
+                pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+                pcui::Button{
+                  .bitmap_={.src_=pcui::Bitmap{"edit"}},
+                  .exactFit_=true,
+                }(),
+              }
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Stack{
+              .base_={.expand_=true},
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Button{
+                  .win_={.base_={.proportion_=1}},
+                  .label_=_("Add"),
+                  .exactFit_=true,
+                }(),
+                pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+                pcui::Button{
+                  .win_={.base_={.proportion_=1}},
+                  .label_=_("Remove"),
+                  .exactFit_=true,
+                }(),
+              }
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Group{
+          .base_={.expand_=true},
+          .label_=_("Blades"),
+          .orient_=wxVERTICAL,
+          .children_={
+            pcui::Choice{
+              .win_={.base_={.proportion_=1}},
+              .data_=mBladeSel.choice_,
+              .style_=pcui::Choice::List{},
+            }(),
+            pcui::Stack{
+              .orient_=wxHORIZONTAL,
+              .children_={
+                pcui::Button{
+                  .label_="+",
+                  .style_=pcui::Button::Style::Companion,
+                  .exactFit_=true,
+                }(),
+                pcui::Button{
+                  .label_="-",
+                  .style_=pcui::Button::Style::Companion,
+                  .exactFit_=true,
+                }(),
+              }
+            }(),
+          }
+        }(),
+      }
+    }();
+}
 
-        auto *nameEntry{new pcui::Text(
-            this,
-            bladeConfig.name,
-            0,
-            false,
-            _("Name")
-        )};
-        nameEntry->SetToolTip(_("The name of the blade array.\nEach name must be unique, but it is for reference only (and thus specific names will not make a difference)."));
+pcui::DescriptorPtr BladesPage::blades() {
 
-        auto *bitsSizer{new wxBoxSizer(wxHORIZONTAL)};
+}
 
-        auto *idEntry{new pcui::Numeric(
-            this,
-            bladeConfig.id,
-            _("Blade ID")
-        )};
-        idEntry->SetToolTip(_("The ID of the blade associated with the currently-selected blade array.\nThis value can be measured by typing \"id\" into the Serial Monitor."));
-        idEntry->SetMinSize({100, -1});
+pcui::DescriptorPtr BladesPage::simple() {
 
-        constexpr cstring BLADE_ID_TEXT{"NO_BLADE"};
-        auto *noBladeID{new pcui::Toggle(
-            this,
-            bladeConfig.noBladeID,
-            BLADE_ID_TEXT,
-            BLADE_ID_TEXT
-        )};
+}
 
-        auto *presetEntry{new pcui::Choice(
-            this,
-            bladeConfig.presetArray,
-            _("Preset Array")
-        )};
+pcui::DescriptorPtr BladesPage::ws281x() {
 
-        bitsSizer->Add(idEntry, wxSizerFlags(1));
-        bitsSizer->AddSpacer(5);
-        bitsSizer->Add(noBladeID, wxSizerFlags(0).Bottom());
-        bitsSizer->AddSpacer(10);
-        bitsSizer->Add(presetEntry, wxSizerFlags(2));
-
-        auto *issueText{new wxStaticText(
-            this,
-            eID_Issue_Text,
-            wxEmptyString
-        )};
-
-        sizer->AddSpacer(10);
-        sizer->Add(
-            nameEntry,
-            wxSizerFlags().Border(wxLEFT | wxRIGHT, 10).Expand()
-        );
-        sizer->AddSpacer(5);
-        sizer->Add(
-            bitsSizer,
-            wxSizerFlags().Border(wxLEFT | wxRIGHT, 10).Expand()
-        );
-        sizer->AddSpacer(10);
-
-        sizer->Add(
-            issueText,
-            wxSizerFlags().Right().Border(wxBOTTOM | wxRIGHT, 5)
-                .DoubleBorder(wxRIGHT)
-
-        );
-
-        SetSizer(sizer);
-    }
-
-    void buildDone() { initializeNotifier(); }
-
-    enum {
-        eID_Issue_Text
-    };
-
-private:
-    Config::BladeConfig& mBladeConfig;
-
-    void handleNotification(uint32) override {
-        auto issues{mBladeConfig.computeIssues()};
-
-        auto *okButton{FindWindow(wxID_OK)};
-        if (okButton) {
-            constexpr auto PERMISSIBLE_ISSUES{
-                Config::BladeConfig::ISSUE_NO_PRESETARRAY
-            };
-
-            const auto filteredIssues{issues & ~PERMISSIBLE_ISSUES};
-            okButton->Enable(
-                filteredIssues == Config::BladeConfig::ISSUE_NONE
-            );
-        }
-
-        auto *issueText{FindWindow(ArrayEditDlg::eID_Issue_Text)};
-        issueText->Show(issues != Config::BladeConfig::ISSUE_NONE);
-        if (issueText->IsShown()) {
-            wxString label;
-            if (issues & Config::BladeConfig::ISSUE_DUPLICATE_NAME) {
-                label += Config::BladeConfig::issueString(
-                    Config::BladeConfig::ISSUE_DUPLICATE_NAME
-                );
-            }
-            if (issues & Config::BladeConfig::ISSUE_DUPLICATE_ID) {
-                if (not label.empty()) label += '\n';
-                label += Config::BladeConfig::issueString(
-                    Config::BladeConfig::ISSUE_DUPLICATE_ID
-                );
-            }
-            if (issues & Config::BladeConfig::ISSUE_NO_PRESETARRAY) {
-                if (not label.empty()) label += '\n';
-                label += Config::BladeConfig::issueString(
-                    Config::BladeConfig::ISSUE_NO_PRESETARRAY
-                );
-            }
-            issueText->SetLabel(label);
-        }
-        Layout();
-        Fit();
-    }
-};
-
-BladesPage::BladesPage(EditorWindow *parent) : 
-    wxPanel(parent),
-    NotifyReceiver(this, parent->getOpenConfig().bladeArrays.notifyData),
-    mParent{parent} {
-    auto *sizer{new wxBoxSizer(wxHORIZONTAL)};
-
-    mAwarenessDlg = new BladeAwarenessDlg(parent);
-
-    sizer->Add(createBladeSelect(), wxSizerFlags(0).Expand());
-    sizer->AddSpacer(10);
-    sizer->Add(createBladeSettings(), wxSizerFlags(1).Expand());
-
-    bindEvents();
-    initializeNotifier();
-    SetSizerAndFit(sizer);
 }
  
+/*
 void BladesPage::bindEvents() {
-    Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
-        if (mAwarenessDlg->IsShown()) mAwarenessDlg->Raise();
-        else mAwarenessDlg->Show();
-    }, ID_OpenBladeAwareness);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-        ArrayEditDlg dlg(
-            mParent,
-            bladeArrays.array(bladeArrays.arraySelection),
-            _("Edit Blade Array")
-        );
-        dlg.GetSizer()->AddSpacer(10);
-        dlg.buildDone();
-        dlg.ShowModal();        
-    }, ID_EditArray);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-        
-        ArrayEditDlg dlg(
-            mParent,
-            bladeArrays.addArray(),
-            _("Add Blade Array")
-        );
-        wxSizerFlags flags;
-        flags.Expand();
-#       ifndef __WXOSX__
-        flags.Border(wxALL, 10);
-#       endif
-        dlg.GetSizer()->Add(
-            dlg.CreateStdDialogButtonSizer(wxOK | wxCANCEL),
-            flags
-        );
-        dlg.buildDone();
-
-        const auto lastIdx{static_cast<int32>(
-            bladeArrays.arraySelection.choices().size() - 1
-        )};
-        if (wxID_OK == dlg.ShowModal()) {
-            bladeArrays.arraySelection = lastIdx;
-        } else {
-            bladeArrays.removeArray(lastIdx);
-        }
-    }, ID_AddArray);
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         auto res{pcui::showMessage(
             "This action cannot be undone!",
@@ -243,46 +162,10 @@ void BladesPage::bindEvents() {
         auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
         bladeArrays.removeArray(bladeArrays.arraySelection);
     }, ID_RemoveArray);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-        bladeArrays.array(bladeArrays.arraySelection).addBlade();
-    }, ID_AddBlade);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-        auto& array{bladeArrays.array(bladeArrays.arraySelection)};
-        array.removeBlade(array.bladeSelection);
-    }, ID_RemoveBlade);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        mParent->getOpenConfig().bladeArrays.addPowerPinFromEntry();
-    }, ID_PinNameAdd);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-
-        if (bladeArrays.arraySelection == -1) return;
-        auto& selectedArray{bladeArrays.array(bladeArrays.arraySelection)};
-        if (selectedArray.bladeSelection == -1) return;
-        auto& selectedBlade{selectedArray.blade(selectedArray.bladeSelection)};
-        if (selectedBlade.type != Config::Blade::WS281X) return;
-
-        selectedBlade.ws281x().addSplit();
-        const auto lastSplitIdx{static_cast<int32>(
-            selectedBlade.ws281x().splits().size() - 1
-        )};
-        selectedBlade.ws281x().splitSelect = lastSplitIdx;
-    }, ID_AddSplit);
-    Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
-
-        if (bladeArrays.arraySelection == -1) return;
-        auto& selectedArray{bladeArrays.array(bladeArrays.arraySelection)};
-        if (selectedArray.bladeSelection == -1) return;
-        auto& selectedBlade{selectedArray.blade(selectedArray.bladeSelection)};
-        if (selectedBlade.type != Config::Blade::WS281X) return;
-        if (selectedBlade.ws281x().splitSelect == -1) return;
-        selectedBlade.ws281x().removeSplit(selectedBlade.ws281x().splitSelect);
-    }, ID_RemoveSplit);
 }
+*/
 
+/*
 void BladesPage::handleNotification(uint32 id) {
     bool rebound{id == pcui::Notifier::eID_Rebound};
     auto& bladeArrays{mParent->getOpenConfig().bladeArrays};
@@ -302,10 +185,10 @@ void BladesPage::handleNotification(uint32 id) {
 
         auto *issueIcon{FindWindow(ID_IssueIcon)};
         if (issues & Config::BladeConfig::ISSUE_ERRORS) {
-            issueIcon->SetLabel(L"\u26D4" /* ⛔️ */);
+            issueIcon->SetLabel(L"\u26D4"); // ⛔️
 
         } else if (issues & Config::BladeConfig::ISSUE_WARNINGS) {
-            issueIcon->SetLabel(L"\u26A0" /* ⚠️  */);
+            issueIcon->SetLabel(L"\u26A0"); // ⚠️
         }
         issueIcon->Show(issues != Config::BladeConfig::ISSUE_NONE);
     }
@@ -352,132 +235,6 @@ void BladesPage::handleNotification(uint32 id) {
         };
         FindWindow(ID_RemoveSplit)->Enable(hasSelection);
     }
-
-    if (not rebound) {
-        Layout();
-        auto size{GetSize()};
-        auto bestSize{GetBestSize()};
-        if (not size.IsAtLeast(bestSize)) {
-            SetMinSize(bestSize);
-            mParent->fitAnimated();
-        }
-    }
-}
-
-wxSizer *BladesPage::createBladeSelect() {
-    auto& config{mParent->getOpenConfig()};
-
-    auto *bladeSelectSizer{new wxBoxSizer(wxVERTICAL)};
-    bladeSelectSizer->SetMinSize(200, -1);
-
-    auto *arraySectSizer{new pcui::StaticBox(
-        wxVERTICAL, this, _("Blade Array")
-    )};
-
-    auto *arraySizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *arraySelection{new pcui::Choice(
-        arraySectSizer->childParent(),
-        config.bladeArrays.arraySelection
-    )};
-    arraySelection->SetToolTip(_("The currently-selected Blade Array to edit."));
-    auto *issueIcon{new wxButton(
-        arraySectSizer->childParent(),
-        ID_IssueIcon,
-        wxEmptyString,
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *editArrayButton{new pcui::Button(
-        arraySectSizer->childParent(),
-        ID_EditArray,
-        wxEmptyString,
-        wxDefaultSize,
-        wxBU_EXACTFIT,
-        "edit",
-        {-1, 16},
-        wxSYS_COLOUR_WINDOWTEXT
-
-    )};
-    arraySizer->Add(arraySelection, wxSizerFlags(1));
-    arraySizer->Add(
-        issueIcon,
-        wxSizerFlags().Border(wxLEFT, 5).Bottom()
-    );
-    arraySizer->AddSpacer(5);
-    arraySizer->Add(editArrayButton, wxSizerFlags().Bottom());
-
-    auto *arrayButtonSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *addArrayButton{new wxButton(
-        arraySectSizer->childParent(),
-        ID_AddArray,
-        _("Add"),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *removeArrayButton{new wxButton(
-        arraySectSizer->childParent(),
-        ID_RemoveArray,
-        _("Remove"),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    arrayButtonSizer->Add(addArrayButton, wxSizerFlags(2));
-    arrayButtonSizer->AddSpacer(5);
-    arrayButtonSizer->Add(removeArrayButton, wxSizerFlags(3));
-
-    arraySectSizer->Add(arraySizer, wxSizerFlags().Expand());
-    arraySectSizer->AddSpacer(5);
-    arraySectSizer->Add(arrayButtonSizer, wxSizerFlags().Expand());
-
-    auto *bladeAwarenessButton{new wxButton(
-        this,
-        ID_OpenBladeAwareness,
-        _("Blade Awareness...")
-    )};
-
-    auto *bladeSelectionSizer{new pcui::StaticBox(
-        wxVERTICAL, this, _("Blades")
-    )};
-    auto *bladeSelect{new pcui::List(
-        bladeSelectionSizer->childParent(),
-        config.bladeArrays.bladeSelectionProxy
-    )};
-
-    auto *bladeButtonSizer{new wxBoxSizer(wxHORIZONTAL)};
-    auto *addBladeButton{new wxButton(
-        bladeSelectionSizer->childParent(),
-        ID_AddBlade,
-        "+",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    auto *removeBladeButton{new wxButton(
-        bladeSelectionSizer->childParent(),
-        ID_RemoveBlade,
-        "-",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxBU_EXACTFIT
-    )};
-    bladeButtonSizer->Add(addBladeButton, wxSizerFlags(1));
-    bladeButtonSizer->AddSpacer(5);
-    bladeButtonSizer->Add(removeBladeButton, wxSizerFlags(1));
-
-    bladeSelectionSizer->Add(bladeSelect, wxSizerFlags(1).Expand());
-    bladeSelectionSizer->AddSpacer(5);
-    bladeSelectionSizer->Add(bladeButtonSizer, wxSizerFlags().Expand());
-
-    bladeSelectSizer->Add(arraySectSizer, wxSizerFlags().Expand());
-    bladeSelectSizer->AddSpacer(10);
-    bladeSelectSizer->Add(bladeAwarenessButton, wxSizerFlags().Expand());
-    bladeSelectSizer->AddSpacer(10);
-    bladeSelectSizer->Add(bladeSelectionSizer, wxSizerFlags(1).Expand());
-
-    return bladeSelectSizer;
 }
 
 wxSizer *BladesPage::createBladeSettings() {
@@ -780,4 +537,5 @@ wxSizer *BladesPage::createBladeSettings() {
 
     return settingsSizer;
 }
+*/
 

@@ -19,44 +19,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../editorwindow.h"
-#include "../dialogs/awarenessdlg.h"
+#include "config/config.hpp"
+#include "ui/types.hpp"
 
-class ArrayEditDlg;
+struct BladesPage {
+    BladesPage(config::Config&);
 
-class BladesPage : public wxPanel, pcui::NotifyReceiver {
-public:
-    BladesPage(EditorWindow *);
+    pcui::DescriptorPtr ui();
 
 private:
-    EditorWindow *mParent{nullptr};
+    pcui::DescriptorPtr selection();
+    pcui::DescriptorPtr blades();
+    pcui::DescriptorPtr simple();
+    pcui::DescriptorPtr ws281x();
 
-    enum {
-        ID_OpenBladeAwareness = 2,
+    config::Config& mConfig;
 
-        ID_IssueIcon,
-
-        ID_EditArray,
-        ID_AddArray,
-        ID_RemoveArray,
-
-        ID_AddBlade,
-        ID_RemoveBlade,
-        ID_AddSplit,
-        ID_RemoveSplit,
-
-        ID_NoSelectText,
-        ID_PinNameAdd,
-    };
-
-    BladeAwarenessDlg *mAwarenessDlg{nullptr};
-
-    void bindEvents();
-    void handleNotification(uint32) final;
-
-    wxSizer *createBladeSelect();
-    wxSizer *createBladeSettings();
-   
-    wxSizer *mSimpleSizer;
-    wxSizer *mPixelSizer;
+    data::Selector mArraySel;
+    data::Selector mBladeSel;
 };
+
