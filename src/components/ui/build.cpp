@@ -39,7 +39,8 @@ void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
     auto *sizer{new wxBoxSizer(wxVERTICAL)};
 
     detail::Scaffold scaffold{
-        .childParent_=parent
+        .childParent_=parent,
+        .sizer_=sizer,
     };
 
     auto *item{desc->build(scaffold)};

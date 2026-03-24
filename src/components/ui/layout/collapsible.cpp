@@ -46,6 +46,15 @@ struct Layout : priv::WinBase<wxCollapsiblePane, data::Generic::Receiver> {
 
         postCreation(scaffold, desc.win_);
 
+        auto *sizer{new wxBoxSizer(wxVERTICAL)};
+
+        auto childScaffold{scaffold};
+        childScaffold.childParent_ = GetPane();
+        childScaffold.sizer_ = sizer;
+
+        sizer->Add(desc.child_->build(childScaffold));
+        GetPane()->SetSizer(sizer);
+
         if (desc.data_) attach(*desc.data_);
 
         const auto onPaneChanged{[
@@ -75,13 +84,6 @@ Collapsible::Desc::Desc(Collapsible&& data) :
 
 wxSizerItem *Collapsible::Desc::build(const detail::Scaffold& scaffold) const {
     auto *panel{new Layout(scaffold, *this)};
-
-    auto childScaffold{scaffold};
-    childScaffold.childParent_ = panel->GetPane();
-
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
-    sizer->Add(child_->build(childScaffold));
-    panel->GetPane()->SetSizer(sizer);
 
     auto *item{new wxSizerItem(panel)};
     priv::apply(win_.base_, item);

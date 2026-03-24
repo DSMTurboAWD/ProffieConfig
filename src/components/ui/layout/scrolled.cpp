@@ -35,6 +35,16 @@ struct Window : priv::WinBase<wxScrolledWindow, data::Generic::Receiver> {
         postCreation(scaffold, desc.win_);
         SetScrollRate(desc.scrollRate_.x_, desc.scrollRate_.y_);
 
+        auto *sizer{new wxBoxSizer(wxVERTICAL)};
+
+        auto childScaffold{scaffold};
+        childScaffold.childParent_ = this;
+        childScaffold.scrolled_ = this;
+        childScaffold.sizer_ = sizer;
+
+        sizer->Add(desc.child_->build(childScaffold));
+        SetSizer(sizer);
+
         if (desc.data_) attach(*desc.data_);
     }
 
@@ -85,14 +95,6 @@ Scrolled::Desc::Desc(Scrolled&& data) :
 
 wxSizerItem *Scrolled::Desc::build(const detail::Scaffold& scaffold) const {
     auto *win{new Window(scaffold, *this)};
-
-    auto childScaffold{scaffold};
-    childScaffold.childParent_ = win;
-    childScaffold.scrolled_ = win;
-
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
-    sizer->Add(child_->build(childScaffold));
-    win->SetSizerAndFit(sizer);
 
     auto *item{new wxSizerItem(win)};
     priv::apply(win_.base_, item);

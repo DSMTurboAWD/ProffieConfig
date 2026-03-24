@@ -41,6 +41,7 @@ wxSizerItem *Group::Desc::build(const detail::Scaffold& scaffold) const {
 
     detail::Scaffold childScaffold{scaffold};
     childScaffold.childParent_ = box->childParent();
+    childScaffold.sizer_ = box->sizer();
 
     for (const auto& child : children_) {
         box->sizer()->Add(child->build(childScaffold));

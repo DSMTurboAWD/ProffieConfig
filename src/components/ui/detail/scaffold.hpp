@@ -30,6 +30,7 @@ namespace pcui::detail {
 struct UI_EXPORT Scaffold {
     wxScrolledWindow *scrolled_{nullptr};
     wxWindow *childParent_;
+    wxSizer *sizer_;
 };
 
 } // namespace pcui::detail

@@ -34,8 +34,10 @@ Stack::Desc::Desc(Stack&& data) :
     Stack{std::move(data)} {}
 
 wxSizerItem *Stack::Desc::build(const detail::Scaffold& scaffold) const {
-    detail::Scaffold childScaffold{scaffold};
     auto *sizer{new wxBoxSizer(orient_)};
+
+    auto childScaffold{scaffold};
+    childScaffold.sizer_ = sizer;
 
     for (const auto& child : children_) {
         sizer->Add(child->build(childScaffold));
@@ -43,6 +45,7 @@ wxSizerItem *Stack::Desc::build(const detail::Scaffold& scaffold) const {
 
     auto *item{new wxSizerItem(sizer)};
     priv::apply(base_, item);
+
     return item;
 }
 

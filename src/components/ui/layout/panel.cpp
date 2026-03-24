@@ -49,6 +49,15 @@ struct Layout : priv::WinBase<wxPanel, data::Generic::Receiver> {
 
         postCreation(scaffold, desc.win_);
 
+        auto *sizer{new wxBoxSizer(wxVERTICAL)};
+
+        auto childScaffold{scaffold};
+        childScaffold.childParent_ = this;
+        childScaffold.sizer_ = sizer;
+
+        sizer->Add(desc.child_->build(childScaffold));
+        SetSizer(sizer);
+
         if (desc.data_) attach(*desc.data_);
     }
 
@@ -68,13 +77,6 @@ Panel::Desc::Desc(Panel&& data) :
 
 wxSizerItem *Panel::Desc::build(const detail::Scaffold& scaffold) const {
     auto *panel{new Layout(scaffold, *this)};
-
-    auto childScaffold{scaffold};
-    childScaffold.childParent_ = panel;
-
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
-    sizer->Add(child_->build(childScaffold));
-    panel->SetSizer(sizer);
 
     auto *item{new wxSizerItem(panel)};
     priv::apply(win_.base_, item);
