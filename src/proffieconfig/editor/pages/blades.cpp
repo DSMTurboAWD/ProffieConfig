@@ -25,6 +25,7 @@
 #include "ui/layout/selector.hpp"
 #include "ui/layout/spacer.hpp"
 #include "ui/layout/stack.hpp"
+#include "ui/static/label.hpp"
 #include "ui/types.hpp"
 
 #include "../dialogs/bladearray.hpp"
@@ -149,13 +150,29 @@ pcui::DescriptorPtr BladesPage::selection() {
 }
 
 pcui::DescriptorPtr BladesPage::blades() {
+    const auto builder{[](data::Model *model) -> pcui::DescriptorPtr {
+        if (model == nullptr) {
+            return pcui::Label{
+              .win_={
+                .base_={
+                  .minSize_={350, -1},
+                  .align_=wxALIGN_CENTER,
+                },
+              },
+              .label_=_("No Blade Selected"),
+              .style_=pcui::text::Style::Header,
+              .color_=wxSYS_COLOUR_GRAYTEXT,
+            }();
+        }
+
+        return pcui::Stack{
+
+        }();
+    }};
+
     return pcui::Selector{
       .data_=mBladeSel,
-      .builder_=[](data::Model *) {
-        return pcui::Stack{
-          
-        }();
-      }
+      .builder_=builder,
     }();
 }
 
