@@ -22,6 +22,7 @@
 #include <wx/statbmp.h>
 
 #include "data/generic.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/types.hpp"
@@ -40,7 +41,7 @@ struct UI_EXPORT Image {
 
     wxStaticBitmapBase::ScaleMode scale_{wxStaticBitmapBase::Scale_AspectFill};
 
-    wxBitmap src_;
+    Bitmap src_;
 
     DescriptorPtr operator()();
 };

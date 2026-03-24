@@ -49,16 +49,34 @@ using Widget = wxGenericStaticBitmap;
 struct Static : priv::WinBase<Widget, data::Generic::Receiver> {
     Static(
         const detail::Scaffold& scaffold,
-        const Image& desc,
-        const wxBitmapBundle& bmp
+        const Image& desc
     ) {
-        Create(scaffold.childParent_, wxID_ANY, bmp);
+        Create(scaffold.childParent_, wxID_ANY, {});
 
         postCreation(scaffold, desc.win_);
+
+        bmp_ = desc.src_;
+
+        const auto updateBitmap{[this]() {
+            SetBitmap(bmp_.realize());
+        }};
+
+        Bind(
+            wxEVT_SYS_COLOUR_CHANGED,
+            [updateBitmap](wxSysColourChangedEvent& evt) {
+                evt.Skip();
+                updateBitmap();
+            }
+        );
+
+        updateBitmap();
+
         SetScaleMode(desc.scale_);
 
         if (desc.data_) attach(*desc.data_);
     }
+
+    Bitmap bmp_;
 };
 
 } // namespace
@@ -71,7 +89,7 @@ Image::Desc::Desc(Image&& data) :
     Image{std::move(data)} {}
 
 wxSizerItem *Image::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *img{new Static(scaffold, *this, src_)};
+    auto *img{new Static(scaffold, *this)};
     auto *item{new wxSizerItem(img)};
     priv::apply(win_.base_, item);
     return item;

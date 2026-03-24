@@ -27,6 +27,7 @@
 #include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 #include "ui/types.hpp"
+#include "wx/event.h"
 
 using namespace pcui;
 
@@ -45,6 +46,23 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
                 wxDefaultSize,
                 style
             );
+
+            if (desc.color_) {
+                color_ = desc.color_;
+
+                const auto onColorChange{[this]() {
+                    SetForegroundColour(color_.color());
+                }};
+
+                Bind(
+                    wxEVT_SYS_COLOUR_CHANGED,
+                    [onColorChange](wxSysColourChangedEvent& evt) {
+                        evt.Skip();
+                        onColorChange();
+                    }
+                );
+                onColorChange();
+            }
 
             SetOwnFont(desc.style_.makeFont());
             postCreation(scaffold, desc.win_);
@@ -77,6 +95,8 @@ struct Static : priv::WinBase<wxStaticText, data::String::Receiver> {
             SetLabel(str);
         });
     }
+
+    color::Dynamic color_;
 };
 
 } // namespace

@@ -33,6 +33,8 @@ const wxColour LIGHT_BLUE{31, 99, 168};
 
 void generateMissingBMP(wxBitmap&, const wxSize& = wxDefaultSize);
 
+void doColor(wxBitmap&, const color::Dynamic&);
+
 } // namespace
 
 pcui::Bitmap::Bitmap() = default;
@@ -154,37 +156,18 @@ pcui::Bitmap& pcui::Bitmap::pad(
 }
 
 pcui::Bitmap& pcui::Bitmap::color(const color::Dynamic& dyn) {
-    const auto color{dyn.color()};
-    if (not color.IsOk()) return *this;
-
-    wxAlphaPixelData data(*this);
-    if (not data) return *this;
-
-    auto iter{data.GetPixels()};
-    for (auto yIdx{0}; yIdx < data.GetHeight(); ++yIdx) {
-        wxAlphaPixelData::Iterator rowStart = iter;
-
-        for (auto xIdx{0}; xIdx < data.GetWidth(); ++xIdx, ++iter) {
-            if (iter.Alpha() > 0) {
-#               ifdef _WIN32
-                // Idk man windows is funky with its bitmaps.
-                auto alphaScale{static_cast<float64>(iter.Alpha()) / 0xFF};
-                iter.Red() = static_cast<uint8>(color.Red() * alphaScale);
-                iter.Green() = static_cast<uint8>(color.Green() * alphaScale);
-                iter.Blue() = static_cast<uint8>(color.Blue() * alphaScale);
-#               else
-                iter.Red() = color.Red();
-                iter.Green() = color.Green();
-                iter.Blue() = color.Blue();
-#               endif
-            }
-        }
-
-        iter = rowStart;
-        iter.OffsetY(data, 1);
-    }
-
+    mColor = dyn;
     return *this;
+}
+
+pcui::Bitmap::operator bool() const {
+    return IsOk();
+}
+
+wxBitmap pcui::Bitmap::realize() const {
+    wxBitmap ret{static_cast<const wxBitmap&>(*this)};
+    doColor(ret, mColor);
+    return ret;
 }
 
 namespace {
@@ -214,6 +197,38 @@ void generateMissingBMP(wxBitmap& bmp, const wxSize& size) {
     dimension /= 2;
     bmpDC.SetTextForeground(DARK_BLUE);
     bmpDC.DrawText("?", dimension - extent.x, dimension - extent.y);
+}
+
+void doColor(wxBitmap& bmp, const color::Dynamic& dyn) {
+    const auto color{dyn.color()};
+    if (not color.IsOk()) return;
+
+    wxAlphaPixelData data(bmp);
+    if (not data) return;
+
+    auto iter{data.GetPixels()};
+    for (auto yIdx{0}; yIdx < data.GetHeight(); ++yIdx) {
+        wxAlphaPixelData::Iterator rowStart = iter;
+
+        for (auto xIdx{0}; xIdx < data.GetWidth(); ++xIdx, ++iter) {
+            if (iter.Alpha() > 0) {
+#               ifdef _WIN32
+                // Idk man windows is funky with its bitmaps.
+                auto alphaScale{static_cast<float64>(iter.Alpha()) / 0xFF};
+                iter.Red() = static_cast<uint8>(color.Red() * alphaScale);
+                iter.Green() = static_cast<uint8>(color.Green() * alphaScale);
+                iter.Blue() = static_cast<uint8>(color.Blue() * alphaScale);
+#               else
+                iter.Red() = color.Red();
+                iter.Green() = color.Green();
+                iter.Blue() = color.Blue();
+#               endif
+            }
+        }
+
+        iter = rowStart;
+        iter.OffsetY(data, 1);
+    }
 }
 
 } // namespace

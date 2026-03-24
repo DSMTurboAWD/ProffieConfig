@@ -26,6 +26,7 @@
 #include "ui/types.hpp"
 
 #include "ui_export.h"
+#include "utils/color.hpp"
 
 namespace pcui {
 
@@ -41,6 +42,7 @@ struct UI_EXPORT Label {
     > label_;
 
     text::detail::StyleData style_;
+    color::Dynamic color_;
 
     DescriptorPtr operator()();
 };

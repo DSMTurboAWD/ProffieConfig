@@ -23,6 +23,7 @@
 #include <wx/string.h>
 
 #include "data/helpers/exclusive.hpp"
+#include "ui/bitmap.hpp"
 #include "ui/detail/descriptor.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/types.hpp"
@@ -41,7 +42,7 @@ struct UI_EXPORT Segmented {
 
     struct Label {
         wxString text_;
-        wxBitmap image_;
+        Bitmap bmp_;
     };
 
     std::vector<Label> labels_;

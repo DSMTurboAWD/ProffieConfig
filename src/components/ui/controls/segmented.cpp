@@ -50,7 +50,23 @@ struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
         const detail::ChildWindowBase& win
     ) {
         Create(scaffold.childParent_, wxID_ANY, label.text_);
-        if (label.image_.IsOk()) SetBitmap(label.image_);
+        if (label.bmp_) {
+            bmp_ = label.bmp_;
+
+            const auto updateBitmap{[this]() {
+                SetBitmap(bmp_.realize());
+            }};
+
+            Bind(
+                wxEVT_SYS_COLOUR_CHANGED,
+                [updateBitmap](wxSysColourChangedEvent& evt) {
+                    evt.Skip();
+                    updateBitmap();
+                }
+            );
+
+            updateBitmap();
+        }
 
         postCreation(scaffold, win);
 
@@ -64,7 +80,7 @@ struct Control : priv::WinBase<wxToggleButton, data::Model::Receiver> {
         detach();
     }
 
-    friend struct Manager;
+    Bitmap bmp_;
 };
 
 struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
@@ -135,6 +151,9 @@ struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
 } // namespace
 
 std::unique_ptr<detail::Descriptor> Segmented::operator()() {
+    // Make sure there's the correct labels for the data.
+    assert(labels_.size() == data_.data().size());
+
     return std::make_unique<Segmented::Desc>(std::move(*this));
 }
 

@@ -73,7 +73,23 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
             SetLabel(std::get<0>(desc.label_));
         }
 
-        if (desc.bitmap_.src_.IsOk()) SetBitmap(desc.bitmap_.src_);
+        if (desc.bitmap_.src_) {
+            bmp_ = desc.bitmap_.src_;
+
+            const auto updateBitmap{[this]() {
+                SetBitmap(bmp_.realize());
+            }};
+
+            Bind(
+                wxEVT_SYS_COLOUR_CHANGED,
+                [updateBitmap](wxSysColourChangedEvent& evt) {
+                    evt.Skip();
+                    updateBitmap();
+                }
+            );
+
+            updateBitmap();
+        }
 
         if (desc.default_) SetDefault();
 
@@ -115,6 +131,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
         });
     }
 
+    Bitmap bmp_;
     const std::function<void()> func_;
 };
 
@@ -122,7 +139,7 @@ struct Control : priv::WinBase<wxButton, data::String::Receiver> {
 
 std::unique_ptr<detail::Descriptor> Button::operator()() {
     // The proper in-button size for a bitmap depends on the platform
-    if (bitmap_.mode_ == BitmapMode::Clamped and bitmap_.src_.IsOk()) {
+    if (bitmap_.mode_ == BitmapMode::Clamped and bitmap_.src_) {
 #       if defined(__WXOSX__)
         bitmap_.src_.pad(1, 16, wxVERTICAL);
 #       elif defined(__WXGTK__)

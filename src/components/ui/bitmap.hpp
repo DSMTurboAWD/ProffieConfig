@@ -28,7 +28,7 @@
 
 namespace pcui {
 
-struct UI_EXPORT Bitmap : wxBitmap {
+struct UI_EXPORT Bitmap : private wxBitmap {
     enum class Type {
         Normal,
 #       ifdef __APPLE__
@@ -76,6 +76,20 @@ struct UI_EXPORT Bitmap : wxBitmap {
      * Recolors a bitmap to be monochrome according to alpha channel.
      */
     Bitmap& color(const color::Dynamic&);
+
+    /**
+     * Is there a bitmap?
+     */
+    explicit operator bool() const;
+
+    /**
+     * Generate a bitmap suitable for UI usage according to the transformations
+     * applied.
+     */
+    [[nodiscard]] wxBitmap realize() const;
+
+private:
+    color::Dynamic mColor;
 };
 
 } // namespace pcui
