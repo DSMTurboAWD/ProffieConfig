@@ -95,8 +95,10 @@ protected:
 
     /**
      * Selector bound to a different Vector
+     *
+     * Occurs before choice is updated.
      */
-    virtual void onRebound(const Vector *) {}
+    virtual void onRebound() {}
 };
 
 struct DATA_EXPORT Selector::BindAction : Action {

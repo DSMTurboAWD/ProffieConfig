@@ -168,6 +168,9 @@ void data::Selector::BindAction::perform(Model& model) {
     }
 
     sel.mVec = mVec;
+
+    // Send onRebound before updating the choice.
+    sel.sendToReceivers(&Receiver::onRebound);
     
     if (sel.mVec) {
         sel.mVec->attachReceiver(static_cast<Vector::Receiver&>(sel));
@@ -189,6 +192,8 @@ void data::Selector::BindAction::retract(Model& model) {
     }
 
     sel.mVec = mLast;
+
+    sel.sendToReceivers(&Receiver::onRebound);
 
     if (sel.mVec) {
         sel.mVec->attachReceiver(static_cast<Vector::Receiver&>(sel));
