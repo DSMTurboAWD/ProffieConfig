@@ -199,7 +199,6 @@ pcui::DescriptorPtr PresetsPage::fields() {
           .label_=_("Preset Name"),
         }(),
         pcui::Selector{
-          .win_={.base_={.expand_=true}},
           .data_=mPresetSel,
           .builder_=[](data::Model *model) {
             pcui::Text text{
@@ -229,7 +228,6 @@ pcui::DescriptorPtr PresetsPage::fields() {
           .label_=_("Font Directory"),
         }(),
         pcui::Selector{
-          .win_={.base_={.expand_=true}},
           .data_=mPresetSel,
           .builder_=[](data::Model *model) {
             pcui::Text text{
@@ -255,7 +253,6 @@ pcui::DescriptorPtr PresetsPage::fields() {
           .label_=_("Track File"),
         }(),
         pcui::Selector{
-          .win_={.base_={.expand_=true}},
           .data_=mPresetSel,
           .builder_=[](data::Model *model) {
             pcui::Text text{
@@ -323,7 +320,6 @@ pcui::DescriptorPtr PresetsPage::style() {
             .label_=_("Comments"),
           }(),
           pcui::Selector{
-            .win_={.base_={.expand_=true, .proportion_=1}},
             .data_=mBladeSel,
             .builder_=[](data::Model *model) {
               pcui::Text text{
@@ -358,7 +354,6 @@ pcui::DescriptorPtr PresetsPage::style() {
             .label_=_("Blade Style"),
           }(),
           pcui::Selector{
-            .win_={.base_={.expand_=true, .proportion_=1}},
             .data_=mBladeSel,
             .builder_=[](data::Model *model) {
               pcui::Text text{
