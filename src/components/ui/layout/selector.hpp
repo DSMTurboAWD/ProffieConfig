@@ -22,7 +22,6 @@
 #include "data/selector.hpp"
 #include "ui/detail/builder.hpp"
 #include "ui/detail/descriptor.hpp"
-#include "ui/detail/general.hpp"
 #include "ui/types.hpp"
 
 #include "ui_export.h"
@@ -32,11 +31,7 @@ namespace pcui {
 struct UI_EXPORT Selector {
     struct Desc;
 
-    // TODO: Make this a base w/ C++ P2287.
-    detail::ChildWindowBase win_;
-
     data::Selector& data_;
-
     detail::DescBuilder builder_;
 
     DescriptorPtr operator()();

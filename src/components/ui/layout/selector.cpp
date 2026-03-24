@@ -21,8 +21,6 @@
 
 #include <wx/panel.h>
 
-#include "ui/build.hpp"
-#include "ui/priv/helpers.hpp"
 #include "ui/priv/winbase.hpp"
 #include "ui/detail/scaffold.hpp"
 #include "ui/detail/builder.hpp"
@@ -31,42 +29,110 @@ using namespace pcui;
 
 namespace {
 
-struct Layout : priv::WinBase<wxPanel, data::Selector::Receiver>,
-                data::Choice::Receiver {
-    Layout(const detail::Scaffold& scaffold, const Selector& desc) :
-        builder_{desc.builder_} {
-        Create(scaffold.childParent_);
+/**
+ * This item is a bit of a hack. The idea is to insert it alongside the item
+ * that is rebuilt in order to do the replacing.
+ *
+ * *Something* has to keep this object alive and manage it, and I suppose it
+ * makes sense enough that it be the same parent as the rebuilt item, since
+ * it can't be the item itself.
+ */
+struct TrackerDummy : wxSizerItem, data::Choice::Receiver {
+    TrackerDummy(const detail::Scaffold& scaffold, const Selector& desc) :
+        wxSizerItem(0, 0),
+        scaffold_{scaffold},
+        builder_{desc.builder_},
+        sel_{desc.data_} {
+        data::Choice::Context ctxt{desc.data_.choice_};
 
-        postCreation(scaffold, desc.win_);
-
-        data::Selector::Context ctxt{desc.data_};
-        onRebound(ctxt.bound());
-
-        data::Selector::Receiver::attach(desc.data_);
-        data::Choice::Receiver::attach(desc.data_.choice_);
+        buildAndReplace(ctxt);
+        attach(desc.data_.choice_);
     }
 
-    ~Layout() override {
-        data::Selector::Receiver::detach();
-        data::Choice::Receiver::detach();
+    ~TrackerDummy() override {
+        detach();
     }
 
+    // onChoice will be called for both direct choices and indirect choices
+    // as a result of unbinding (or rebinding), so it's all we need to listen
+    // to.
     void onChoice() override {
-        data::Vector::ROContext vec{*vec_};
-
-        auto ctxt{data::Choice::Receiver::context<data::Choice>()};
-        build(this, builder_(&*vec.children()[ctxt.choice()]));
+        auto ctxt{context<data::Choice>()};
+        buildAndReplace(ctxt);
     }
 
-    void onRebound(const data::Vector *vec) override {
-        vec_ = vec;
+    // Build a new item and replace the old one with it, or insert a new item
+    // if we don't have one yet.
+    void buildAndReplace(const data::Choice::ROContext& choice) {
+        data::Model *model{nullptr};
 
-        if (not vec_) build(this, builder_(nullptr));
-        else onChoice();
+        // If we have a choice, then a vector is guaranteed to be bound. If
+        // not, it doesn't matter in any case.
+        if (choice.choice() != -1) {
+            data::Selector::ROContext sel{sel_};
+            data::Vector::ROContext vec{*sel.bound()};
+
+            // Grab the model to build off of.
+            model = &*vec.children()[choice.choice()];
+        }
+
+        auto desc{builder_(model)};
+        auto *item{desc->build(scaffold_)};
+
+        int32 insertLoc{-1};
+        if (last_) {
+            // If last_ holds a window, Remove will not destroy it, which
+            // would be a memory leak if not cleaned up here.
+            if (last_->IsWindow()) last_->GetWindow()->Destroy();
+
+            // The old item needs to be removed from the sizer, but wxSizer
+            // only provides remove by index or wxSizer *, and only provides
+            // Replace for window->window and sizer->sizer.
+            //
+            // So, we've got to find the index of the item we're tracking
+            // before being able to remove it, and then insert in a new item.
+            const auto& children{scaffold_.sizer_->GetChildren()};
+
+            // wxSizerItemList is, well, a list, so have to iterate with
+            // iterators, not by index. The list deceptively provides a
+            // subscript operator, but this simply iterates over the list
+            // internally, so using it would be horribly inefficient.
+            auto iter{children.begin()};
+            for (size idx{0}; idx < children.size(); ++idx, ++iter) {
+                if (*iter != last_) continue;
+
+                // The wxSizerItemList and wxSizerItem use int, but STL types
+                // use size (or ssize, or equivalent type). So a size is used
+                // for `idx` to compare against the size(), but has to be
+                // converted here. We're not worried about hitting the int
+                // limit and it being a problem, it's just a bit confusing.
+                insertLoc = static_cast<int>(idx);
+                scaffold_.sizer_->Remove(static_cast<int>(idx));
+                break;
+            }
+        }
+
+        // Now, the wxSizerItem is deleted, if it existed.
+        // Track the new item.
+        last_ = item;
+
+        if (insertLoc == -1) {
+            scaffold_.sizer_->Add(item);
+        } else {
+            scaffold_.sizer_->Insert(insertLoc, item);
+        }
     }
 
+    // The last-built item that is currently being held in whatever sizer
+    // is hold us.
+    wxSizerItem *last_{nullptr};
+
+    const detail::Scaffold scaffold_;
     const detail::DescBuilder builder_;
-    const data::Vector *vec_;
+
+    // Since we're not a receiver for the selector, have to hold onto this
+    // ourselves.
+    const data::Selector& sel_;
 };
 
 } // namespace
@@ -80,9 +146,6 @@ Selector::Desc::Desc(Selector&& data) :
     Selector{std::move(data)} {}
 
 wxSizerItem *Selector::Desc::build(const detail::Scaffold& scaffold) const {
-    auto *sel{new Layout(scaffold, *this)};
-    auto *item{new wxSizerItem(sel)};
-    priv::apply(win_.base_, item);
-    return item;
+    return new TrackerDummy(scaffold, *this);
 }
 
