@@ -19,7 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "data/string.hpp"
 #include "ui/detail/general.hpp"
 #include "ui/types.hpp"
 
@@ -30,10 +29,7 @@ namespace pcui {
 struct UI_EXPORT Labeled {
     detail::ChildBase base_;
 
-    std::variant<
-        wxString,
-        RefWrap<data::String>
-    > label_;
+    LabelData label_;
     wxOrientation orient_{wxVERTICAL};
 
     DescriptorPtr ctrl_;

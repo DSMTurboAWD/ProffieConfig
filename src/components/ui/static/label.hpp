@@ -36,10 +36,7 @@ struct UI_EXPORT Label {
     // TODO: Make these base w/ C++ P2287.
     detail::ChildWindowBase win_;
 
-    std::variant<
-        wxString,
-        RefWrap<data::String>
-    > label_;
+    LabelData label_;
 
     text::detail::StyleData style_;
     color::Dynamic color_;
