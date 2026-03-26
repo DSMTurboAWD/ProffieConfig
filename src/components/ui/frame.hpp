@@ -21,6 +21,8 @@
 
 #include <wx/frame.h>
 
+#include "ui/types.hpp"
+
 #include "ui_export.h"
 
 namespace pcui {
@@ -29,8 +31,8 @@ class UI_EXPORT Frame : public wxFrame {
 public:
     Frame(
         wxWindow* parent,
-        wxWindowID winID,
-        const wxString& title,
+        wxWindowID id,
+        const LabelData& title,
         long style = wxDEFAULT_FRAME_STYLE
     );
     ~Frame() override;
@@ -42,6 +44,7 @@ public:
 
 private:
     Frame** mReference{nullptr};
+    std::unique_ptr<data::String::Receiver> mTitleRcvr;
 };
 
 } // namespace pcui

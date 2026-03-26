@@ -28,15 +28,12 @@
 
 namespace pcui {
 
-class UI_EXPORT Dialog : public wxDialog, data::String::Receiver {
+class UI_EXPORT Dialog : public wxDialog {
 public:
     Dialog(
         wxWindow* parent,
-        wxWindowID winID,
-        std::variant<
-            wxString,
-            pcui::RefWrap<const data::String>
-        > title,
+        wxWindowID id,
+        const LabelData& title,
         long style = wxDEFAULT_DIALOG_STYLE
     );
     ~Dialog() override;
@@ -44,7 +41,7 @@ public:
     void Fit() override;
 
 private:
-    void onChange() override;
+    std::unique_ptr<data::String::Receiver> mTitleRcvr;
 };
 
 } // namespace pcui

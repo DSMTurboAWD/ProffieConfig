@@ -23,30 +23,32 @@
 #include <wx/sizer.h>
 #include <wx/window.h>
 
-#include "ui/priv/helpers.hpp"
+#include "ui/priv/tlw.hpp"
 
 using namespace pcui;
 
 Frame::Frame(
     wxWindow *parent,
-    wxWindowID winID,
-    const wxString& title,
+    wxWindowID id,
+    const LabelData& title,
     long style
 ) {
-    priv::tlwBindOnCreate(this);
-    priv::tlwPreCreate(this);
+    priv::tlw::bindOnCreate(this);
+    priv::tlw::preCreate(this);
 
     Create(
         parent,
-        winID,
-        title,
+        id,
+        wxEmptyString,
         wxDefaultPosition,
         wxDefaultSize,
         style,
         "pcui::Frame"
     );
 
-    priv::tlwPostCreate(this);
+    priv::tlw::postCreate(this);
+
+    mTitleRcvr = priv::tlw::setTitle(this, title);
 }
 
 Frame::~Frame() {
@@ -58,12 +60,7 @@ void Frame::setReference(Frame** ref) {
 }
 
 void Frame::Fit() {
-    // IMO it's silly that the usual fit doesn't set min size. Fit is supposed
-    // to set it to fit around the children (i.e. at min size), so not making
-    // it so the sizing reflects that is a little odd. Probably historical.
-    SetMinSize({0, 0});
-    wxFrame::Fit();
-    SetMinSize(GetSize());
+    priv::tlw::fit<wxFrame>(this);
 }
 
 void Frame::appendDefaultMenuItems(wxMenuBar *menuBar) {
