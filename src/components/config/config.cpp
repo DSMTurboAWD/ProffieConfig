@@ -84,7 +84,9 @@ config::Config::Config() :
     mBoardSel(this) {
     suppressActions();
 
-    const auto propSelFilt{[](const data::Choice::ROContext& ctxt, int32& idx) {
+    const auto propSelFilt{[](
+        const data::Choice::ROContext& ctxt, int32& idx
+    ) {
         if (idx == -1 and ctxt.numChoices()) idx = 0;
     }};
     mPropSel.choice_.setFilter(propSelFilt);
@@ -195,6 +197,10 @@ const versions::props::Prop *config::Config::prop() const {
         // NOLINTNEXTLINE suppress lifetimebound warning
         vec.children()[choice.choice()].get()
     );
+}
+
+const data::Bool& config::Config::isSaved() const {
+    return mIsSaved;
 }
 
 size config::Config::numBlades() const {
