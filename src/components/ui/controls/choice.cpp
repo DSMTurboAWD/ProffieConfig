@@ -61,7 +61,7 @@ struct ControlBase : priv::WinBase<Ctrl, data::Choice::Receiver> {
     void onChoice() override {
         const auto self{static_cast<Derived *>(this)};
         const auto model{data::Choice::Receiver::context<data::Choice>()};
-        Ctrl::CallAfter([this, self, choice=model.choice()] {
+        this->safeCall([this, self, choice=model.choice()] {
             Ctrl::SetSelection(self->dataToControl(choice));
         });
     }
@@ -72,7 +72,7 @@ struct ControlBase : priv::WinBase<Ctrl, data::Choice::Receiver> {
             data::Choice::Receiver::context<data::Choice>().numChoices()
         )};
 
-        Ctrl::CallAfter([this, choices] {
+        this->safeCall([this, choices] {
             Ctrl::Set(choices);
         });
     }
@@ -153,7 +153,7 @@ private:
 
     struct LabelReceiver final : data::String::Receiver {
         LabelReceiver(
-            Ctrl *ctrl,
+            ControlBase *ctrl,
             uint32 idx,
             const data::String& model
         ) : mCtrl{ctrl}, mIdx{idx} {
@@ -167,7 +167,7 @@ private:
         void onChange() override {
             // Capture info by value, the receiver could die before the UI
             // updates occur.
-            mCtrl->CallAfter([
+            mCtrl->safeCall([
                 ctrl=mCtrl, idx=mIdx, val=context<data::String>().val()
             ] {
                 ctrl->SetString(idx, val);
@@ -175,7 +175,7 @@ private:
         }
 
     private:
-        Ctrl *mCtrl;
+        ControlBase *mCtrl;
         uint32 mIdx;
     };
 };

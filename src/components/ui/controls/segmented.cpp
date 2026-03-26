@@ -137,7 +137,7 @@ struct Manager : priv::WinBase<wxPanel, data::Exclusive::Receiver> {
     }
     
     void onSelection(size idx) override {
-        CallAfter([this, idx] {
+        safeCall([this, idx] {
             auto& children{GetChildren()};
 
             for (size childIdx{0}; childIdx < children.size(); ++childIdx) {

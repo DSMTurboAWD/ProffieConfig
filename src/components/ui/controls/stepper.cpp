@@ -69,14 +69,14 @@ struct IntCtrl : priv::WinBase<wxSpinCtrl, data::Integer::Receiver> {
     
     void onSet() override {
         const auto val{context<data::Integer>().val()};
-        CallAfter([this, val] {
+        safeCall([this, val] {
             SetValue(val);
         });
     }
 
     void onUpdate() override {
         auto params{context<data::Integer>().params()};
-        CallAfter([this, params] {
+        safeCall([this, params] {
             SetRange(params.min_, params.max_);
             SetIncrement(params.inc_);
         });
@@ -122,14 +122,14 @@ struct DoubleCtrl : priv::WinBase<wxSpinCtrlDouble, data::Integer::Receiver> {
     
     void onSet() override {
         const auto val{context<data::Decimal>().val()};
-        CallAfter([this, val] {
+        safeCall([this, val] {
             SetValue(val);
         });
     }
 
     void onUpdate() override {
         auto params{context<data::Decimal>().params()};
-        CallAfter([this, params] {
+        safeCall([this, params] {
             SetRange(params.min_, params.max_);
             SetIncrement(params.inc_);
         });
