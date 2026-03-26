@@ -31,7 +31,7 @@ namespace pcui {
 struct UI_EXPORT Selector {
     struct Desc;
 
-    data::Selector& data_;
+    const data::Selector& data_;
     detail::DescBuilder builder_;
 
     DescriptorPtr operator()();
