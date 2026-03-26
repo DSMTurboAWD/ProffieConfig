@@ -1,4 +1,4 @@
-#include "editorwindow.h"
+#include "editorwindow.hpp"
 /*
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2023-2026 Ryan Ogurek
@@ -23,194 +23,81 @@
 #include <filesystem>
 #include <thread>
 
-#include <wx/arrstr.h>
-#include <wx/combobox.h>
-#include <wx/display.h>
-#include <wx/event.h>
 #include <wx/filedlg.h>
-#include <wx/gdicmn.h>
-#include <wx/list.h>
 #include <wx/menu.h>
-#include <wx/settings.h>
-#include <wx/sizer.h>
-#include <wx/statbox.h>
-#include <wx/string.h>
-#include <wx/toolbar.h>
-#include <wx/tooltip.h>
+#include <wx/uri.h>
 
-#include "config/config.h"
-#include "ui/message.hpp"
-#include "ui/frame.hpp"
-#include "utils/defer.h"
-#include "utils/image.h"
-#include "utils/paths.h"
-#include "utils/string.h"
+#include "config/misc/injection.hpp"
+#include "config/presets/preset.hpp"
+#include "ui/bitmap.hpp"
+#include "ui/build.hpp"
+#include "ui/dialogs/message.hpp"
+#include "ui/dialogs/progress.hpp"
+#include "ui/helpers/busy.hpp"
+#include "utils/files.hpp"
+#include "utils/paths.hpp"
+#include "utils/string.hpp"
 
-#include "pages/bladespage.h"
-#include "pages/generalpage.h"
-#include "pages/presetspage.h"
-#include "pages/propspage.h"
+#include "../tools/arduino.hpp"
 
-#include "../core/utilities/misc.h"
-#include "../core/utilities/progress.h"
-#include "../mainmenu/mainmenu.h"
-
-#include "../tools/arduino.h"
-
-EditorWindow::EditorWindow(wxWindow *parent, Config::Config& config) : 
+EditorWindow::EditorWindow(wxWindow *parent, config::Info& info) : 
     pcui::Frame(
         parent,
         wxID_ANY,
-        /* _("ProffieConfig Editor") + */ static_cast<string>(config.name)
+        info.name()
     ),
-    mConfig{config},
-    mInitialOSVersion{config.settings.getOSVersion()} {
-    NotifyReceiver::create(this, mNotifyData);
-    auto *sizer{new wxBoxSizer{wxVERTICAL}};
+    mInfo{info},
+    mGeneralPage(*info.config()),
+    mPropsPage(*info.config()),
+    mPresetsPage(*info.config()),
+    mBladesPage(*info.config()) {
 
-    createMenuBar();
-    createUI(sizer);
+    // createMenuBar();
+    createToolBar();
+
     bindEvents();
-    initializeNotifier();
 
-    propsPage->Hide();
-    bladesPage->Hide();
-    presetsPage->Hide();
-    wxCommandEvent event{wxEVT_MENU, ID_General};
+    wxCommandEvent event{wxEVT_MENU, ePage_General};
     event.SetInt(0);
     wxPostEvent(this, event);
-
-    SetSizerAndFit(sizer);
-}
-
-bool EditorWindow::Destroy() {
-    mConfig.close();
-    return pcui::Frame::Destroy();
 }
 
 void EditorWindow::bindEvents() {
-    Bind(wxEVT_CLOSE_WINDOW, [&](wxCloseEvent& evt) {
-        if (not evt.CanVeto()) {
-            evt.Skip();
-            return;
-        }
-
-        if (not mConfig.isSaved()) {
-#           ifdef __WXMSW__
-            const auto flags{static_cast<long>(wxICON_WARNING | wxYES_NO | wxCANCEL | wxCANCEL_DEFAULT)};
-            wxGenericMessageDialog saveDialog{
-#           else
-            const auto flags{wxICON_WARNING | wxYES_NO | wxCANCEL | wxCANCEL_DEFAULT};
-            wxMessageDialog saveDialog{
-#           endif
-                this,
-                _("You currently have unsaved changes which will be lost otherwise."),
-                wxString::Format(
-                    _("Save Changes to \"%s\"?"),
-                    static_cast<string>(mConfig.name)
-                ),
-                flags
-            };
-            saveDialog.SetYesNoCancelLabels(
-                _("Save Changes"),
-                _("Discard Changes"),
-                _("Cancel")
-            );
-            auto saveChoice{saveDialog.ShowModal()};
-
-            if (saveChoice == wxID_CANCEL or (saveChoice == wxID_YES and not save())) {
-                evt.Veto();
-                return;
-            }
-        }
-
-        if (not mInitialOSVersion.err and mInitialOSVersion != mConfig.settings.getOSVersion()) {
-#           ifdef __WXMSW__
-            const auto flags{static_cast<long>(wxICON_INFORMATION | wxYES_NO | wxNO_DEFAULT)};
-            wxGenericMessageDialog osChangeDlg{
-#           else
-            const auto flags{wxICON_INFORMATION | wxYES_NO | wxNO_DEFAULT};
-            wxMessageDialog osChangeDlg{
-#           endif
-                this,
-                _("Any settings no longer active in this ProffieOS version are not saved "
-                        "once the editor is closed.\n\nAre you sure you want to continue?"),
-                _("OS Version Changed"),
-                flags
-            };
-            osChangeDlg.SetYesNoLabels(
-                _("Continue"),
-                _("Not Yet")
-            );
-            if (osChangeDlg.ShowModal() != wxID_YES) {
-                evt.Veto();
-                return;
-            }
-        }
-
-        reinterpret_cast<MainMenu *>(GetParent())->removeEditor(this);
-        evt.Skip();
-    });
-    Bind(Progress::EVT_UPDATE, [&](ProgressEvent& event) { 
-        Progress::handleEvent(&event); 
-    });
-    Bind(misc::EVT_MSGBOX, [&](misc::MessageBoxEvent& evt) {
-        pcui::showMessage(evt.message_, evt.caption_, evt.style_, this);
-    }, wxID_ANY);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) {
         save();
     }, wxID_SAVE); 
+
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
+        const auto name{data::String::ROContext{mInfo.name()}.val()};
         wxFileDialog fileDlg(
             this,
             _("Export ProffieOS Config File"),
             wxEmptyString,
-            static_cast<string>(mConfig.name) + Config::RAW_FILE_EXTENSION,
+            name + config::RAW_FILE_EXTENSION,
             _("ProffieOS Configuration") + " (*.h)|*.h",
             wxFD_SAVE | wxFD_OVERWRITE_PROMPT
         );
         if (fileDlg.ShowModal() == wxID_CANCEL) return;
 
-        mConfig.save(fileDlg.GetPath().ToStdString()); 
-    }, ID_ExportConfig);
+        config::generate(*mInfo.config(), fileDlg.GetPath().ToStdString());
+    }, eID_Export);
+
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
-        wxSetCursor(wxCURSOR_WAIT);
+        pcui::BusyTracker busy;
 
-        auto *prog{new Progress(this)};
-        const auto verifyStr{_("Verify Config")};
-        prog->SetTitle(verifyStr);
-        prog->Update(0, _("Initializing..."));
+        auto *prog{new pcui::ProgressDialog(
+            this,
+            _("Verify Config"),
+            true
+        )};
 
-        std::thread{[this, prog, verifyStr]() {
-            Defer defer{[this]() { mNotifyData.notify(ID_AsyncDone); }};
+        prog->set(0, _("Initializing..."));
 
-            auto res{Arduino::verifyConfig(mConfig, prog)};
-            if (auto *err = std::get_if<string>(&res)) {
-                auto *evt{new misc::MessageBoxEvent(
-                    misc::EVT_MSGBOX, wxID_ANY, *err, _("Config Verification Failed")
-                )};
-                wxQueueEvent(this, evt);
-                return;
-            }
-            auto result{std::get<Arduino::Result>(res)};
-
-            wxString message{_("Config Verified Successfully!")};
-            if (result.total != -1) {
-                message += "\n\n";
-                message += wxString::Format(
-                    wxGetTranslation(Arduino::Result::USAGE_MESSAGE),
-                    result.percent(),
-                    result.used,
-                    result.total
-                );
-            } 
-
-            auto *evt{new misc::MessageBoxEvent(
-                misc::EVT_MSGBOX, wxID_ANY, message, verifyStr
-            )};
-            wxQueueEvent(this, evt);
+        std::thread{[this, prog, busy]() {
+            arduino::verifyConfig(*mInfo.config(), *prog);
         }}.detach();
-    }, ID_VerifyConfig);
+    }, eID_Verify);
+
     Bind(wxEVT_MENU, [&](wxCommandEvent&) {
         wxFileDialog fileDialog{
             this,
@@ -222,58 +109,74 @@ void EditorWindow::bindEvents() {
         };
         if (fileDialog.ShowModal() == wxCANCEL) return;
 
-        auto copyPath{paths::injectionDir() / fileDialog.GetFilename().ToStdWstring()};
-        std::error_code err;
-        if (not paths::copyOverwrite(fileDialog.GetPath().ToStdWstring(), copyPath, err)) {
-            pcui::showMessage(err.message(), _("Injection file could not be added."));
+        auto dst{
+            paths::injectionDir() / fileDialog.GetFilename().ToStdWstring()
+        };
+
+        std::error_code ec;
+        const auto src{fileDialog.GetPath().ToStdWstring()};
+        if (not files::copyOverwrite(src, dst, ec)) {
+            pcui::showMessage(
+                ec.message(),
+                _("Injection file could not be added.")
+            );
             return;
         }
 
-        mConfig.presetArrays.addInjection(fileDialog.GetFilename().ToStdString());
-    }, ID_AddInjection);
+        auto& injectionVec{mInfo.config()->injections_};
+        data::Vector::Context injections{injectionVec};
+        injections.add(std::make_unique<config::Injection>(
+            &injectionVec, fileDialog.GetFilename().ToStdString()
+        ));
+    }, eID_Add_Injection);
+
     Bind(wxEVT_MENU, [&](wxCommandEvent&) { 
-        string styleStr;
+        std::string styleStr;
 
-        int32 presetArrayIdx{mConfig.presetArrays.selection};
-        if (presetArrayIdx != -1) {
-            auto& presetArray{mConfig.presetArrays.array(presetArrayIdx)};
+        data::Selector::ROContext styleSel{mPresetsPage.styleSel()};
+        data::Choice::ROContext styleChoice{mPresetsPage.styleSel().choice_};
+        if (styleChoice.choice() != -1) {
+            data::Vector::ROContext styleVec{*styleSel.bound()};
 
-            int32 presetIdx{presetArray.selection};
-            if (presetIdx != -1) {
-                auto& preset{presetArray.preset(presetIdx)};
+            auto& model{*styleVec.children()[styleChoice.choice()]};
+            auto& style{static_cast<config::presets::Style&>(model)};
 
-                int32 styleIdx{preset.styleSelection};
-                if (styleIdx != -1) {
-                    auto& style{preset.style(styleIdx)};
-                    styleStr = style.style;
-                    Utils::trimWhitespaceOutsideString(styleStr);
-                }
-            }
+            data::String::ROContext content{style.content_};
+            styleStr = content.val();
+
+            utils::trimWhitespaceOutsideString(styleStr);
         }
 
-        wxLaunchDefaultBrowser("https://fredrik.hubbe.net/lightsaber/style_editor.html?S=" + styleStr);
-    }, ID_StyleEditor);
-    auto windowSelectionHandler{[this](wxCommandEvent& evt) {
-        wxSetCursor(wxCURSOR_WAIT);
-        Defer deferCursor{[]() { wxSetCursor(wxNullCursor); }};
+        constexpr cstring EDITOR_URL{
+            "https://fredrik.hubbe.net/lightsaber/style_editor.html?S="
+        };
 
+        wxURI uri{EDITOR_URL + styleStr};
+        wxLaunchDefaultBrowser(uri.BuildURI());
+    }, eID_Style_Editor);
+
+    auto windowSelectionHandler{[this](wxCommandEvent& evt) {
 #       ifdef __WXOSX__
         GetToolBar()->ToggleTool(evt.GetId(), false);
+        GetToolBar()->OSXSelectTool(evt.GetId());
 #       endif
-        generalPage->Show(evt.GetId() == ID_General);
-        propsPage->Show(evt.GetId() == ID_Props);
-        bladesPage->Show(evt.GetId() == ID_BladeArrays);
-        presetsPage->Show(evt.GetId() == ID_Presets);
 
-        // Try removing this check, see what happens.
-        if (evt.GetEventObject()) fitAnimated();
-        else Fit();
+        if (evt.GetId() == ePage_General) {
+            pcui::build(this, mGeneralPage.ui());
+        } else if (evt.GetId() == ePage_Props) {
+            pcui::build(this, mPropsPage.ui());
+        } else if (evt.GetId() == ePage_Presets) {
+            pcui::build(this, mPresetsPage.ui());
+        } else if (evt.GetId() == ePage_Blades) {
+            pcui::build(this, mBladesPage.ui());
+        }
     }};
-    Bind(wxEVT_MENU, windowSelectionHandler, ID_General);
-    Bind(wxEVT_MENU, windowSelectionHandler, ID_Props);
-    Bind(wxEVT_MENU, windowSelectionHandler, ID_Presets);
-    Bind(wxEVT_MENU, windowSelectionHandler, ID_BladeArrays);
+    Bind(wxEVT_MENU, windowSelectionHandler, ePage_General);
+    Bind(wxEVT_MENU, windowSelectionHandler, ePage_Props);
+    Bind(wxEVT_MENU, windowSelectionHandler, ePage_Presets);
+    Bind(wxEVT_MENU, windowSelectionHandler, ePage_Blades);
 
+    /*
     Bind(wxEVT_IDLE, [this](wxIdleEvent& evt) {
         if (mStartMicros == -1) return;
 
@@ -315,28 +218,25 @@ void EditorWindow::bindEvents() {
             evt.RequestMore();
         }
     });
-}
-
-void EditorWindow::handleNotification(uint32 id) {
-    if (id == ID_AsyncDone) wxSetCursor(wxNullCursor);
+    */
 }
 
 void EditorWindow::createMenuBar() {
     auto *file{new wxMenu};
-    file->Append(ID_VerifyConfig, _("Verify Config") + "\tCtrl+R");
+    file->Append(eID_Verify, _("Verify Config") + "\tCtrl+R");
     file->AppendSeparator();
     file->Append(wxID_SAVE, _("Save Config") + "\tCtrl+S");
-    file->Append(ID_ExportConfig, _("Export Config...") + "\tCtrl+Alt+S");
+    file->Append(eID_Export, _("Export Config...") + "\tCtrl+Alt+S");
     file->AppendSeparator();
     file->Append(
-        ID_AddInjection,
+        eID_Add_Injection,
         _("Add Injection...") + "\tCtrl+Alt+I",
         _("Add a header file to be injected into CONFIG_PRESETS during compilation.")
     );
 
     auto *tools{new wxMenu};
     tools->Append(
-        ID_StyleEditor,
+        eID_Style_Editor,
         _("Style Editor..."),
         _("Open the ProffieOS style editor")
     );
@@ -349,70 +249,48 @@ void EditorWindow::createMenuBar() {
     SetMenuBar(menuBar);
 }
 
-void EditorWindow::createUI(wxSizer *sizer) {
+void EditorWindow::createToolBar() {
     auto *toolbar{CreateToolBar(wxTB_TEXT)};
     toolbar->AddRadioTool(
-        ID_General,
+        ePage_General,
         _("General"),
-        Image::loadPNG("settings", {32, -1})
+        pcui::Bitmap("settings").scaleTo(32).realize()
     );
     toolbar->AddRadioTool(
-        ID_Props,
+        ePage_Props,
         _("Prop File"),
-        Image::loadPNG("props", {32, -1})
+        pcui::Bitmap("props").scaleTo(32).realize()
     );
     toolbar->AddRadioTool(
-        ID_Presets,
+        ePage_Presets,
         _("Presets"),
-        Image::loadPNG("presets", {32, -1})
+        pcui::Bitmap("presets").scaleTo(32).realize()
     );
     toolbar->AddRadioTool(
-        ID_BladeArrays,
+        ePage_Blades,
         _("Blade Arrays"),
-        Image::loadPNG("blade", {32, -1})
+        pcui::Bitmap("blade").scale(32).realize()
     );
+
 #   ifdef __WXMSW__
     toolbar->AddStretchableSpace();
 #   endif
 #   ifdef __WXOSX__
     toolbar->OSXSetSelectableTools(true);
 #   endif
+
     toolbar->Realize();
-#   ifdef __WXOSX__
-    toolbar->OSXSelectTool(ID_General);
-#   endif
-
-    generalPage = new GeneralPage(this);
-    propsPage = new PropsPage(this);
-    presetsPage = new PresetsPage(this);
-    bladesPage = new BladesPage(this);
-
-    sizer->Add(
-        generalPage, 
-        wxSizerFlags(1).Border(wxALL, 20).Expand()
-    );
-    sizer->Add(
-        propsPage,
-        wxSizerFlags(1).Border(wxALL, 20).Expand()
-    );
-    sizer->Add(
-        presetsPage,
-        wxSizerFlags(1).Border(wxALL, 20).Expand()
-    );
-    sizer->Add(
-        bladesPage,
-        wxSizerFlags(1).Border(wxALL, 20).Expand()
-    );
 }
 
 bool EditorWindow::save() {
-    auto err{mConfig.save()};
+    auto err{mInfo.save()};
     if (err) {
         pcui::showMessage(*err, _("Config Not Saved"), wxOK | wxCENTER | wxICON_ERROR, this);
     }
     return not err;
 }
 
+/*
 void EditorWindow::configureResizing() {
     if (not generalPage or not propsPage or not bladesPage or not presetsPage) return;
 
@@ -430,7 +308,9 @@ void EditorWindow::configureResizing() {
     }
     SetVirtualSize(-1, -1);
 }
+*/
 
+/*
 void EditorWindow::fitAnimated() {
     if (not generalPage or not propsPage or not bladesPage or not presetsPage) return;
 
@@ -455,8 +335,5 @@ void EditorWindow::Fit() {
 
     configureResizing();
 }
-
-Config::Config& EditorWindow::getOpenConfig() const { return mConfig; }
-
-
+*/
 

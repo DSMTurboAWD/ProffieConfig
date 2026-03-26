@@ -19,40 +19,57 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/frame.h>
-
 #include "config/config.hpp"
 #include "ui/frame.hpp"
 #include "ui/types.hpp"
 
-struct EditorWindow : pcui::Frame {
-    EditorWindow(wxWindow *, config::Config&);
+#include "pages/general.hpp"
+#include "pages/props.hpp"
+#include "pages/presets.hpp"
+#include "pages/blades.hpp"
 
-    bool Destroy() final;
-    void Fit() final;
-    void fitAnimated();
+struct EditorWindow : pcui::Frame {
+    EditorWindow(wxWindow *, config::Info&);
+
+    // void Fit() final;
+    // void fitAnimated();
 
     // Handles errors
     bool save();
 
     [[nodiscard]] config::Config& getOpenConfig() const;
 
-    GeneralPage *generalPage{nullptr};
-    PropsPage *propsPage{nullptr};
-    BladesPage *bladesPage{nullptr};
-    PresetsPage *presetsPage{nullptr};
-
 private:
     pcui::DescriptorPtr ui();
 
     void createMenuBar();
+    void createToolBar();
+
     void bindEvents();
+
+    // void configureResizing();
+
+    config::Info& mInfo;
+
+    GeneralPage mGeneralPage;
+    PropsPage mPropsPage;
+    BladesPage mBladesPage;
+    PresetsPage mPresetsPage;
+
+    enum {
+        ePage_General = 100,
+        ePage_Props,
+        ePage_Presets,
+        ePage_Blades,
+
+        eID_Export,
+        eID_Verify,
+        eID_Add_Injection,
+        eID_Style_Editor,
+    };
 
     wxSize mBestSize{-1, -1};
     wxSize mStartSize{-1, -1};
     std::chrono::microseconds::rep mStartMicros;
-
-    void configureResizing();
-
-    config::Config& mConfig;
 };
+
