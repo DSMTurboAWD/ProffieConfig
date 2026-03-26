@@ -13,6 +13,7 @@ add_library(ui SHARED
 
     priv/helpers.cpp
     priv/winbase.cpp
+    priv/tlw.cpp
 
     detail/descriptor.cpp
     detail/scaffold.cpp

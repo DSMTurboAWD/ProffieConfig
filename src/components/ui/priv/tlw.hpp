@@ -3,7 +3,7 @@
  * ProffieConfig, All-In-One Proffieboard Management Utility
  * Copyright (C) 2026 Ryan Ogurek
  *
- * components/ui/priv/helpers.hpp
+ * components/ui/priv/tlw.hpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,32 +19,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/sizer.h>
+#include <wx/string.h>
 #include <wx/toplevel.h>
 
-#include "ui/detail/general.hpp"
+#include "ui/types.hpp"
 
-namespace pcui::priv {
+namespace pcui::priv::tlw {
 
-/**
- * Apply general ChildBase attributes to a sizer item.
- */
-void apply(const detail::ChildBase&, wxSizerItem *);
+void preCreate(wxTopLevelWindow *tlw);
+void postCreate(wxTopLevelWindow *tlw);
+void bindOnCreate(wxTopLevelWindow *tlw);
 
-/**
- * Queue a window to be shown when updates take place.
- *
- * This is done to ensure that a window is always shown in the same event as
- * it's laid out to ensure the window doesn't appear in an unexpected place to
- * the user.
- */
-void queueShow(wxWindow *, bool);
+[[nodiscard]] std::unique_ptr<data::String::Receiver> setTitle(
+    wxTopLevelWindow *tlw,
+    const LabelData& title
+);
 
-/**
- * Layout this window and its parents recursively, queued to ensure multiple
- * updates only require a single set of recalculations.
- */
-void layoutAndFitFor(wxWindow *);
+template <typename TLW>
+void fit(wxTopLevelWindow *tlw) {
+    // IMO it's silly that the usual fit doesn't set min size. Fit is supposed
+    // to set it to fit around the children (i.e. at min size), so not making
+    // it so the sizing reflects that is a little odd. Probably historical.
+    tlw->SetMinSize({0, 0});
+    tlw->TLW::Fit();
+    tlw->SetMinSize(tlw->GetSize());
+}
 
-} // namespace pcui::priv
+} // namespace pcui::priv::tlw
 
