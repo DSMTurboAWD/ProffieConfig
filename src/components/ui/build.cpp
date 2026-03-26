@@ -22,6 +22,7 @@
 #include <wx/panel.h>
 
 #include "ui/frame.hpp"
+#include "ui/priv/winbase.hpp"
 
 void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
     teardown(win);
@@ -56,23 +57,38 @@ void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
     //
     // TL;DR SetSizerAndFit() does not call Fit().
     parent->SetSizer(sizer);
-    parent->Fit();
 
-    // TODO: I'm not sure why (I thought at first it was layoutAndFitFor()'s
-    // deferred routines, but none of that should be firing, much less in an
-    // impactful way), but without a yield here to sync things up before a
-    // window is shown, there's some jitter as laying out occurs.
-    wxYield();
+    // In any case, we actually don't want Fit() on the parent, but rather on
+    // the win. The parent might be an intermediary panel!!
+    win->Fit();
 }
 
 void pcui::teardown(wxWindow *parent) {
     assert(parent);
 
-    // Destroy children in all the ways and delete sizer.
-    parent->DestroyChildren();
+    // First, delete all children of the active sizer, and the sizer itself.
+    // That should clear out most windows in most cases.
     if (parent->GetSizer()) {
         parent->GetSizer()->DeleteWindows();
         parent->SetSizer(nullptr, true);
+    }
+
+    // Then, check for any other children. They cannot be unconditionally
+    // deleted because there's things like toolbars (and probably other things)
+    // that need to be considered.
+    //
+    // There might be a cleaner and/or more efficient way to do this, but we
+    // can't just iterate over GetChildren() directly, because the iterators
+    // will be invalidated as child Destroy() is called.
+    auto iter{parent->GetChildren().begin()};
+    while (iter != parent->GetChildren().end()) {
+        if (not parent->IsClientAreaChild(*iter)) {
+            ++iter;
+            continue;
+        }
+
+        (*iter)->Destroy();
+        iter = parent->GetChildren().begin();
     }
 }
 

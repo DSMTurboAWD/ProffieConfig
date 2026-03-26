@@ -23,25 +23,22 @@
 #include <wx/sizer.h>
 #include <wx/window.h>
 
-#include "ui/priv/helpers.hpp"
+#include "ui/priv/tlw.hpp"
 
 using namespace pcui;
 
 Dialog::Dialog(
     wxWindow *parent,
-    wxWindowID winID,
-    std::variant<
-        wxString,
-        pcui::RefWrap<const data::String>
-    > title,
+    wxWindowID id,
+    const LabelData& title,
     long style
 ) {
-    priv::tlwBindOnCreate(this);
-    priv::tlwPreCreate(this);
+    priv::tlw::bindOnCreate(this);
+    priv::tlw::preCreate(this);
 
     Create(
         parent,
-        winID,
+        id,
         wxEmptyString,
         wxDefaultPosition,
         wxDefaultSize,
@@ -49,30 +46,19 @@ Dialog::Dialog(
         "pcui::Dialog"
     );
 
-    if (const auto *ptr{std::get_if<1>(&title)}) {
-        data::String::ROContext ctxt{*ptr};
-        SetTitle(ctxt.val());
-        attach(*ptr);
-    } else SetTitle(std::get<0>(title));
+    priv::tlw::postCreate(this);
+
+    mTitleRcvr = priv::tlw::setTitle(this, title);
 
     Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& evt) {
         if (evt.GetKeyCode() == WXK_ESCAPE) EndModal(wxID_CANCEL);
         evt.Skip();
     });
-
-    priv::tlwPostCreate(this);
 }
 
 Dialog::~Dialog() = default;
 
 void Dialog::Fit() {
-    // See Frame
-    SetMinSize({0, 0});
-    wxDialog::Fit();
-    SetMinSize(GetSize());
-}
-
-void Dialog::onChange() {
-    SetTitle(context<data::String>().val());
+    priv::tlw::fit<wxDialog>(this);
 }
 

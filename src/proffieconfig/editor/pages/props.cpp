@@ -19,59 +19,72 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wx/button.h>
-#include <wx/event.h>
-#include <wx/gdicmn.h>
-#include <wx/scrolwin.h>
-#include <wx/sizer.h>
-#include <wx/tooltip.h>
+#include "ui/controls/button.hpp"
+#include "ui/controls/choice.hpp"
+#include "ui/helpers/labeled.hpp"
+#include "ui/layout/scrolled.hpp"
+#include "ui/layout/selector.hpp"
+#include "ui/layout/spacer.hpp"
+#include "ui/layout/stack.hpp"
+#include "ui/types.hpp"
+#include "ui/values.hpp"
 
-#include "../editorwindow.h"
-#include "../dialogs/propbuttons.h"
+PropsPage::PropsPage(config::Config& config) : mConfig{config} {}
 
-PropsPage::PropsPage(EditorWindow *parent) : 
-    wxPanel(parent),
-    mParent{parent} {
-    NotifyReceiver::create(this, mParent->getOpenConfig().propNotifyData);
-    auto& config{mParent->getOpenConfig()};
+pcui::DescriptorPtr PropsPage::ui() {
+    return pcui::Stack{
+      .base_={.border_={.size_=pcui::winEdgeSpacing(), .dirs_=wxALL}},
+      .orient_=wxVERTICAL,
+      .children_={
+        pcui::Stack{
+          .orient_=wxHORIZONTAL,
+          .children_={
+            pcui::Labeled{
+              .label_=_("Prop File"),
+              .ctrl_=pcui::Choice{
+                .data_=mConfig.propSel().choice_,
+                .style_=pcui::Choice::PopUp{
+                  .unselected_=_("Select Prop"),
+                }
+              }(),
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Button{
+              .win_={
+                .tooltip_=_("View prop creator-provided information about this prop and its intended usage."),
+              },
+              .label_=_("Prop Description and Usage Info..."),
+            }(),
+            pcui::Spacer{.size_=pcui::interControlSpacing()}(),
+            pcui::Button{
+              .win_={
+                .tooltip_=_("View button controls based on specific option settings and number of buttons."),
+              },
+              .label_=_("Button Controls..."),
+            }(),
+          }
+        }(),
+        pcui::Spacer{.size_=pcui::interGroupSpacing()}(),
+        pcui::Scrolled{
+          .scrollRate_={.x_=10, .y_=10},
+          .child_=pcui::Selector{
+            .data_=mConfig.propSel(),
+            .builder_=[](data::Model *model) {
+                if (not model) return pcui::Spacer{.size_=0}();
 
-    auto *sizer{new wxBoxSizer(wxVERTICAL)};
+                auto *prop{static_cast<versions::props::Prop *>(
+                    model
+                )};
 
-    mTopSizer = new wxBoxSizer(wxHORIZONTAL);
-    auto *propSelection {new pcui::Choice(
-        this,
-        config.propSelection,
-        _("Prop File")
-    )};
-    propSelection->SetMinSize(wxSize{120, -1});
-    auto *propInfo{new wxButton(
-        this,
-        ID_PropInfo,
-        _("Prop Description and Usage Info...")
-    )};
-    auto *buttonInfo{new wxButton(
-        this,
-        ID_Buttons,
-        _("Button Controls...")
-    )};
-    propInfo->SetToolTip(_("View prop creator-provided information about this prop and its intended usage."));
-    buttonInfo->SetToolTip(_("View button controls based on specific option settings and number of buttons."));
-    mTopSizer->Add(propSelection, wxSizerFlags());
-    mTopSizer->AddSpacer(5);
-    mTopSizer->Add(propInfo, wxSizerFlags().Bottom());
-    mTopSizer->AddSpacer(5);
-    mTopSizer->Add(buttonInfo, wxSizerFlags().Bottom());
-
-    mPropsWindow = new wxScrolledWindow(this, wxID_ANY);
-
-    sizer->Add(mTopSizer);
-    sizer->AddSpacer(10);
-
-    bindEvents();
-    initializeNotifier();
-    SetSizerAndFit(sizer);
+                return prop->layout();
+            }
+          }(),
+        }(),
+      }
+    }();
 }
 
+/*
 void PropsPage::bindEvents() {
     Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         PropButtonsDialog(mParent).ShowModal();
@@ -98,224 +111,5 @@ void PropsPage::bindEvents() {
         infoDialog.ShowModal();
     }, ID_PropInfo);
 }
-
-void PropsPage::handleNotification(uint32 id) {
-    if (id == Config::Config::ID_PROPSELECTION) {
-        showSelectedProp();
-    }
-    if (
-            id == pcui::Notifier::eID_Rebound or
-            id == Config::Config::ID_PROPUPDATE
-       ) {
-        loadProps();
-    }
-}
-
-void PropsPage::setToActualMinSize() {
-    SetMinSize(GetSizer()->CalcMin());
-}
-
-void PropsPage::setToActualBestSize() {
-    auto minSize{GetSizer()->CalcMin()};
-    auto propsBestVirtualSize{
-        mPropsWindow->GetSizer() 
-            ? mPropsWindow->GetSizer()->CalcMin() 
-            : wxSize{0, 0} +
-        mPropsWindow->GetWindowBorderSize()
-    };
-    SetMinSize({
-        std::max(minSize.x, propsBestVirtualSize.x),
-        minSize.y + propsBestVirtualSize.y
-    });
-}
-
-bool PropsPage::Layout() {
-    auto res{wxPanel::Layout()};
-    if (not res) return false;
-
-    // The props window is not managed by the sizer so
-    // that it's easy to get the actual min size of the window and
-    // do the handling for that for EditorWindow.
-    //
-    // It's easy enough to lay out the props window so there's
-    // no point in trying to hack wxWidgets sizing any more than I
-    // already am...
-    auto propsStartY{GetSizer()->CalcMin().y};
-    auto size{GetSize()};
-
-    mPropsWindow->SetSize(
-        0, propsStartY,
-        size.x, size.y - propsStartY
-    );
-
-    mPropsWindow->FitInside();
-    mPropsWindow->SetScrollRate(10, 10);
-
-    return true;
-}
-
-void PropsPage::showSelectedProp() {
-    auto& config{mParent->getOpenConfig()};
-    bool hasValidSelection{
-        config.propSelection != -1 and
-        config.propSelection < config.props().size()
-    };
-    FindWindow(ID_Buttons)->Enable(hasValidSelection);
-    FindWindow(ID_PropInfo)->Enable(hasValidSelection);
-
-    for (auto *prop : mProps) prop->ShowItems(false);
-    mPropsWindow->SetSizer(nullptr, false);
-    if (not hasValidSelection) return;
-
-    auto *sizer{mProps[config.propSelection]};
-    sizer->ShowItems(true);
-
-    mPropsWindow->SetSizer(sizer);
-
-    mParent->Layout();
-    mParent->fitAnimated();
-}
-
-void PropsPage::loadProps() {
-    mPropsWindow->SetSizer(nullptr, false);
-    for (auto *sizer : mProps) {
-        sizer->Clear(true);
-        delete sizer;
-    }
-    mProps.clear();
-
-    const auto processChildren{[](
-        const auto self,
-        const Versions::PropLayout::Children& children,
-        wxSizer *sizer,
-        wxWindow *parent
-    ) -> void {
-        for (const auto& child : children) {
-            int32 lastSpacer{0};
-
-            const auto *const settingPtr{
-                std::get_if<Versions::PropSettingBase *>(&child)
-            };
-            if (settingPtr) {
-                auto& setting{**settingPtr};
-                wxWindow *windowToAdd{nullptr};
-                int32 spacer{0};
-
-                using enum Versions::PropSettingType;
-                if (TOGGLE == setting.settingType) {
-                    auto& toggle{static_cast<Versions::PropToggle&>(setting)};
-                    auto *control{new pcui::CheckBox(
-                        parent,
-                        toggle.value,
-                        0,
-                        toggle.name
-                    )};
-                    control->SetToolTip(toggle.description);
-                    windowToAdd = control;
-                } else if (OPTION == setting.settingType) {
-                    auto& option{static_cast<Versions::PropOption&>(setting)};
-
-                    vector<string> labels;
-                    labels.reserve(option.selections().size());
-                    for (const auto& selection : option.selections()) {
-                        labels.push_back(selection->name);
-                    }
-
-                    auto *control{new pcui::Radios(
-                        parent,
-                        option.selection,
-                        labels,
-                        option.name
-                    )};
-
-                    control->SetToolTip(option.description);
-                    for (
-                            auto idx{0};
-                            idx < option.selections().size();
-                            ++idx
-                        ) {
-                        control->SetToolTip(
-                            idx, option.selections()[idx]->description
-                        );
-                    }
-                    windowToAdd = control;
-                    spacer = 10;
-                } else if (NUMERIC == setting.settingType) {
-                    auto& numeric{static_cast<Versions::PropNumeric&>(
-                        setting
-                    )};
-                    auto *control{new pcui::Numeric(
-                        parent,
-                        numeric.value,
-                        numeric.name
-                    )};
-                    control->SetToolTip(numeric.description);
-                    windowToAdd = control;
-                } else if (DECIMAL == setting.settingType) {
-                    auto& decimal{static_cast<Versions::PropDecimal&>(
-                        setting
-                    )};
-                    auto *control{new pcui::Decimal(
-                        parent,
-                        decimal.value,
-                        decimal.name
-                    )};
-                    control->SetToolTip(decimal.description);
-                    windowToAdd = control;
-                } else {
-                    assert(0);
-                }
-
-                assert(windowToAdd);
-                spacer = std::max(lastSpacer, spacer);
-                if (spacer > 0) sizer->AddSpacer(spacer);
-                sizer->Add(windowToAdd, 0, wxEXPAND);
-                lastSpacer = spacer;
-
-                continue;
-            }
-
-            const auto *const layoutPtr{
-                std::get_if<Versions::PropLayout>(&child)
-            };
-            if (layoutPtr) {
-                if (not sizer->IsEmpty()) sizer->AddSpacer(10);
-                if (layoutPtr->label.empty()) {
-                    auto *newSizer{new wxBoxSizer(layoutPtr->axis)};
-                    self(self, layoutPtr->children, newSizer, parent);
-                    sizer->Add(newSizer, 0, wxEXPAND);
-                } else {
-                    auto *box{new pcui::StaticBox(
-                        layoutPtr->axis, parent, layoutPtr->label
-                    )};
-                    self(
-                        self,
-                        layoutPtr->children,
-                        box->sizer(),
-                        box->childParent()
-                    );
-                    sizer->Add(box, 0, wxEXPAND);
-                }
-
-                continue;
-            } 
-
-            assert(0);
-        }
-    }};
-
-    for (const auto *const prop : mParent->getOpenConfig().props()) {
-        auto *sizer{mProps.emplace_back(new wxBoxSizer(prop->layout().axis))};
-        // Top layout (as of writing) should never have label
-
-        processChildren(
-            processChildren,
-            prop->layout().children,
-            sizer,
-            mPropsWindow
-        );
-    }
-
-    showSelectedProp();
-}
+*/
 

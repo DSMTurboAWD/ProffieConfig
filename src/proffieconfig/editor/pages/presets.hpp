@@ -30,6 +30,10 @@ struct PresetsPage {
 
     pcui::DescriptorPtr ui();
 
+    [[nodiscard]] const data::Selector& styleSel() const {
+        return mStyleSel;
+    }
+
 private:
     pcui::DescriptorPtr selection();
     pcui::DescriptorPtr fields();

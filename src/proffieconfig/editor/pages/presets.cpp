@@ -320,7 +320,7 @@ pcui::DescriptorPtr PresetsPage::style() {
             .label_=_("Comments"),
           }(),
           pcui::Selector{
-            .data_=mBladeSel,
+            .data_=mStyleSel,
             .builder_=[](data::Model *model) {
               pcui::Text text{
                 .win_={
@@ -354,7 +354,7 @@ pcui::DescriptorPtr PresetsPage::style() {
             .label_=_("Blade Style"),
           }(),
           pcui::Selector{
-            .data_=mBladeSel,
+            .data_=mStyleSel,
             .builder_=[](data::Model *model) {
               pcui::Text text{
                 .win_={

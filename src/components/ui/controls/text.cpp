@@ -133,14 +133,14 @@ struct Control : priv::WinBase<wxTextCtrl, data::String::Receiver> {
     
     void onChange() override {
         const auto val{context<data::String>().val()};
-        CallAfter([this, val] {
+        safeCall([this, val] {
             ChangeValue(val);
             // SetInsertionPoint
         });
     }
 
     void onMove() override {
-        CallAfter([this] {
+        safeCall([this] {
             // SetInsertionPoint
         });
     }

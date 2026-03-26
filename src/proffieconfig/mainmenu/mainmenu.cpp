@@ -42,8 +42,7 @@
 
 #include "../core/state.hpp"
 #include "../onboard/onboard.hpp"
-#include "../editor/pages/general.hpp"
-#include "../editor/pages/presets.hpp"
+#include "../editor/editorwindow.hpp"
 #include "dialogs/about.hpp"
 #include "dialogs/addconfig.hpp"
 #include "dialogs/licenses.hpp"
@@ -83,7 +82,7 @@ MainMenu::~MainMenu() {
 
 void MainMenu::removeEditor(EditorWindow *editor) {
     for (auto it{mEditors.begin()}; it != mEditors.end(); ++it) {
-        if (*it == editor) {
+        if (it->second == editor) {
             mEditors.erase(it);
             break;
         }
@@ -185,12 +184,26 @@ pcui::DescriptorPtr MainMenu::ui() {
                   return;
               }
 
-              GeneralPage presetsPage{*info.config()};
-              pcui::Dialog dialog{this, wxID_ANY, _("Test")};
+              auto iter{mEditors.find(&info)};
+              if (iter == mEditors.end()) {
+                  auto *editor{new EditorWindow(this, info)};
 
-              pcui::build(&dialog, presetsPage.ui());
+                  const auto onDestroy{[this, editor](
+                      wxWindowDestroyEvent& evt
+                  ) {
+                      evt.Skip();
+                      if (evt.GetEventObject() != editor) return;
 
-              dialog.ShowModal();
+                      removeEditor(editor);
+                  }};
+                  editor->Bind(wxEVT_DESTROY, onDestroy);
+
+                  mEditors[&info] = editor;
+
+                  editor->Show();
+              } else {
+                  iter->second->Raise();
+              }
           }
         }(),
         pcui::Spacer{.size_=20}(),
@@ -287,19 +300,23 @@ void MainMenu::createMenuBar() {
 
 void MainMenu::bindEvents() {
     auto promptClose{[this]() -> bool {
-        for (auto *editor : mEditors) {
-            // REVIEW
-            // if (not editor->getOpenConfig().isSaved()) {
-            //     auto res{pcui::showMessage(
-            //         _("There is at least one editor open with unsaved changes, are you sure you want to exit?") +
-            //         "\n\n"+
-            //         _("All unsaved changes will be lost!"),
-            //         _("Open Editor(s)"),
-            //         wxYES_NO | wxNO_DEFAULT | wxCENTER | wxICON_EXCLAMATION
-            //     )};
-            //     if (res != wxYES) return false;
-            //     break;
-            // }
+        for (auto [info, editor] : mEditors) {
+            if (
+                    info->config() and
+                    data::Bool::ROContext{info->config()->isSaved()}.val()
+               ) {
+                continue;
+            }
+
+            auto res{pcui::showMessage(
+                _("There is at least one editor open with unsaved changes, are you sure you want to exit?") +
+                "\n\n"+
+                _("All unsaved changes will be lost!"),
+                _("Open Editor(s)"),
+                wxYES_NO | wxNO_DEFAULT | wxCENTER | wxICON_EXCLAMATION
+            )};
+            if (res != wxYES) return false;
+            break;
         }
 
         return true;

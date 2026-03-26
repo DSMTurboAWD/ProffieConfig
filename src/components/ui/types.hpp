@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "data/string.hpp"
 #include "ui/detail/descriptor.hpp"
 
 namespace pcui {
@@ -29,6 +30,11 @@ using DescriptorPtr = std::unique_ptr<detail::Descriptor>;
 
 template<typename T>
 using RefWrap = std::reference_wrapper<T>;
+
+using LabelData = std::variant<
+    wxString,
+    pcui::RefWrap<const data::String>
+>;
 
 } // namespace pcui
 
