@@ -19,14 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <vector>
+#include <map>
 
-#include <wx/button.h>
-#include <wx/combobox.h>
-
+#include "config/config.hpp"
 #include "data/choice.hpp"
 #include "data/selector.hpp"
-
 #include "ui/frame.hpp"
 #include "ui/types.hpp"
 
@@ -72,7 +69,7 @@ struct MainMenu : pcui::Frame {
     static MainMenu* instance;
 
 private:
-    std::vector<EditorWindow *> mEditors;
+    std::map<config::Info *, EditorWindow *> mEditors;
 
     pcui::DescriptorPtr ui();
 
