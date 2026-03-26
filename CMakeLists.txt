@@ -8,10 +8,10 @@ endif()
 
 project(ProffieConfig)
 
-if (NOT (CMAKE_HOST_SYSTEM_NAME STREQUAL Linux OR CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin))
-    # Rip Windows
-    message(FATAL_ERROR "Building on this platform is not supported.")
-endif()
+# if (NOT (CMAKE_HOST_SYSTEM_NAME STREQUAL Linux OR CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin))
+#     # Rip Windows
+#     message(FATAL_ERROR "Building on this platform is not supported.")
+# endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Windows)
     message(NOTICE "Configuring as cross-compile for Windows.")
