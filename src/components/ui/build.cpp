@@ -68,11 +68,29 @@ void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
 void pcui::teardown(wxWindow *parent) {
     assert(parent);
 
-    // Destroy children in all the ways and delete sizer.
-    parent->DestroyChildren();
+    // First, delete all children of the active sizer, and the sizer itself.
+    // That should clear out most windows in most cases.
     if (parent->GetSizer()) {
         parent->GetSizer()->DeleteWindows();
         parent->SetSizer(nullptr, true);
+    }
+
+    // Then, check for any other children. They cannot be unconditionally
+    // deleted because there's things like toolbars (and probably other things)
+    // that need to be considered.
+    //
+    // There might be a cleaner and/or more efficient way to do this, but we
+    // can't just iterate over GetChildren() directly, because the iterators
+    // will be invalidated as child Destroy() is called.
+    auto iter{parent->GetChildren().begin()};
+    while (iter != parent->GetChildren().end()) {
+        if (not parent->IsClientAreaChild(*iter)) {
+            ++iter;
+            continue;
+        }
+
+        (*iter)->Destroy();
+        iter = parent->GetChildren().begin();
     }
 }
 
