@@ -19,39 +19,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../editorwindow.h"
 #include "config/config.hpp"
-#include "ui/notifier.h"
-
-#include <wx/scrolwin.h>
-#include <wx/statbox.h>
+#include "ui/types.hpp"
 
 struct PropsPage {
-    PropsPage(wxWindow *, config::Config&);
+    PropsPage(config::Config&);
 
-    // Because wxWidgets sizing is somewhat annoying,
-    // "best size" vs "min size" means nothing when using sizers.
-    //
-    // This means there's no way to differentiate in the EditorWindow.
-    // It must set our min-size to our best size, calculate its size, then
-    // update our min size to be shrinkable.
-    void setToActualMinSize();
-    void setToActualBestSize();
-
-    [[nodiscard]] bool Layout() override;
+    pcui::DescriptorPtr ui();
 
 private:
-    wxScrolledWindow *mPropsWindow{nullptr};
-    wxSizer *mTopSizer{nullptr};
-
-    EditorWindow *mParent{nullptr};
-
-    vector<wxSizer *> mProps;
-
     void loadProps();
-    void showSelectedProp();
+
     void bindEvents();
 
-    void handleNotification(uint32) final;
+    config::Config& mConfig;
 };
 

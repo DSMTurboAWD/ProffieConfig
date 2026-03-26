@@ -14,6 +14,7 @@ add_executable(proffieconfig WIN32
     mainmenu/dialogs/manifest.cpp
 
     editor/pages/general.cpp
+    editor/pages/props.cpp
     editor/pages/presets.cpp
     editor/pages/blades.cpp
 
