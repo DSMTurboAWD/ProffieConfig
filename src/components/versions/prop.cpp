@@ -36,6 +36,7 @@
 #include "ui/detail/descriptor.hpp"
 #include "ui/layout/group.hpp"
 #include "ui/layout/stack.hpp"
+#include "ui/types.hpp"
 #include "utils/string.hpp"
 #include "versions/priv/data.hpp"
 
@@ -340,7 +341,7 @@ auto Prop::buttons(uint32 numButtons) const -> Buttons {
     return {};
 }
 
-std::unique_ptr<pcui::detail::Descriptor> Prop::layout() {
+pcui::DescriptorPtr Prop::layout() {
     struct Layer {
         const Layout& layout_;
         decltype(Layout::children_)::const_iterator iter_;
@@ -398,7 +399,6 @@ std::unique_ptr<pcui::detail::Descriptor> Prop::layout() {
             } else if (auto *ptr{dynamic_cast<Integer *>(setting)}) {
                 children.push_back(pcui::Stepper{
                     .data_ = *ptr,
-
                 }());
             } else if (auto *ptr{dynamic_cast<Decimal *>(setting)}) {
                 children.push_back(pcui::Stepper{

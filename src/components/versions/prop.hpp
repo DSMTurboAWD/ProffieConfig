@@ -35,7 +35,7 @@
 #include "data/helpers/exclusive.hpp"
 #include "log/branch.hpp"
 #include "pconf/types.hpp"
-#include "ui/detail/descriptor.hpp"
+#include "ui/types.hpp"
 #include "utils/types.hpp"
 
 #include "utils/version.hpp"
@@ -242,7 +242,7 @@ struct VERSIONS_EXPORT Prop : data::Node {
     [[nodiscard]] Buttons buttons(uint32 numButtons) const;
     [[nodiscard]] const Errors& errors() const;
 
-    [[nodiscard]] std::unique_ptr<pcui::detail::Descriptor> layout();
+    [[nodiscard]] pcui::DescriptorPtr layout();
 
     void migrateFrom(const Prop&);
 
