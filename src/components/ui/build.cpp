@@ -22,6 +22,7 @@
 #include <wx/panel.h>
 
 #include "ui/frame.hpp"
+#include "ui/priv/winbase.hpp"
 
 void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
     teardown(win);
@@ -56,13 +57,10 @@ void pcui::build(wxWindow *win, const DescriptorPtr& desc) {
     //
     // TL;DR SetSizerAndFit() does not call Fit().
     parent->SetSizer(sizer);
-    parent->Fit();
 
-    // TODO: I'm not sure why (I thought at first it was layoutAndFitFor()'s
-    // deferred routines, but none of that should be firing, much less in an
-    // impactful way), but without a yield here to sync things up before a
-    // window is shown, there's some jitter as laying out occurs.
-    wxYield();
+    // In any case, we actually don't want Fit() on the parent, but rather on
+    // the win. The parent might be an intermediary panel!!
+    win->Fit();
 }
 
 void pcui::teardown(wxWindow *parent) {
